@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Маршрут</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0d1117;
+      color: #c9d1d9;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    #header {
+      background: #161b22;
+      border-bottom: 1px solid #30363d;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      z-index: 1000;
+    }
+    #header-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #f0f6fc;
+    }
+    #counter {
+      background: #1f6feb;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 20px;
+      transition: background 0.2s;
+    }
+    #counter.has-items { background: #238636; }
+
+    /* ── Map ── */
+    #map-wrap {
+      flex: 1;
+      position: relative;
+      min-height: 0;
+    }
+    #map { width: 100%; height: 100%; }
+
+    /* ── Loading overlay ── */
+    #loading {
+      position: absolute;
+      inset: 0;
+      background: #0d1117;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 500;
+      gap: 14px;
+    }
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid #30363d;
+      border-top-color: #1f6feb;
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loading p { color: #8b949e; font-size: 14px; }
+
+    /* ── Leaflet popup dark ── */
+    .leaflet-popup-content-wrapper {
+      background: #161b22;
+      color: #c9d1d9;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+    .leaflet-popup-tip { background: #161b22; }
+    .leaflet-popup-close-button { color: #8b949e !important; }
+    .popup-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: #f0f6fc;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+    .popup-btn {
+      width: 100%;
+      padding: 9px 0;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .popup-btn:active { opacity: 0.75; }
+    .popup-btn.add { background: #238636; color: #fff; }
+    .popup-btn.remove { background: #da3633; color: #fff; }
+
+    /* ── Bottom panel ── */
+    #panel {
+      background: #161b22;
+      border-top: 1px solid #30363d;
+      display: flex;
+      flex-direction: column;
+      max-height: 38vh;
+      flex-shrink: 0;
+      transition: max-height 0.25s ease;
+    }
+    #panel.collapsed { max-height: 44px; }
+
+    #panel-toggle {
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      flex-shrink: 0;
+      user-select: none;
+    }
+    #panel-label {
+      font-size: 13px;
+      color: #8b949e;
+      font-weight: 500;
+    }
+    #toggle-icon {
+      color: #8b949e;
+      font-size: 12px;
+      transition: transform 0.25s;
+    }
+    #panel.collapsed #toggle-icon { transform: rotate(180deg); }
+
+    #countries-list {
+      overflow-y: auto;
+      flex: 1;
+      padding: 0 10px 6px;
+    }
+    #panel.collapsed #countries-list { display: none; }
+
+    .empty-hint {
+      color: #484f58;
+      font-size: 13px;
+      text-align: center;
+      padding: 10px 0 4px;
+    }
+
+    .country-chip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #21262d;
+      border-radius: 8px;
+      padding: 7px 10px;
+      margin-bottom: 6px;
+    }
+    .chip-num { color: #8b949e; font-size: 12px; margin-right: 6px; }
+    .chip-name { font-size: 14px; color: #f0f6fc; flex: 1; }
+    .chip-del {
+      background: none;
+      border: none;
+      color: #da3633;
+      font-size: 16px;
+      cursor: pointer;
+      padding: 0 2px;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+    .chip-del:active { opacity: 0.6; }
+
+    #btn-done {
+      margin: 8px 12px 10px;
+      padding: 13px;
+      background: linear-gradient(135deg, #1f6feb, #388bfd);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: opacity 0.15s;
+    }
+    #btn-done:disabled { background: #21262d; color: #484f58; cursor: default; }
+    #btn-done:not(:disabled):active { opacity: 0.8; }
+    #panel.collapsed #btn-done { display: none; }
+
+    /* Leaflet zoom control dark */
+    .leaflet-control-zoom a {
+      background: #161b22 !important;
+      color: #c9d1d9 !important;
+      border-color: #30363d !important;
+    }
+    .leaflet-control-zoom a:hover { background: #21262d !important; }
+    .leaflet-bar { border: 1px solid #30363d !important; }
+    .leaflet-control-attribution {
+      background: rgba(13,17,23,0.7) !important;
+      color: #484f58 !important;
+      font-size: 9px !important;
+    }
+    .leaflet-control-attribution a { color: #6e7681 !important; }
+  </style>
+</head>
+<body>
+
+<div id="header">
+  <span id="header-title">🗺 Маршрут</span>
+  <span id="counter">0 стран</span>
+</div>
+
+<div id="map-wrap">
+  <div id="map"></div>
+  <div id="loading">
+    <div class="spinner"></div>
+    <p>Загрузка карты…</p>
+  </div>
+</div>
+
+<div id="panel">
+  <div id="panel-toggle" onclick="togglePanel()">
+    <span id="panel-label">Выбранные страны</span>
+    <span id="toggle-icon">▲</span>
+  </div>
+  <div id="countries-list">
+    <div class="empty-hint">Нажми на страну чтобы добавить</div>
+  </div>
+  <button id="btn-done" onclick="sendRoute()" disabled>Готово →</button>
+</div>
+
+<script>
+  /* ── Telegram WebApp init ── */
+  const tg = window.Telegram.WebApp;
+  tg.ready();
+  tg.expand();
+  if (tg.setHeaderColor) tg.setHeaderColor('#161b22');
+  if (tg.setBackgroundColor) tg.setBackgroundColor('#0d1117');
+
+  /* ── State ── */
+  let route = [];           // string[] — country names
+  let layerMap = new Map(); // name → Leaflet layer
+  let panelOpen = true;
+  let activePopup = null;
+
+  /* ── Map ── */
+  const map = L.map('map', {
+    center: [25, 15],
+    zoom: 2,
+    minZoom: 1,
+    maxZoom: 7,
+    zoomControl: true,
+    attributionControl: true,
+  });
+
+  L.tileLayer(
+    'https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png',
+    { attribution: '© OpenStreetMap © CartoDB', subdomains: 'abcd', maxZoom: 19 }
+  ).addTo(map);
+
+  /* ── Styles ── */
+  const S = {
+    default:  { fillColor: '#1f3a5f', fillOpacity: 0.55, color: '#2d5a8e', weight: 0.6 },
+    hover:    { fillColor: '#2d6a9f', fillOpacity: 0.75, color: '#4d9abf', weight: 1   },
+    selected: { fillColor: '#1a5c2e', fillOpacity: 0.85, color: '#2ea34e', weight: 1.5 },
+  };
+
+  function getName(f) {
+    return f.properties.name
+        || f.properties.ADMIN
+        || f.properties.NAME
+        || '—';
+  }
+
+  function isSelected(name) { return route.includes(name); }
+
+  /* ── GeoJSON events ── */
+  function onEach(feature, layer) {
+    const name = getName(feature);
+    layerMap.set(name, layer);
+
+    layer.on({
+      mouseover(e) {
+        if (!isSelected(name)) e.target.setStyle(S.hover);
+      },
+      mouseout(e) {
+        if (!isSelected(name)) e.target.setStyle(S.default);
+      },
+      click(e) {
+        L.DomEvent.stopPropagation(e);
+        openPopup(name, e.latlng);
+      },
+    });
+  }
+
+  /* ── Popup ── */
+  function openPopup(name, latlng) {
+    if (activePopup) map.closePopup(activePopup);
+
+    const sel = isSelected(name);
+    const safeName = name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+
+    activePopup = L.popup({ closeButton: true, minWidth: 180 })
+      .setLatLng(latlng)
+      .setContent(`
+        <div class="popup-name">${name}</div>
+        <button
+          class="popup-btn ${sel ? 'remove' : 'add'}"
+          onclick="toggleCountry('${safeName}', this)">
+          ${sel ? '✕ Убрать из маршрута' : '+ Добавить в маршрут'}
+        </button>
+      `)
+      .openOn(map);
+  }
+
+  /* ── Toggle country in route ── */
+  window.toggleCountry = function(name, btn) {
+    if (isSelected(name)) {
+      route = route.filter(c => c !== name);
+      layerMap.get(name)?.setStyle(S.default);
+      btn.className = 'popup-btn add';
+      btn.textContent = '+ Добавить в маршрут';
+    } else {
+      route.push(name);
+      layerMap.get(name)?.setStyle(S.selected);
+      btn.className = 'popup-btn remove';
+      btn.textContent = '✕ Убрать из маршрута';
+      if (!panelOpen) togglePanel();
+    }
+    render();
+  };
+
+  /* ── Remove from list ── */
+  window.removeCountry = function(name) {
+    route = route.filter(c => c !== name);
+    layerMap.get(name)?.setStyle(S.default);
+
+    // refresh popup if open for this country
+    if (activePopup && activePopup.isOpen()) {
+      const wrap = activePopup.getElement();
+      if (wrap && wrap.querySelector('.popup-name')?.textContent === name) {
+        const btn = wrap.querySelector('.popup-btn');
+        if (btn) { btn.className = 'popup-btn add'; btn.textContent = '+ Добавить в маршрут'; }
+      }
+    }
+    render();
+  };
+
+  /* ── Render UI ── */
+  function render() {
+    const n = route.length;
+
+    // counter
+    const counter = document.getElementById('counter');
+    const word = n === 1 ? 'страна' : n > 1 && n < 5 ? 'страны' : 'стран';
+    counter.textContent = n === 0 ? '0 стран' : `${n} ${word}`;
+    counter.className = n > 0 ? 'has-items' : '';
+
+    // list
+    const list = document.getElementById('countries-list');
+    if (n === 0) {
+      list.innerHTML = '<div class="empty-hint">Нажми на страну чтобы добавить</div>';
+    } else {
+      list.innerHTML = route.map((name, i) => {
+        const safe = name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        return `<div class="country-chip">
+          <span class="chip-num">${i + 1}</span>
+          <span class="chip-name">${name}</span>
+          <button class="chip-del" onclick="removeCountry('${safe}')">✕</button>
+        </div>`;
+      }).join('');
+    }
+
+    // done button
+    document.getElementById('btn-done').disabled = n === 0;
+  }
+
+  /* ── Panel toggle ── */
+  function togglePanel() {
+    panelOpen = !panelOpen;
+    document.getElementById('panel').classList.toggle('collapsed', !panelOpen);
+  }
+
+  /* ── Send route to bot ── */
+  function sendRoute() {
+    if (route.length === 0) return;
+    tg.sendData(JSON.stringify({ countries: route }));
+  }
+
+  /* ── Load GeoJSON ── */
+  fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json')
+    .then(r => {
+      if (!r.ok) throw new Error('fetch failed');
+      return r.json();
+    })
+    .then(data => {
+      L.geoJSON(data, { style: S.default, onEachFeature: onEach }).addTo(map);
+      document.getElementById('loading').style.display = 'none';
+      render();
+    })
+    .catch(() => {
+      document.getElementById('loading').innerHTML =
+        '<p style="color:#da3633;font-size:14px;text-align:center;padding:0 20px">Не удалось загрузить карту.<br>Проверь интернет-соединение.</p>';
+    });
+
+  render();
+</script>
+</body>
+</html>
