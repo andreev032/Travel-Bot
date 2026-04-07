@@ -8,7 +8,70 @@ logger = logging.getLogger(__name__)
 
 TOKEN = "8701321387:AAHwb_WkmrimPtInwDftv8jb0d03gTkogqA"
 
-ANSWERING = 0
+MAIN_MENU, ANSWERING, HELP_MENU, HELP_TOPIC = range(4)
+
+HELP_TOPICS = {
+    "✈️ Что делать в аэропорту": (
+        "✈️ *Что делать в аэропорту*\n\n"
+        "1. Приезжай за 2–3 часа до вылета.\n"
+        "2. Найди стойку регистрации своей авиакомпании — посмотри на табло (DEPARTURES).\n"
+        "3. Сдай багаж и получи посадочный талон (boarding pass).\n"
+        "4. Пройди досмотр: сними ремень, куртку, достань ноутбук и жидкости в пакете.\n"
+        "5. Найди свой гейт (Gate) по номеру на посадочном.\n"
+        "6. Следи за табло — гейт может измениться!\n\n"
+        "💡 *Совет:* Скачай приложение авиакомпании — уведомления о гейте приходят туда."
+    ),
+    "🛂 Как пройти паспортный контроль": (
+        "🛂 *Как пройти паспортный контроль*\n\n"
+        "При выезде из России:\n"
+        "— Подойди к стойке, отдай загранпаспорт.\n"
+        "— Пограничник задаст пару вопросов или просто проверит документы.\n"
+        "— Получи штамп и иди на посадку.\n\n"
+        "При въезде в другую страну:\n"
+        "— Стань в очередь для иностранцев (Foreigners / All Passports).\n"
+        "— Могут спросить: цель поездки (Tourism), сколько дней, где живёшь.\n"
+        "— Покажи бронь отеля и обратный билет — лучше иметь их под рукой.\n\n"
+        "💡 *Совет:* Говори уверенно, не нервничай — это стандартная процедура."
+    ),
+    "🚕 Как найти такси/транспорт": (
+        "🚕 *Как найти такси и транспорт*\n\n"
+        "В аэропорту:\n"
+        "— Не соглашайся с «частниками», которые сами подходят — это дорого и рискованно.\n"
+        "— Ищи официальные стойки такси (Taxi / Official Taxi).\n"
+        "— Или закажи через приложение: Uber, Bolt, Grab (Азия), inDrive.\n\n"
+        "Общественный транспорт:\n"
+        "— Автобус или метро часто дешевле в 5–10 раз.\n"
+        "— Уточни маршрут заранее в Google Maps — работает офлайн.\n\n"
+        "💡 *Совет:* Скачай Google Maps офлайн-карту ещё дома, пока есть Wi-Fi."
+    ),
+    "🪪 Что такое e-visa и как оформить": (
+        "🪪 *Что такое e-visa*\n\n"
+        "E-visa — это электронная виза, которую получаешь онлайн без похода в консульство.\n\n"
+        "Как оформить:\n"
+        "1. Найди официальный сайт страны (ищи «e-visa + название страны»).\n"
+        "2. Заполни анкету: ФИО, паспортные данные, цель визита.\n"
+        "3. Загрузи фото и скан паспорта.\n"
+        "4. Оплати сбор картой (обычно $20–60).\n"
+        "5. Жди одобрения на email (1–7 дней).\n"
+        "6. Распечатай или сохрани на телефоне — покажешь на границе.\n\n"
+        "💡 *Совет:* Пользуйся только официальными сайтами — есть мошеннические копии."
+    ),
+    "🎒 Что взять в дорогу": (
+        "🎒 *Что взять в дорогу*\n\n"
+        "Документы:\n"
+        "— Загранпаспорт + копия\n"
+        "— Распечатки билетов, брони отеля, визы\n\n"
+        "Деньги:\n"
+        "— Карта (Visa/MC) + немного наличных в местной валюте\n"
+        "— Сообщи банку о поездке заранее\n\n"
+        "В ручную кладь (до 100 мл!):\n"
+        "— Жидкости: крем, шампунь, вода — только в прозрачном пакете 1л\n"
+        "— Зарядки, наушники, ноутбук\n\n"
+        "Аптечка:\n"
+        "— Обезболивающее, антидиарейное, пластырь, средство от насекомых\n\n"
+        "💡 *Совет:* Сфотографируй все документы и отправь себе на email."
+    ),
+}
 
 QUESTIONS = [
     {"id": "company", "text": "Привет! Я твой travel-помощник 🌍\n\nС кем планируешь путешествие?", "opts": ["Один", "С партнёром", "С друзьями", "С семьёй и детьми"]},
@@ -91,15 +154,77 @@ def score_destination(dest, answers):
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data.clear()
-    context.user_data["answers"] = {}
-    context.user_data["step"] = 0
-    q = QUESTIONS[0]
-    keyboard = [[opt] for opt in q["opts"]]
+    keyboard = [["🌍 Подобрать страну", "📖 Инструкция для новичка"]]
     await update.message.reply_text(
-        q["text"],
+        "Привет! Я твой travel-помощник 🌍\n\n"
+        "Помогу подобрать страну для путешествия или отвечу на вопросы если едешь впервые.\n\n"
+        "Что хочешь сделать?",
         reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
     )
-    return ANSWERING
+    return MAIN_MENU
+
+
+async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text
+    if text == "🌍 Подобрать страну":
+        context.user_data["answers"] = {}
+        context.user_data["step"] = 0
+        q = QUESTIONS[0]
+        keyboard = [[opt] for opt in q["opts"]]
+        await update.message.reply_text(
+            q["text"],
+            reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
+        )
+        return ANSWERING
+    elif text == "📖 Инструкция для новичка":
+        return await show_help_menu(update, context)
+    else:
+        keyboard = [["🌍 Подобрать страну", "📖 Инструкция для новичка"]]
+        await update.message.reply_text(
+            "Выбери один из вариантов 👇",
+            reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
+        )
+        return MAIN_MENU
+
+
+async def show_help_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    keyboard = [[topic] for topic in HELP_TOPICS.keys()] + [["🏠 Главное меню"]]
+    await update.message.reply_text(
+        "📖 *Инструкция для новичка*\n\nВыбери тему:",
+        parse_mode="Markdown",
+        reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
+    )
+    return HELP_MENU
+
+
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    return await show_help_menu(update, context)
+
+
+async def help_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text
+    if text == "🏠 Главное меню":
+        keyboard = [["🌍 Подобрать страну", "📖 Инструкция для новичка"]]
+        await update.message.reply_text(
+            "Главное меню:",
+            reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
+        )
+        return MAIN_MENU
+    if text in HELP_TOPICS:
+        keyboard = [["◀️ Назад в меню"]]
+        await update.message.reply_text(
+            HELP_TOPICS[text],
+            parse_mode="Markdown",
+            reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
+        )
+        return HELP_TOPIC
+    return await show_help_menu(update, context)
+
+
+async def help_topic_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.text == "◀️ Назад в меню":
+        return await show_help_menu(update, context)
+    return await show_help_menu(update, context)
 
 
 async def handle_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -167,8 +292,16 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 def main():
     app = Application.builder().token(TOKEN).build()
     conv = ConversationHandler(
-        entry_points=[CommandHandler("start", start)],
-        states={ANSWERING: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_answer)]},
+        entry_points=[
+            CommandHandler("start", start),
+            CommandHandler("help", help_command),
+        ],
+        states={
+            MAIN_MENU: [MessageHandler(filters.TEXT & ~filters.COMMAND, main_menu_handler)],
+            ANSWERING: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_answer)],
+            HELP_MENU: [MessageHandler(filters.TEXT & ~filters.COMMAND, help_menu_handler)],
+            HELP_TOPIC: [MessageHandler(filters.TEXT & ~filters.COMMAND, help_topic_handler)],
+        },
         fallbacks=[CommandHandler("cancel", cancel)],
     )
     app.add_handler(conv)
