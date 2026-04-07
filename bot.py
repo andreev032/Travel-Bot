@@ -1,6 +1,7 @@
 import os
+import json
 import logging
-from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
+from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton, WebAppInfo
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler
 
 logging.basicConfig(level=logging.INFO)
@@ -9,6 +10,20 @@ logger = logging.getLogger(__name__)
 TOKEN = "8701321387:AAHwb_WkmrimPtInwDftv8jb0d03gTkogqA"
 
 MAIN_MENU, ANSWERING, HELP_MENU, HELP_TOPIC = range(4)
+
+# Замени на реальный HTTPS-URL после деплоя webapp/index.html
+WEBAPP_URL = "https://your-domain.com/webapp/index.html"
+
+
+def get_main_keyboard():
+    return ReplyKeyboardMarkup(
+        [
+            [KeyboardButton("🌍 Подобрать страну"), KeyboardButton("📖 Инструкция для новичка")],
+            [KeyboardButton("🗺 Построить маршрут", web_app=WebAppInfo(url=WEBAPP_URL))],
+        ],
+        resize_keyboard=True,
+        one_time_keyboard=True,
+    )
 
 HELP_TOPICS = {
     "✈️ Что делать в аэропорту": (
@@ -254,12 +269,11 @@ def score_destination(dest, answers):
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data.clear()
-    keyboard = [["🌍 Подобрать страну", "📖 Инструкция для новичка"]]
     await update.message.reply_text(
         "Привет! Я твой travel-помощник 🌍\n\n"
-        "Помогу подобрать страну для путешествия или отвечу на вопросы если едешь впервые.\n\n"
+        "Помогу подобрать страну, покажу карту маршрута или отвечу на вопросы если едешь впервые.\n\n"
         "Что хочешь сделать?",
-        reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
+        reply_markup=get_main_keyboard(),
     )
     return MAIN_MENU
 
@@ -279,10 +293,9 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == "📖 Инструкция для новичка":
         return await show_help_menu(update, context)
     else:
-        keyboard = [["🌍 Подобрать страну", "📖 Инструкция для новичка"]]
         await update.message.reply_text(
             "Выбери один из вариантов 👇",
-            reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
+            reply_markup=get_main_keyboard(),
         )
         return MAIN_MENU
 
@@ -304,10 +317,9 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def help_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
     if text == "🏠 Главное меню":
-        keyboard = [["🌍 Подобрать страну", "📖 Инструкция для новичка"]]
         await update.message.reply_text(
             "Главное меню:",
-            reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
+            reply_markup=get_main_keyboard(),
         )
         return MAIN_MENU
     if text in HELP_TOPICS:
@@ -384,6 +396,35 @@ async def show_result(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 
+async def handle_webapp_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    try:
+        data = json.loads(update.message.web_app_data.data)
+        countries = data.get("countries", [])
+    except (json.JSONDecodeError, AttributeError):
+        countries = []
+
+    if not countries:
+        await update.message.reply_text("Маршрут пустой. Попробуй ещё раз!", reply_markup=get_main_keyboard())
+        return MAIN_MENU
+
+    count = len(countries)
+    if count == 1:
+        word = "страна"
+    elif count < 5:
+        word = "страны"
+    else:
+        word = "стран"
+
+    route_text = "\n".join(f"{i + 1}. {c}" for i, c in enumerate(countries))
+    await update.message.reply_text(
+        f"🗺 *Твой маршрут — {count} {word}:*\n\n{route_text}\n\n"
+        f"Отличный выбор! Хочешь подобрать направление подробнее — нажми «Подобрать страну».",
+        parse_mode="Markdown",
+        reply_markup=get_main_keyboard(),
+    )
+    return MAIN_MENU
+
+
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("До встречи! Напиши /start чтобы начать заново.", reply_markup=ReplyKeyboardRemove())
     return ConversationHandler.END
@@ -397,7 +438,10 @@ def main():
             CommandHandler("help", help_command),
         ],
         states={
-            MAIN_MENU: [MessageHandler(filters.TEXT & ~filters.COMMAND, main_menu_handler)],
+            MAIN_MENU: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, main_menu_handler),
+                MessageHandler(filters.StatusUpdate.WEB_APP_DATA, handle_webapp_data),
+            ],
             ANSWERING: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_answer)],
             HELP_MENU: [MessageHandler(filters.TEXT & ~filters.COMMAND, help_menu_handler)],
             HELP_TOPIC: [MessageHandler(filters.TEXT & ~filters.COMMAND, help_topic_handler)],
