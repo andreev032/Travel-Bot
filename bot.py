@@ -9,10 +9,11 @@ logger = logging.getLogger(__name__)
 
 TOKEN = "8701321387:AAHwb_WkmrimPtInwDftv8jb0d03gTkogqA"
 
-MAIN_MENU, ANSWERING, HELP_MENU, HELP_TOPIC, COUNTRY_INFO = range(5)
+MAIN_MENU, ANSWERING, HELP_MENU, HELP_TOPIC = range(4)
 
 # Замени на реальный HTTPS-URL после деплоя webapp/index.html
-WEBAPP_URL = "https://andreev032.github.io/Travel-Bot/"
+WEBAPP_URL     = "https://andreev032.github.io/Travel-Bot/"
+MAP_URL      = "https://andreev032.github.io/Travel-Bot/map.html"
 
 
 HOME_BTN = "🏠 Главное меню"
@@ -22,7 +23,7 @@ def get_main_keyboard():
     return ReplyKeyboardMarkup(
         [
             [KeyboardButton("🌍 Подобрать страну"), KeyboardButton("📖 Инструкция для новичка")],
-            [KeyboardButton("🗺 Мои страны", web_app=WebAppInfo(url=WEBAPP_URL)), KeyboardButton("✈️ Инфо о стране")],
+            [KeyboardButton("🗺 Мои страны", web_app=WebAppInfo(url=WEBAPP_URL)), KeyboardButton("🗺 Карта мира", web_app=WebAppInfo(url=MAP_URL))],
         ],
         resize_keyboard=True,
         one_time_keyboard=True,
@@ -305,8 +306,6 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ANSWERING
     elif text == "📖 Инструкция для новичка":
         return await show_help_menu(update, context)
-    elif text == "✈️ Инфо о стране":
-        return await country_info_start(update, context)
     else:
         await update.message.reply_text(
             "Выбери один из вариантов 👇",
@@ -404,44 +403,6 @@ async def show_result(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return MAIN_MENU
 
 
-async def country_info_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    keyboard = [[f"{d['flag']} {d['country']}"] for d in DESTINATIONS] + [[HOME_BTN]]
-    await update.message.reply_text(
-        "✈️ *Инфо о стране*\n\nВыбери страну из списка:",
-        parse_mode="Markdown",
-        reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True),
-    )
-    return COUNTRY_INFO
-
-
-async def country_info_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text
-    if text == "◀️ К списку стран":
-        return await country_info_start(update, context)
-
-    dest = next((d for d in DESTINATIONS if f"{d['flag']} {d['country']}" == text), None)
-    if not dest:
-        return await country_info_start(update, context)
-
-    info = (
-        f"{dest['flag']} *{dest['country']}*\n\n"
-        f"🏙 *Старт из:* {dest['city']}\n"
-        f"💡 *Почему стоит ехать:* {dest['why']}\n"
-        f"✨ *Главная фишка:* {dest['highlight']}\n"
-        f"📅 *Лучшее время:* {dest['best_time']}\n"
-        f"💰 *Бюджет:* {dest['budget']}\n"
-        f"🛂 *Виза:* {dest['visa']}\n"
-        f"🎯 *Совет:* {dest['tip']}"
-    )
-    keyboard = [["◀️ К списку стран"], [HOME_BTN]]
-    await update.message.reply_text(
-        info,
-        parse_mode="Markdown",
-        reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True),
-    )
-    return COUNTRY_INFO
-
-
 async def handle_webapp_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         data = json.loads(update.message.web_app_data.data)
@@ -502,10 +463,6 @@ def main():
             HELP_TOPIC: [
                 home,
                 MessageHandler(filters.TEXT & ~filters.COMMAND, help_topic_handler),
-            ],
-            COUNTRY_INFO: [
-                home,
-                MessageHandler(filters.TEXT & ~filters.COMMAND, country_info_handler),
             ],
         },
         fallbacks=[
