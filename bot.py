@@ -9,21 +9,34 @@ logger = logging.getLogger(__name__)
 
 TOKEN = "8701321387:AAHwb_WkmrimPtInwDftv8jb0d03gTkogqA"
 
-MAIN_MENU, ANSWERING, HELP_MENU, HELP_TOPIC = range(4)
+MAIN_MENU, ANSWERING, HELP_MENU, HELP_TOPIC, COUNTRY_INFO = range(5)
 
 # Замени на реальный HTTPS-URL после деплоя webapp/index.html
 WEBAPP_URL = "https://andreev032.github.io/Travel-Bot/"
+
+
+HOME_BTN = "🏠 Главное меню"
 
 
 def get_main_keyboard():
     return ReplyKeyboardMarkup(
         [
             [KeyboardButton("🌍 Подобрать страну"), KeyboardButton("📖 Инструкция для новичка")],
-            [KeyboardButton("🗺 Построить маршрут", web_app=WebAppInfo(url=WEBAPP_URL))],
+            [KeyboardButton("🗺 Мои страны", web_app=WebAppInfo(url=WEBAPP_URL)), KeyboardButton("✈️ Инфо о стране")],
         ],
         resize_keyboard=True,
         one_time_keyboard=True,
     )
+
+
+async def go_home(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data.clear()
+    await update.message.reply_text(
+        "🏠 Главное меню:",
+        reply_markup=get_main_keyboard(),
+    )
+    return MAIN_MENU
+
 
 HELP_TOPICS = {
     "✈️ Что делать в аэропорту": (
@@ -284,7 +297,7 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data["answers"] = {}
         context.user_data["step"] = 0
         q = QUESTIONS[0]
-        keyboard = [[opt] for opt in q["opts"]]
+        keyboard = [[opt] for opt in q["opts"]] + [[HOME_BTN]]
         await update.message.reply_text(
             q["text"],
             reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
@@ -292,6 +305,8 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ANSWERING
     elif text == "📖 Инструкция для новичка":
         return await show_help_menu(update, context)
+    elif text == "✈️ Инфо о стране":
+        return await country_info_start(update, context)
     else:
         await update.message.reply_text(
             "Выбери один из вариантов 👇",
@@ -316,12 +331,6 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def help_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
-    if text == "🏠 Главное меню":
-        await update.message.reply_text(
-            "Главное меню:",
-            reply_markup=get_main_keyboard(),
-        )
-        return MAIN_MENU
     if text in HELP_TOPICS:
         keyboard = [["◀️ Назад в меню"]]
         await update.message.reply_text(
@@ -346,7 +355,7 @@ async def handle_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     valid_opts = QUESTIONS[step]["opts"]
     if text not in valid_opts:
-        keyboard = [[opt] for opt in valid_opts]
+        keyboard = [[opt] for opt in valid_opts] + [[HOME_BTN]]
         await update.message.reply_text(
             "Выбери один из вариантов 👇",
             reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
@@ -360,7 +369,7 @@ async def handle_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if step < len(QUESTIONS):
         q = QUESTIONS[step]
-        keyboard = [[opt] for opt in q["opts"]]
+        keyboard = [[opt] for opt in q["opts"]] + [[HOME_BTN]]
         progress = f"Вопрос {step + 1} из {len(QUESTIONS)}\n\n"
         await update.message.reply_text(
             progress + q["text"],
@@ -388,12 +397,49 @@ async def show_result(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"💰 *Бюджет:* {rec['budget']}\n"
         f"🛂 *Виза:* {rec['visa']}\n"
         f"🎯 *Совет эксперта:* {rec['tip']}\n\n"
-        f"Также подойдёт: {alt['flag']} {alt['country']}\n\n"
-        f"Пройти ещё раз — /start"
+        f"Также подойдёт: {alt['flag']} {alt['country']}"
     )
 
-    await update.message.reply_text(result, parse_mode="Markdown")
-    return ConversationHandler.END
+    await update.message.reply_text(result, parse_mode="Markdown", reply_markup=get_main_keyboard())
+    return MAIN_MENU
+
+
+async def country_info_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    keyboard = [[f"{d['flag']} {d['country']}"] for d in DESTINATIONS] + [[HOME_BTN]]
+    await update.message.reply_text(
+        "✈️ *Инфо о стране*\n\nВыбери страну из списка:",
+        parse_mode="Markdown",
+        reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True),
+    )
+    return COUNTRY_INFO
+
+
+async def country_info_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text
+    if text == "◀️ К списку стран":
+        return await country_info_start(update, context)
+
+    dest = next((d for d in DESTINATIONS if f"{d['flag']} {d['country']}" == text), None)
+    if not dest:
+        return await country_info_start(update, context)
+
+    info = (
+        f"{dest['flag']} *{dest['country']}*\n\n"
+        f"🏙 *Старт из:* {dest['city']}\n"
+        f"💡 *Почему стоит ехать:* {dest['why']}\n"
+        f"✨ *Главная фишка:* {dest['highlight']}\n"
+        f"📅 *Лучшее время:* {dest['best_time']}\n"
+        f"💰 *Бюджет:* {dest['budget']}\n"
+        f"🛂 *Виза:* {dest['visa']}\n"
+        f"🎯 *Совет:* {dest['tip']}"
+    )
+    keyboard = [["◀️ К списку стран"], [HOME_BTN]]
+    await update.message.reply_text(
+        info,
+        parse_mode="Markdown",
+        reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True),
+    )
+    return COUNTRY_INFO
 
 
 async def handle_webapp_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -432,6 +478,9 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def main():
     app = Application.builder().token(TOKEN).build()
+
+    home = MessageHandler(filters.Regex(f"^{HOME_BTN}$"), go_home)
+
     conv = ConversationHandler(
         entry_points=[
             CommandHandler("start", start),
@@ -439,14 +488,30 @@ def main():
         ],
         states={
             MAIN_MENU: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, main_menu_handler),
                 MessageHandler(filters.StatusUpdate.WEB_APP_DATA, handle_webapp_data),
+                MessageHandler(filters.TEXT & ~filters.COMMAND, main_menu_handler),
             ],
-            ANSWERING: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_answer)],
-            HELP_MENU: [MessageHandler(filters.TEXT & ~filters.COMMAND, help_menu_handler)],
-            HELP_TOPIC: [MessageHandler(filters.TEXT & ~filters.COMMAND, help_topic_handler)],
+            ANSWERING: [
+                home,
+                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_answer),
+            ],
+            HELP_MENU: [
+                home,
+                MessageHandler(filters.TEXT & ~filters.COMMAND, help_menu_handler),
+            ],
+            HELP_TOPIC: [
+                home,
+                MessageHandler(filters.TEXT & ~filters.COMMAND, help_topic_handler),
+            ],
+            COUNTRY_INFO: [
+                home,
+                MessageHandler(filters.TEXT & ~filters.COMMAND, country_info_handler),
+            ],
         },
-        fallbacks=[CommandHandler("cancel", cancel)],
+        fallbacks=[
+            home,
+            CommandHandler("cancel", cancel),
+        ],
     )
     app.add_handler(conv)
     logger.info("Бот запущен!")
