@@ -3,60 +3,166 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Маршрут</title>
+  <title>Travel Map</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; overflow: hidden; }
 
     body {
       background: #0d1117;
       color: #c9d1d9;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      height: 100vh;
       display: flex;
       flex-direction: column;
-      overflow: hidden;
     }
 
-    /* ── Header ── */
-    #header {
+    /* ── Tabs ── */
+    #tabs {
+      display: flex;
       background: #161b22;
       border-bottom: 1px solid #30363d;
-      padding: 10px 14px;
+      flex-shrink: 0;
+      z-index: 100;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 12px 0;
+      background: none;
+      border: none;
+      color: #8b949e;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: color .2s, border-color .2s;
+    }
+    .tab-btn.active { color: #58a6ff; border-bottom-color: #58a6ff; }
+
+    /* ── Panels ── */
+    #panel-countries, #panel-map {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+    .hidden { display: none !important; }
+
+    /* ── Countries tab ── */
+    #search-wrap {
+      padding: 10px 12px 6px;
+      background: #161b22;
+      border-bottom: 1px solid #21262d;
+      flex-shrink: 0;
+    }
+    #search {
+      width: 100%;
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 8px 12px;
+      color: #c9d1d9;
+      font-size: 14px;
+      outline: none;
+    }
+    #search::placeholder { color: #484f58; }
+    #search:focus { border-color: #58a6ff; }
+
+    #counter-bar {
+      padding: 8px 14px;
+      background: #0d1117;
+      border-bottom: 1px solid #21262d;
       display: flex;
       align-items: center;
       justify-content: space-between;
       flex-shrink: 0;
-      z-index: 1000;
     }
-    #header-title {
-      font-size: 15px;
-      font-weight: 600;
-      color: #f0f6fc;
-    }
-    #counter {
-      background: #1f6feb;
+    #counter-text { font-size: 13px; color: #8b949e; }
+    #counter-badge {
+      background: #238636;
       color: #fff;
-      font-size: 13px;
-      font-weight: 600;
-      padding: 4px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 2px 10px;
       border-radius: 20px;
-      transition: background 0.2s;
+      min-width: 42px;
+      text-align: center;
+      transition: background .2s;
     }
-    #counter.has-items { background: #238636; }
+    #counter-badge.zero { background: #21262d; color: #484f58; }
 
-    /* ── Map ── */
-    #map-wrap {
+    #countries-list {
+      overflow-y: auto;
       flex: 1;
-      position: relative;
-      min-height: 0;
+      padding: 6px 10px 80px;
     }
+    .country-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background .15s;
+      user-select: none;
+    }
+    .country-row:hover { background: #161b22; }
+    .country-row.checked { background: #0f2617; }
+    .country-row .cflag { font-size: 20px; flex-shrink: 0; width: 28px; text-align: center; }
+    .country-row .cname { flex: 1; font-size: 14px; color: #c9d1d9; }
+    .country-row.checked .cname { color: #3fb950; }
+    .check-box {
+      width: 20px; height: 20px;
+      border: 2px solid #30363d;
+      border-radius: 5px;
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .15s, border-color .15s;
+    }
+    .country-row.checked .check-box {
+      background: #238636;
+      border-color: #238636;
+    }
+    .check-box svg { display: none; }
+    .country-row.checked .check-box svg { display: block; }
+    .no-results {
+      text-align: center;
+      color: #484f58;
+      font-size: 14px;
+      padding: 30px 0;
+    }
+
+    /* ── Done button ── */
+    #done-wrap {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      padding: 10px 12px 14px;
+      background: linear-gradient(transparent, #0d1117 40%);
+      z-index: 200;
+    }
+    #btn-done {
+      width: 100%;
+      padding: 13px;
+      background: linear-gradient(135deg, #238636, #2ea043);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity .15s;
+    }
+    #btn-done:disabled { background: #21262d; color: #484f58; cursor: default; }
+    #btn-done:not(:disabled):active { opacity: .8; }
+
+    /* ── Map tab ── */
+    #panel-map { position: relative; }
     #map { width: 100%; height: 100%; }
 
-    /* ── Loading overlay ── */
-    #loading {
+    #map-loading {
       position: absolute;
       inset: 0;
       background: #0d1117;
@@ -64,354 +170,515 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      z-index: 500;
       gap: 14px;
+      z-index: 400;
     }
     .spinner {
       width: 36px; height: 36px;
-      border: 3px solid #30363d;
-      border-top-color: #1f6feb;
+      border: 3px solid #21262d;
+      border-top-color: #58a6ff;
       border-radius: 50%;
-      animation: spin 0.9s linear infinite;
+      animation: spin .9s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-    #loading p { color: #8b949e; font-size: 14px; }
+    #map-loading p { color: #8b949e; font-size: 14px; }
 
-    /* ── Leaflet popup dark ── */
-    .leaflet-popup-content-wrapper {
-      background: #161b22;
-      color: #c9d1d9;
-      border: 1px solid #30363d;
-      border-radius: 12px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-    }
-    .leaflet-popup-tip { background: #161b22; }
-    .leaflet-popup-close-button { color: #8b949e !important; }
-    .popup-name {
-      font-size: 15px;
-      font-weight: 600;
-      color: #f0f6fc;
-      margin-bottom: 10px;
-      text-align: center;
-    }
-    .popup-btn {
-      width: 100%;
-      padding: 9px 0;
-      border: none;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: opacity 0.15s;
-    }
-    .popup-btn:active { opacity: 0.75; }
-    .popup-btn.add { background: #238636; color: #fff; }
-    .popup-btn.remove { background: #da3633; color: #fff; }
-
-    /* ── Bottom panel ── */
-    #panel {
+    /* ── Country info sheet (map) ── */
+    #info-sheet {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
       background: #161b22;
       border-top: 1px solid #30363d;
-      display: flex;
-      flex-direction: column;
-      max-height: 38vh;
-      flex-shrink: 0;
-      transition: max-height 0.25s ease;
+      border-radius: 16px 16px 0 0;
+      padding: 16px 16px 24px;
+      z-index: 500;
+      transform: translateY(100%);
+      transition: transform .3s ease;
+      box-shadow: 0 -8px 32px rgba(0,0,0,.5);
     }
-    #panel.collapsed { max-height: 44px; }
+    #info-sheet.open { transform: translateY(0); }
 
-    #panel-toggle {
-      padding: 10px 14px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      cursor: pointer;
-      flex-shrink: 0;
-      user-select: none;
-    }
-    #panel-label {
-      font-size: 13px;
-      color: #8b949e;
-      font-weight: 500;
-    }
-    #toggle-icon {
-      color: #8b949e;
-      font-size: 12px;
-      transition: transform 0.25s;
-    }
-    #panel.collapsed #toggle-icon { transform: rotate(180deg); }
-
-    #countries-list {
-      overflow-y: auto;
-      flex: 1;
-      padding: 0 10px 6px;
-    }
-    #panel.collapsed #countries-list { display: none; }
-
-    .empty-hint {
-      color: #484f58;
-      font-size: 13px;
-      text-align: center;
-      padding: 10px 0 4px;
-    }
-
-    .country-chip {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+    #sheet-close {
+      position: absolute;
+      top: 12px; right: 14px;
       background: #21262d;
-      border-radius: 8px;
-      padding: 7px 10px;
-      margin-bottom: 6px;
-    }
-    .chip-num { color: #8b949e; font-size: 12px; margin-right: 6px; }
-    .chip-name { font-size: 14px; color: #f0f6fc; flex: 1; }
-    .chip-del {
-      background: none;
       border: none;
-      color: #da3633;
+      color: #8b949e;
+      width: 28px; height: 28px;
+      border-radius: 50%;
       font-size: 16px;
       cursor: pointer;
-      padding: 0 2px;
-      line-height: 1;
-      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .15s;
     }
-    .chip-del:active { opacity: 0.6; }
+    #sheet-close:hover { background: #30363d; }
 
-    #btn-done {
-      margin: 8px 12px 10px;
-      padding: 13px;
-      background: linear-gradient(135deg, #1f6feb, #388bfd);
-      color: #fff;
-      border: none;
-      border-radius: 10px;
-      font-size: 15px;
-      font-weight: 700;
-      cursor: pointer;
-      flex-shrink: 0;
-      transition: opacity 0.15s;
+    #sheet-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+    #sheet-flag { font-size: 36px; line-height: 1; }
+    #sheet-name { font-size: 18px; font-weight: 700; color: #f0f6fc; }
+
+    .info-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid #21262d;
     }
-    #btn-done:disabled { background: #21262d; color: #484f58; cursor: default; }
-    #btn-done:not(:disabled):active { opacity: 0.8; }
-    #panel.collapsed #btn-done { display: none; }
+    .info-row:last-child { border-bottom: none; }
+    .info-icon { font-size: 16px; width: 22px; flex-shrink: 0; text-align: center; }
+    .info-label { font-size: 12px; color: #8b949e; margin-bottom: 2px; }
+    .info-value { font-size: 14px; color: #c9d1d9; }
 
-    /* Leaflet zoom control dark */
+    /* Leaflet dark tweaks */
     .leaflet-control-zoom a {
-      background: #161b22 !important;
-      color: #c9d1d9 !important;
-      border-color: #30363d !important;
+      background: #161b22 !important; color: #c9d1d9 !important; border-color: #30363d !important;
     }
     .leaflet-control-zoom a:hover { background: #21262d !important; }
     .leaflet-bar { border: 1px solid #30363d !important; }
     .leaflet-control-attribution {
-      background: rgba(13,17,23,0.7) !important;
-      color: #484f58 !important;
-      font-size: 9px !important;
+      background: rgba(13,17,23,.75) !important; color: #484f58 !important; font-size: 9px !important;
     }
     .leaflet-control-attribution a { color: #6e7681 !important; }
   </style>
 </head>
 <body>
 
-<div id="header">
-  <span id="header-title">🗺 Маршрут</span>
-  <span id="counter">0 стран</span>
+<div id="tabs">
+  <button class="tab-btn active" onclick="showTab('countries')">🌍 Мои страны</button>
+  <button class="tab-btn" onclick="showTab('map')">🗺 Карта</button>
 </div>
 
-<div id="map-wrap">
+<!-- ── Countries tab ── -->
+<div id="panel-countries">
+  <div id="search-wrap">
+    <input id="search" type="text" placeholder="🔍 Поиск страны…" oninput="filterList(this.value)" autocomplete="off">
+  </div>
+  <div id="counter-bar">
+    <span id="counter-text">Посещено</span>
+    <span id="counter-badge" class="zero">0 / 0</span>
+  </div>
+  <div id="countries-list"></div>
+  <div id="done-wrap">
+    <button id="btn-done" disabled onclick="sendData()">Готово — отправить в бот</button>
+  </div>
+</div>
+
+<!-- ── Map tab ── -->
+<div id="panel-map" class="hidden">
   <div id="map"></div>
-  <div id="loading">
+  <div id="map-loading">
     <div class="spinner"></div>
     <p>Загрузка карты…</p>
   </div>
-</div>
-
-<div id="panel">
-  <div id="panel-toggle" onclick="togglePanel()">
-    <span id="panel-label">Выбранные страны</span>
-    <span id="toggle-icon">▲</span>
+  <!-- Country info bottom sheet -->
+  <div id="info-sheet">
+    <button id="sheet-close" onclick="closeSheet()">✕</button>
+    <div id="sheet-header">
+      <span id="sheet-flag">🌍</span>
+      <span id="sheet-name">—</span>
+    </div>
+    <div id="sheet-body"></div>
   </div>
-  <div id="countries-list">
-    <div class="empty-hint">Нажми на страну чтобы добавить</div>
-  </div>
-  <button id="btn-done" onclick="sendRoute()" disabled>Готово →</button>
 </div>
 
 <script>
-  /* ── Telegram WebApp init ── */
-  const tg = window.Telegram.WebApp;
-  tg.ready();
-  tg.expand();
-  if (tg.setHeaderColor) tg.setHeaderColor('#161b22');
-  if (tg.setBackgroundColor) tg.setBackgroundColor('#0d1117');
+/* ── Telegram WebApp ── */
+const tg = window.Telegram.WebApp;
+tg.ready();
+tg.expand();
+if (tg.setHeaderColor)    tg.setHeaderColor('#161b22');
+if (tg.setBackgroundColor) tg.setBackgroundColor('#0d1117');
 
-  /* ── State ── */
-  let route = [];           // string[] — country names
-  let layerMap = new Map(); // name → Leaflet layer
-  let panelOpen = true;
-  let activePopup = null;
+/* ────────────────────────────────────────────────────────────
+   COUNTRIES DATA
+   [ru_name, flag_emoji, en_name (for GeoJSON), visa_ru, best_time, avg_budget]
+──────────────────────────────────────────────────────────── */
+const RAW = [
+  ["Австралия","🇦🇺","Australia","Нужна виза","Сен–Ноя","$150–200/день"],
+  ["Австрия","🇦🇹","Austria","Виза (Шенген)","Апр–Май, Окт","€100–150/день"],
+  ["Азербайджан","🇦🇿","Azerbaijan","Безвизово","Апр–Июн, Сен–Окт","$40–70/день"],
+  ["Албания","🇦🇱","Albania","Безвизово","Май–Сен","$40–60/день"],
+  ["Алжир","🇩🇿","Algeria","Нужна виза","Окт–Апр","$50–80/день"],
+  ["Ангола","🇦🇴","Angola","Нужна виза","Май–Окт","$80–120/день"],
+  ["Андорра","🇦🇩","Andorra","Виза (Шенген)","Дек–Мар, Июн–Авг","€80–120/день"],
+  ["Антигуа и Барбуда","🇦🇬","Antigua and Barbuda","Нужна виза","Янв–Апр","$150–200/день"],
+  ["Аргентина","🇦🇷","Argentina","Безвизово","Окт–Мар","$60–100/день"],
+  ["Армения","🇦🇲","Armenia","Безвизово","Май–Окт","$30–50/день"],
+  ["Афганистан","🇦🇫","Afghanistan","Нужна виза","Апр–Июн","—"],
+  ["Багамские острова","🇧🇸","The Bahamas","Нужна виза","Дек–Апр","$200+/день"],
+  ["Бангладеш","🇧🇩","Bangladesh","Виза по прилёту","Ноя–Фев","$20–40/день"],
+  ["Барбадос","🇧🇧","Barbados","Нужна виза","Дек–Апр","$150–200/день"],
+  ["Бахрейн","🇧🇭","Bahrain","e-Visa (онлайн)","Ноя–Мар","$80–120/день"],
+  ["Беларусь","🇧🇾","Belarus","Безвизово","Май–Сен","$40–60/день"],
+  ["Белиз","🇧🇿","Belize","Безвизово","Ноя–Апр","$80–120/день"],
+  ["Бельгия","🇧🇪","Belgium","Виза (Шенген)","Апр–Сен","€100–160/день"],
+  ["Бенин","🇧🇯","Benin","Нужна виза","Ноя–Фев","$50–70/день"],
+  ["Болгария","🇧🇬","Bulgaria","Виза (Шенген)","Июн–Сен","€50–80/день"],
+  ["Боливия","🇧🇴","Bolivia","Безвизово","Май–Окт","$30–50/день"],
+  ["Босния и Герцеговина","🇧🇦","Bosnia and Herz.","Безвизово","Май–Сен","$40–60/день"],
+  ["Ботсвана","🇧🇼","Botswana","Безвизово","Май–Окт","$100–200/день"],
+  ["Бразилия","🇧🇷","Brazil","Безвизово","Апр–Июн, Авг–Окт","$60–100/день"],
+  ["Бруней","🇧🇳","Brunei","Безвизово (14 дней)","Янв–Апр","$80–120/день"],
+  ["Буркина-Фасо","🇧🇫","Burkina Faso","Нужна виза","Ноя–Фев","$40–60/день"],
+  ["Бурунди","🇧🇮","Burundi","Нужна виза","Июн–Авг","$40–60/день"],
+  ["Бутан","🇧🇹","Bhutan","Нужна виза","Мар–Май, Сен–Ноя","$200–250/день"],
+  ["Вануату","🇻🇺","Vanuatu","Безвизово","Май–Окт","$100–150/день"],
+  ["Ватикан","🇻🇦","Vatican","Виза (Шенген)","Апр–Окт","€120+/день"],
+  ["Великобритания","🇬🇧","United Kingdom","Нужна виза","Май–Сен","£120–180/день"],
+  ["Венгрия","🇭🇺","Hungary","Виза (Шенген)","Апр–Окт","€60–100/день"],
+  ["Венесуэла","🇻🇪","Venezuela","Безвизово","Дек–Апр","$30–60/день"],
+  ["Восточный Тимор","🇹🇱","East Timor","Виза по прилёту","Май–Ноя","$50–80/день"],
+  ["Вьетнам","🇻🇳","Vietnam","Безвизово (45 дней)","Янв–Апр, Авг–Дек","$30–60/день"],
+  ["Габон","🇬🇦","Gabon","e-Visa (онлайн)","Июн–Сен","$80–120/день"],
+  ["Гаити","🇭🇹","Haiti","Безвизово","Ноя–Апр","$50–80/день"],
+  ["Гайана","🇬🇾","Guyana","Безвизово","Сен–Ноя","$60–90/день"],
+  ["Гамбия","🇬🇲","Gambia","Нужна виза","Ноя–Май","$40–60/день"],
+  ["Гана","🇬🇭","Ghana","Нужна виза","Ноя–Мар","$50–80/день"],
+  ["Гватемала","🇬🇹","Guatemala","Безвизово","Ноя–Апр","$40–70/день"],
+  ["Гвинея","🇬🇳","Guinea","Нужна виза","Ноя–Апр","$40–60/день"],
+  ["Гвинея-Бисау","🇬🇼","Guinea Bissau","Нужна виза","Ноя–Май","$40–60/день"],
+  ["Германия","🇩🇪","Germany","Виза (Шенген)","Май–Окт","€100–160/день"],
+  ["Гондурас","🇭🇳","Honduras","Безвизово","Ноя–Апр","$40–70/день"],
+  ["Гренада","🇬🇩","Grenada","Нужна виза","Янв–Май","$120–180/день"],
+  ["Греция","🇬🇷","Greece","Виза (Шенген)","Май–Окт","€80–130/день"],
+  ["Грузия","🇬🇪","Georgia","Безвизово (365 дней)","Апр–Июн, Сен–Ноя","$40–70/день"],
+  ["Дания","🇩🇰","Denmark","Виза (Шенген)","Май–Авг","€150–200/день"],
+  ["Джибути","🇩🇯","Djibouti","e-Visa (онлайн)","Ноя–Апр","$80–120/день"],
+  ["Доминика","🇩🇲","Dominica","Нужна виза","Янв–Май","$100–150/день"],
+  ["Доминиканская Республика","🇩🇴","Dominican Republic","Безвизово","Дек–Апр","$80–130/день"],
+  ["ДР Конго","🇨🇩","Democratic Republic of the Congo","Нужна виза","Июн–Авг","$60–100/день"],
+  ["Египет","🇪🇬","Egypt","Виза по прилёту","Окт–Апр","$40–70/день"],
+  ["Замбия","🇿🇲","Zambia","Виза по прилёту","Май–Окт","$80–120/день"],
+  ["Зимбабве","🇿🇼","Zimbabwe","Виза по прилёту","Май–Окт","$60–100/день"],
+  ["Израиль","🇮🇱","Israel","Нужна виза","Мар–Май, Окт–Ноя","$150–200/день"],
+  ["Индия","🇮🇳","India","e-Visa (онлайн)","Окт–Мар","$30–60/день"],
+  ["Индонезия","🇮🇩","Indonesia","Безвизово (30 дней)","Апр–Окт","$40–80/день"],
+  ["Иордания","🇯🇴","Jordan","Виза по прилёту","Мар–Май, Сен–Ноя","$60–100/день"],
+  ["Ирак","🇮🇶","Iraq","Нужна виза","Окт–Апр","$50–80/день"],
+  ["Иран","🇮🇷","Iran","Виза по прилёту","Апр–Май, Сен–Ноя","$30–50/день"],
+  ["Ирландия","🇮🇪","Ireland","Нужна виза","Май–Авг","€120–180/день"],
+  ["Исландия","🇮🇸","Iceland","Виза (Шенген)","Июн–Авг","€150–250/день"],
+  ["Испания","🇪🇸","Spain","Виза (Шенген)","Апр–Июн, Сен–Окт","€90–140/день"],
+  ["Италия","🇮🇹","Italy","Виза (Шенген)","Апр–Июн, Сен–Окт","€100–160/день"],
+  ["Йемен","🇾🇪","Yemen","Нужна виза","Окт–Мар","—"],
+  ["Кабо-Верде","🇨🇻","Cape Verde","Виза по прилёту","Ноя–Июл","$80–120/день"],
+  ["Казахстан","🇰🇿","Kazakhstan","Безвизово","Май–Сен","$40–70/день"],
+  ["Камбоджа","🇰🇭","Cambodia","e-Visa / прилёт","Ноя–Апр","$30–60/день"],
+  ["Камерун","🇨🇲","Cameroon","Нужна виза","Ноя–Фев","$50–80/день"],
+  ["Канада","🇨🇦","Canada","Нужна виза","Июн–Авг","$120–180/день"],
+  ["Катар","🇶🇦","Qatar","e-Visa (онлайн)","Ноя–Апр","$100–160/день"],
+  ["Кения","🇰🇪","Kenya","e-Visa (онлайн)","Июл–Окт","$70–120/день"],
+  ["Кипр","🇨🇾","Cyprus","Виза (Шенген)","Апр–Ноя","€80–120/день"],
+  ["Кирибати","🇰🇮","Kiribati","Безвизово (30 дней)","Апр–Окт","$100–150/день"],
+  ["Китай","🇨🇳","China","Безвизово (15 дней)","Апр–Май, Сен–Окт","$50–100/день"],
+  ["Колумбия","🇨🇴","Colombia","Безвизово","Дек–Мар, Июл–Авг","$40–70/день"],
+  ["Коморские острова","🇰🇲","Comoros","Виза по прилёту","Апр–Окт","$60–90/день"],
+  ["Конго","🇨🇬","Republic of Congo","Нужна виза","Июн–Сен","$60–100/день"],
+  ["Коста-Рика","🇨🇷","Costa Rica","Безвизово","Дек–Апр","$70–100/день"],
+  ["Кот-д'Ивуар","🇨🇮","Ivory Coast","Нужна виза","Ноя–Апр","$60–90/день"],
+  ["Куба","🇨🇺","Cuba","Турист. карта","Ноя–Апр","$60–100/день"],
+  ["Кувейт","🇰🇼","Kuwait","Нужна виза","Ноя–Мар","$80–130/день"],
+  ["Кыргызстан","🇰🇬","Kyrgyzstan","Безвизово","Июн–Сен","$20–40/день"],
+  ["Лаос","🇱🇦","Laos","Виза по прилёту","Ноя–Мар","$25–50/день"],
+  ["Латвия","🇱🇻","Latvia","Виза (Шенген)","Май–Авг","€60–90/день"],
+  ["Лесото","🇱🇸","Lesotho","Безвизово","Май–Авг","$50–80/день"],
+  ["Либерия","🇱🇷","Liberia","Нужна виза","Ноя–Апр","$50–80/день"],
+  ["Ливан","🇱🇧","Lebanon","Нужна виза","Апр–Окт","$60–100/день"],
+  ["Ливия","🇱🇾","Libya","Нужна виза","Окт–Апр","—"],
+  ["Литва","🇱🇹","Lithuania","Виза (Шенген)","Май–Авг","€60–90/день"],
+  ["Лихтенштейн","🇱🇮","Liechtenstein","Виза (Шенген)","Июн–Авг","€120–180/день"],
+  ["Люксембург","🇱🇺","Luxembourg","Виза (Шенген)","Май–Сен","€120–180/день"],
+  ["Маврикий","🇲🇺","Mauritius","Безвизово (60 дней)","Май–Дек","$100–180/день"],
+  ["Мавритания","🇲🇷","Mauritania","Виза по прилёту","Ноя–Фев","$40–70/день"],
+  ["Мадагаскар","🇲🇬","Madagascar","Виза по прилёту","Апр–Ноя","$50–90/день"],
+  ["Малави","🇲🇼","Malawi","Виза по прилёту","Май–Авг","$50–80/день"],
+  ["Малайзия","🇲🇾","Malaysia","Безвизово (30 дней)","Март–Окт","$40–80/день"],
+  ["Мали","🇲🇱","Mali","Нужна виза","Ноя–Фев","$40–70/день"],
+  ["Мальдивы","🇲🇻","Maldives","Безвизово (30 дней)","Ноя–Апр","$150–300/день"],
+  ["Мальта","🇲🇹","Malta","Виза (Шенген)","Апр–Окт","€90–140/день"],
+  ["Марокко","🇲🇦","Morocco","Безвизово (90 дней)","Мар–Май, Сен–Ноя","$40–80/день"],
+  ["Маршалловы острова","🇲🇭","Marshall Islands","Безвизово (90 дней)","Дек–Апр","$100–150/день"],
+  ["Мексика","🇲🇽","Mexico","Безвизово (180 дней)","Ноя–Апр","$50–90/день"],
+  ["Микронезия","🇫🇲","Micronesia","Безвизово (30 дней)","Ноя–Май","$100–150/день"],
+  ["Мозамбик","🇲🇿","Mozambique","Виза по прилёту","Апр–Авг","$50–90/день"],
+  ["Молдова","🇲🇩","Moldova","Безвизово","Май–Окт","$30–50/день"],
+  ["Монако","🇲🇨","Monaco","Виза (Шенген)","Май–Сен","€250+/день"],
+  ["Монголия","🇲🇳","Mongolia","Безвизово (30 дней)","Июн–Авг","$30–60/день"],
+  ["Мьянма","🇲🇲","Myanmar","e-Visa (онлайн)","Ноя–Фев","$40–70/день"],
+  ["Намибия","🇳🇦","Namibia","Безвизово (90 дней)","Май–Окт","$70–120/день"],
+  ["Науру","🇳🇷","Nauru","Нужна виза","Апр–Окт","$100–150/день"],
+  ["Непал","🇳🇵","Nepal","Виза по прилёту","Окт–Ноя, Мар–Апр","$30–60/день"],
+  ["Нигер","🇳🇪","Niger","Нужна виза","Ноя–Фев","$40–70/день"],
+  ["Нигерия","🇳🇬","Nigeria","Нужна виза","Ноя–Мар","$60–100/день"],
+  ["Нидерланды","🇳🇱","Netherlands","Виза (Шенген)","Апр–Авг","€100–160/день"],
+  ["Никарагуа","🇳🇮","Nicaragua","Безвизово","Ноя–Апр","$40–60/день"],
+  ["Новая Зеландия","🇳🇿","New Zealand","e-Visa (онлайн)","Дек–Мар","$100–160/день"],
+  ["Норвегия","🇳🇴","Norway","Виза (Шенген)","Июн–Авг","€150–250/день"],
+  ["ОАЭ","🇦🇪","United Arab Emirates","Безвизово (30 дней)","Ноя–Мар","$120–200/день"],
+  ["Оман","🇴🇲","Oman","e-Visa (онлайн)","Окт–Мар","$70–110/день"],
+  ["Пакистан","🇵🇰","Pakistan","e-Visa (онлайн)","Окт–Мар","$30–60/день"],
+  ["Палау","🇵🇼","Palau","Виза по прилёту","Ноя–Апр","$150–200/день"],
+  ["Палестина","🇵🇸","Palestine","Нужна виза","Мар–Май, Окт–Ноя","$50–80/день"],
+  ["Панама","🇵🇦","Panama","Безвизово","Янв–Апр","$60–100/день"],
+  ["Папуа Новая Гвинея","🇵🇬","Papua New Guinea","Виза по прилёту","Май–Окт","$80–130/день"],
+  ["Парагвай","🇵🇾","Paraguay","Безвизово","Май–Сен","$30–50/день"],
+  ["Перу","🇵🇪","Peru","Безвизово","Май–Окт","$40–70/день"],
+  ["Польша","🇵🇱","Poland","Виза (Шенген)","Май–Авг","€60–100/день"],
+  ["Португалия","🇵🇹","Portugal","Виза (Шенген)","Апр–Окт","€80–130/день"],
+  ["Россия","🇷🇺","Russia","Не требуется","Май–Сен","$40–80/день"],
+  ["Руанда","🇷🇼","Rwanda","e-Visa (онлайн)","Июн–Сен","$80–130/день"],
+  ["Румыния","🇷🇴","Romania","Виза (Шенген)","Май–Сен","€50–80/день"],
+  ["Сальвадор","🇸🇻","El Salvador","Безвизово","Ноя–Апр","$40–70/день"],
+  ["Самоа","🇼🇸","Samoa","Безвизово (60 дней)","Май–Окт","$80–120/день"],
+  ["Сан-Марино","🇸🇲","San Marino","Виза (Шенген)","Апр–Окт","€100–150/день"],
+  ["Сан-Томе и Принсипи","🇸🇹","Sao Tome and Principe","e-Visa (онлайн)","Июн–Сен","$80–120/день"],
+  ["Саудовская Аравия","🇸🇦","Saudi Arabia","e-Visa (онлайн)","Ноя–Мар","$80–140/день"],
+  ["Северная Корея","🇰🇵","North Korea","Нужна виза","Апр–Июн","—"],
+  ["Северная Македония","🇲🇰","Macedonia","Безвизово","Май–Окт","$40–60/день"],
+  ["Сейшелы","🇸🇨","Seychelles","Безвизово (90 дней)","Апр–Май, Окт–Ноя","$150–250/день"],
+  ["Сенегал","🇸🇳","Senegal","Безвизово","Ноя–Май","$50–80/день"],
+  ["Сент-Винсент и Гренадины","🇻🇨","Saint Vincent and the Grenadines","Нужна виза","Янв–Май","$100–150/день"],
+  ["Сент-Китс и Невис","🇰🇳","Saint Kitts and Nevis","Нужна виза","Янв–Май","$150–200/день"],
+  ["Сент-Люсия","🇱🇨","Saint Lucia","Нужна виза","Янв–Май","$120–180/день"],
+  ["Сербия","🇷🇸","Serbia","Безвизово (30 дней)","Апр–Окт","$40–70/день"],
+  ["Сингапур","🇸🇬","Singapore","Нужна виза","Фев–Апр","$100–180/день"],
+  ["Сирия","🇸🇾","Syria","Нужна виза","Мар–Май, Сен–Ноя","—"],
+  ["Словакия","🇸🇰","Slovakia","Виза (Шенген)","Май–Сен","€60–90/день"],
+  ["Словения","🇸🇮","Slovenia","Виза (Шенген)","Май–Сен","€80–120/день"],
+  ["Соломоновы острова","🇸🇧","Solomon Islands","Безвизово (90 дней)","Апр–Окт","$100–150/день"],
+  ["Сомали","🇸🇴","Somalia","Нужна виза","Ноя–Апр","—"],
+  ["Судан","🇸🇩","Sudan","Нужна виза","Окт–Апр","$30–60/день"],
+  ["Суринам","🇸🇷","Suriname","Безвизово","Авг–Ноя","$50–80/день"],
+  ["США","🇺🇸","United States of America","Нужна виза (ESTA)","Апр–Май, Сен–Окт","$150–200/день"],
+  ["Сьерра-Леоне","🇸🇱","Sierra Leone","Нужна виза","Ноя–Апр","$50–80/день"],
+  ["Таджикистан","🇹🇯","Tajikistan","Безвизово","Май–Сен","$20–40/день"],
+  ["Таиланд","🇹🇭","Thailand","Безвизово (60 дней)","Ноя–Фев","$30–70/день"],
+  ["Танзания","🇹🇿","Tanzania","Виза по прилёту","Июн–Окт","$80–150/день"],
+  ["Того","🇹🇬","Togo","Виза по прилёту","Ноя–Фев","$40–60/день"],
+  ["Тонга","🇹🇴","Tonga","Безвизово (31 день)","Май–Окт","$80–130/день"],
+  ["Тринидад и Тобаго","🇹🇹","Trinidad and Tobago","Безвизово","Янв–Май","$100–150/день"],
+  ["Тувалу","🇹🇻","Tuvalu","Безвизово (30 дней)","Апр–Окт","$100–150/день"],
+  ["Тунис","🇹🇳","Tunisia","Безвизово (90 дней)","Апр–Июн, Сен–Окт","$40–70/день"],
+  ["Туркменистан","🇹🇲","Turkmenistan","Нужна виза","Апр–Май, Сен–Окт","$40–70/день"],
+  ["Турция","🇹🇷","Turkey","Безвизово (60 дней)","Апр–Июн, Сен–Окт","$50–100/день"],
+  ["Уганда","🇺🇬","Uganda","e-Visa (онлайн)","Июн–Сен","$70–120/день"],
+  ["Узбекистан","🇺🇿","Uzbekistan","Безвизово","Апр–Июн, Сен–Окт","$25–50/день"],
+  ["Украина","🇺🇦","Ukraine","Безвизово","Май–Сен","$30–60/день"],
+  ["Уругвай","🇺🇾","Uruguay","Безвизово","Дек–Мар","$60–90/день"],
+  ["Фиджи","🇫🇯","Fiji","Безвизово (4 мес.)","Май–Окт","$80–130/день"],
+  ["Филиппины","🇵🇭","Philippines","Безвизово (30 дней)","Ноя–Май","$30–70/день"],
+  ["Финляндия","🇫🇮","Finland","Виза (Шенген)","Июн–Авг","€100–150/день"],
+  ["Франция","🇫🇷","France","Виза (Шенген)","Апр–Июн, Сен–Окт","€120–180/день"],
+  ["Хорватия","🇭🇷","Croatia","Виза (Шенген)","Июн–Сен","€80–130/день"],
+  ["ЦАР","🇨🇫","Central African Republic","Нужна виза","Ноя–Апр","$60–100/день"],
+  ["Чад","🇹🇩","Chad","Нужна виза","Ноя–Мар","$50–80/день"],
+  ["Черногория","🇲🇪","Montenegro","Безвизово","Июн–Сен","$50–90/день"],
+  ["Чехия","🇨🇿","Czech Republic","Виза (Шенген)","Май–Сен","€70–110/день"],
+  ["Чили","🇨🇱","Chile","Безвизово","Ноя–Мар","$60–90/день"],
+  ["Швейцария","🇨🇭","Switzerland","Виза (Шенген)","Июн–Авг, Дек–Мар","€150–250/день"],
+  ["Швеция","🇸🇪","Sweden","Виза (Шенген)","Июн–Авг","€120–180/день"],
+  ["Шри-Ланка","🇱🇰","Sri Lanka","e-Visa (онлайн)","Дек–Апр","$40–80/день"],
+  ["Эквадор","🇪🇨","Ecuador","Безвизово","Июн–Авг","$40–70/день"],
+  ["Экваториальная Гвинея","🇬🇶","Equatorial Guinea","Нужна виза","Ноя–Фев","$80–120/день"],
+  ["Эритрея","🇪🇷","Eritrea","Нужна виза","Окт–Мар","$40–70/день"],
+  ["Эсватини","🇸🇿","Swaziland","Безвизово","Май–Авг","$50–80/день"],
+  ["Эстония","🇪🇪","Estonia","Виза (Шенген)","Июн–Авг","€70–110/день"],
+  ["Эфиопия","🇪🇹","Ethiopia","e-Visa (онлайн)","Окт–Янв","$50–90/день"],
+  ["Южная Корея","🇰🇷","South Korea","Нужна виза","Апр–Июн, Сен–Ноя","$80–130/день"],
+  ["Южный Судан","🇸🇸","South Sudan","Нужна виза","Ноя–Апр","$50–80/день"],
+  ["Ямайка","🇯🇲","Jamaica","Безвизово","Дек–Апр","$100–150/день"],
+  ["Япония","🇯🇵","Japan","Безвизово (90 дней)","Апр–Май, Окт–Ноя","$80–150/день"],
+];
 
-  /* ── Map ── */
-  const map = L.map('map', {
-    center: [25, 15],
-    zoom: 2,
-    minZoom: 1,
-    maxZoom: 7,
-    zoomControl: true,
-    attributionControl: true,
+const TOTAL = RAW.length;
+const COUNTRIES = RAW.map(([ru, flag, en, visa, time, budget]) => ({ ru, flag, en, visa, time, budget }));
+
+// lookup by English GeoJSON name
+const BY_EN = {};
+COUNTRIES.forEach(c => { BY_EN[c.en.toLowerCase()] = c; });
+
+/* ── Visited state ── */
+const STORAGE_KEY = 'travel_visited_v1';
+let visited = new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'));
+
+function saveVisited() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify([...visited]));
+}
+
+/* ════════════════════════════════════
+   TAB SWITCHING
+════════════════════════════════════ */
+let activeTab = 'countries';
+let mapInitialized = false;
+
+function showTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.tab-btn').forEach((b, i) => {
+    b.classList.toggle('active', (i === 0 && tab === 'countries') || (i === 1 && tab === 'map'));
   });
+  document.getElementById('panel-countries').classList.toggle('hidden', tab !== 'countries');
+  document.getElementById('panel-map').classList.toggle('hidden', tab !== 'map');
+  document.getElementById('done-wrap').classList.toggle('hidden', tab !== 'countries');
 
-  L.tileLayer(
-    'https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png',
-    { attribution: '© OpenStreetMap © CartoDB', subdomains: 'abcd', maxZoom: 19 }
-  ).addTo(map);
+  if (tab === 'map' && !mapInitialized) initMap();
+}
 
-  /* ── Styles ── */
+/* ════════════════════════════════════
+   COUNTRIES TAB
+════════════════════════════════════ */
+let currentFilter = '';
+
+function renderList(filter) {
+  const q = (filter || '').trim().toLowerCase();
+  const list = document.getElementById('countries-list');
+  const items = q
+    ? COUNTRIES.filter(c => c.ru.toLowerCase().includes(q))
+    : COUNTRIES;
+
+  if (items.length === 0) {
+    list.innerHTML = '<div class="no-results">Ничего не найдено</div>';
+    return;
+  }
+
+  list.innerHTML = items.map(c => {
+    const chk = visited.has(c.ru);
+    return `<div class="country-row${chk ? ' checked' : ''}" onclick="toggleVisited('${c.ru.replace(/'/g,"\\'")}')">
+      <span class="cflag">${c.flag}</span>
+      <span class="cname">${c.ru}</span>
+      <span class="check-box">
+        <svg width="12" height="10" viewBox="0 0 12 10" fill="none">
+          <path d="M1 5l3.5 3.5L11 1" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+    </div>`;
+  }).join('');
+}
+
+function toggleVisited(name) {
+  if (visited.has(name)) {
+    visited.delete(name);
+  } else {
+    visited.add(name);
+  }
+  saveVisited();
+  renderList(currentFilter);
+  updateCounter();
+}
+
+function updateCounter() {
+  const n = visited.size;
+  document.getElementById('counter-badge').textContent = `${n} / ${TOTAL}`;
+  document.getElementById('counter-badge').classList.toggle('zero', n === 0);
+  document.getElementById('btn-done').disabled = n === 0;
+}
+
+function filterList(value) {
+  currentFilter = value;
+  renderList(value);
+}
+
+function sendData() {
+  if (visited.size === 0) return;
+  const data = JSON.stringify({ visited: [...visited].sort() });
+  tg.sendData(data);
+}
+
+/* init countries tab */
+renderList('');
+updateCounter();
+
+/* ════════════════════════════════════
+   MAP TAB
+════════════════════════════════════ */
+let map, geojsonLayer;
+
+function initMap() {
+  mapInitialized = true;
+
+  map = L.map('map', { center: [25, 15], zoom: 2, minZoom: 1, maxZoom: 7, zoomControl: true });
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
+    attribution: '© OpenStreetMap © CartoDB',
+    subdomains: 'abcd',
+    maxZoom: 19,
+  }).addTo(map);
+
   const S = {
     default:  { fillColor: '#1f3a5f', fillOpacity: 0.55, color: '#2d5a8e', weight: 0.6 },
-    hover:    { fillColor: '#2d6a9f', fillOpacity: 0.75, color: '#4d9abf', weight: 1   },
-    selected: { fillColor: '#1a5c2e', fillOpacity: 0.85, color: '#2ea34e', weight: 1.5 },
+    hover:    { fillColor: '#2d5a9f', fillOpacity: 0.75, color: '#4d8abf', weight: 1   },
   };
 
   function getName(f) {
-    return f.properties.name
-        || f.properties.ADMIN
-        || f.properties.NAME
-        || '—';
+    return f.properties.name || f.properties.ADMIN || f.properties.NAME || '';
   }
 
-  function isSelected(name) { return route.includes(name); }
+  function lookup(name) {
+    const key = (name || '').toLowerCase();
+    return BY_EN[key] || null;
+  }
 
-  /* ── GeoJSON events ── */
   function onEach(feature, layer) {
     const name = getName(feature);
-    layerMap.set(name, layer);
-
     layer.on({
-      mouseover(e) {
-        if (!isSelected(name)) e.target.setStyle(S.hover);
-      },
-      mouseout(e) {
-        if (!isSelected(name)) e.target.setStyle(S.default);
-      },
+      mouseover(e) { e.target.setStyle(S.hover); },
+      mouseout(e)  { geojsonLayer.resetStyle(e.target); },
       click(e) {
         L.DomEvent.stopPropagation(e);
-        openPopup(name, e.latlng);
+        const info = lookup(name);
+        openSheet(info, name);
       },
     });
   }
 
-  /* ── Popup ── */
-  function openPopup(name, latlng) {
-    if (activePopup) map.closePopup(activePopup);
-
-    const sel = isSelected(name);
-    const safeName = name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-
-    activePopup = L.popup({ closeButton: true, minWidth: 180 })
-      .setLatLng(latlng)
-      .setContent(`
-        <div class="popup-name">${name}</div>
-        <button
-          class="popup-btn ${sel ? 'remove' : 'add'}"
-          onclick="toggleCountry('${safeName}', this)">
-          ${sel ? '✕ Убрать из маршрута' : '+ Добавить в маршрут'}
-        </button>
-      `)
-      .openOn(map);
-  }
-
-  /* ── Toggle country in route ── */
-  window.toggleCountry = function(name, btn) {
-    if (isSelected(name)) {
-      route = route.filter(c => c !== name);
-      layerMap.get(name)?.setStyle(S.default);
-      btn.className = 'popup-btn add';
-      btn.textContent = '+ Добавить в маршрут';
-    } else {
-      route.push(name);
-      layerMap.get(name)?.setStyle(S.selected);
-      btn.className = 'popup-btn remove';
-      btn.textContent = '✕ Убрать из маршрута';
-      if (!panelOpen) togglePanel();
-    }
-    render();
-  };
-
-  /* ── Remove from list ── */
-  window.removeCountry = function(name) {
-    route = route.filter(c => c !== name);
-    layerMap.get(name)?.setStyle(S.default);
-
-    // refresh popup if open for this country
-    if (activePopup && activePopup.isOpen()) {
-      const wrap = activePopup.getElement();
-      if (wrap && wrap.querySelector('.popup-name')?.textContent === name) {
-        const btn = wrap.querySelector('.popup-btn');
-        if (btn) { btn.className = 'popup-btn add'; btn.textContent = '+ Добавить в маршрут'; }
-      }
-    }
-    render();
-  };
-
-  /* ── Render UI ── */
-  function render() {
-    const n = route.length;
-
-    // counter
-    const counter = document.getElementById('counter');
-    const word = n === 1 ? 'страна' : n > 1 && n < 5 ? 'страны' : 'стран';
-    counter.textContent = n === 0 ? '0 стран' : `${n} ${word}`;
-    counter.className = n > 0 ? 'has-items' : '';
-
-    // list
-    const list = document.getElementById('countries-list');
-    if (n === 0) {
-      list.innerHTML = '<div class="empty-hint">Нажми на страну чтобы добавить</div>';
-    } else {
-      list.innerHTML = route.map((name, i) => {
-        const safe = name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-        return `<div class="country-chip">
-          <span class="chip-num">${i + 1}</span>
-          <span class="chip-name">${name}</span>
-          <button class="chip-del" onclick="removeCountry('${safe}')">✕</button>
-        </div>`;
-      }).join('');
-    }
-
-    // done button
-    document.getElementById('btn-done').disabled = n === 0;
-  }
-
-  /* ── Panel toggle ── */
-  function togglePanel() {
-    panelOpen = !panelOpen;
-    document.getElementById('panel').classList.toggle('collapsed', !panelOpen);
-  }
-
-  /* ── Send route to bot ── */
-  function sendRoute() {
-    if (route.length === 0) return;
-    tg.sendData(JSON.stringify({ countries: route }));
-  }
-
-  /* ── Load GeoJSON ── */
   fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json')
-    .then(r => {
-      if (!r.ok) throw new Error('fetch failed');
-      return r.json();
-    })
+    .then(r => { if (!r.ok) throw new Error(); return r.json(); })
     .then(data => {
-      L.geoJSON(data, { style: S.default, onEachFeature: onEach }).addTo(map);
-      document.getElementById('loading').style.display = 'none';
-      render();
+      geojsonLayer = L.geoJSON(data, { style: S.default, onEachFeature: onEach }).addTo(map);
+      document.getElementById('map-loading').style.display = 'none';
     })
     .catch(() => {
-      document.getElementById('loading').innerHTML =
-        '<p style="color:#da3633;font-size:14px;text-align:center;padding:0 20px">Не удалось загрузить карту.<br>Проверь интернет-соединение.</p>';
+      document.getElementById('map-loading').innerHTML =
+        '<p style="color:#da3633;text-align:center;padding:20px">Не удалось загрузить карту.<br>Проверь интернет-соединение.</p>';
     });
+}
 
-  render();
+/* ── Info sheet ── */
+function openSheet(info, rawName) {
+  const sheet = document.getElementById('info-sheet');
+  if (info) {
+    document.getElementById('sheet-flag').textContent = info.flag;
+    document.getElementById('sheet-name').textContent = info.ru;
+    document.getElementById('sheet-body').innerHTML = `
+      <div class="info-row">
+        <span class="info-icon">🛂</span>
+        <div><div class="info-label">Виза для россиян</div><div class="info-value">${info.visa}</div></div>
+      </div>
+      <div class="info-row">
+        <span class="info-icon">📅</span>
+        <div><div class="info-label">Лучшее время</div><div class="info-value">${info.time}</div></div>
+      </div>
+      <div class="info-row">
+        <span class="info-icon">💰</span>
+        <div><div class="info-label">Средний бюджет</div><div class="info-value">${info.budget}</div></div>
+      </div>`;
+  } else {
+    document.getElementById('sheet-flag').textContent = '🌍';
+    document.getElementById('sheet-name').textContent = rawName || '—';
+    document.getElementById('sheet-body').innerHTML = `
+      <div class="info-row">
+        <span class="info-icon">ℹ️</span>
+        <div><div class="info-value" style="color:#8b949e">Подробная информация<br>по этой стране пока не добавлена</div></div>
+      </div>`;
+  }
+  sheet.classList.add('open');
+}
+
+function closeSheet() {
+  document.getElementById('info-sheet').classList.remove('open');
+}
+
+/* close sheet on map click */
+document.getElementById('map').addEventListener('click', () => closeSheet());
 </script>
 </body>
 </html>
