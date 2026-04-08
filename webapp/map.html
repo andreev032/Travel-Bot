@@ -9,14 +9,71 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { height: 100%; overflow: hidden; background: #0d1117;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    html, body {
+      height: 100%; overflow: hidden; background: #0d1117;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      display: flex; flex-direction: column;
+    }
 
+    /* ── Search bar ── */
+    #search-bar {
+      flex-shrink: 0;
+      background: #161b22;
+      border-bottom: 1px solid #30363d;
+      padding: 8px 10px;
+      position: relative;
+      z-index: 700;
+    }
+    #search-wrap {
+      display: flex; align-items: center; gap: 8px;
+      background: #21262d; border: 1px solid #30363d;
+      border-radius: 8px; padding: 0 10px;
+      transition: border-color .2s;
+    }
+    #search-wrap:focus-within { border-color: #58a6ff; }
+    #search-icon { color: #8b949e; font-size: 14px; flex-shrink: 0; }
+    #search-input {
+      flex: 1; background: none; border: none; outline: none;
+      color: #c9d1d9; font-size: 14px; padding: 9px 0;
+    }
+    #search-input::placeholder { color: #484f58; }
+    #search-clear {
+      background: none; border: none; color: #8b949e;
+      font-size: 15px; cursor: pointer; padding: 0 2px;
+      display: none; line-height: 1;
+    }
+    #search-clear.show { display: block; }
+    #search-clear:hover { color: #c9d1d9; }
+
+    /* ── Suggestions dropdown ── */
+    #suggestions {
+      position: absolute; top: 100%; left: 10px; right: 10px;
+      background: #161b22; border: 1px solid #30363d;
+      border-top: none; border-radius: 0 0 8px 8px;
+      overflow: hidden; z-index: 800;
+      box-shadow: 0 8px 24px rgba(0,0,0,.5);
+      display: none;
+    }
+    #suggestions.show { display: block; }
+    .sug-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; cursor: pointer;
+      transition: background .1s;
+      border-bottom: 1px solid #21262d;
+    }
+    .sug-item:last-child { border-bottom: none; }
+    .sug-item:hover, .sug-item:active { background: #21262d; }
+    .sug-flag { font-size: 18px; width: 24px; text-align: center; flex-shrink: 0; }
+    .sug-name { font-size: 14px; color: #c9d1d9; }
+    .sug-none { padding: 12px; text-align: center; color: #484f58; font-size: 13px; }
+
+    /* ── Map ── */
+    #map-wrap { flex: 1; position: relative; min-height: 0; }
     #map { width: 100%; height: 100%; }
 
     /* ── Loading ── */
     #loading {
-      position: fixed; inset: 0; background: #0d1117;
+      position: absolute; inset: 0; background: #0d1117;
       display: flex; flex-direction: column;
       align-items: center; justify-content: center; gap: 14px; z-index: 600;
     }
@@ -30,7 +87,7 @@
 
     /* ── Bottom sheet ── */
     #sheet {
-      position: fixed; bottom: 0; left: 0; right: 0;
+      position: absolute; bottom: 0; left: 0; right: 0;
       background: #161b22; border-top: 1px solid #30363d;
       border-radius: 16px 16px 0 0;
       padding: 16px 16px 28px;
@@ -40,7 +97,6 @@
       transition: transform .28s cubic-bezier(.4,0,.2,1);
     }
     #sheet.open { transform: translateY(0); }
-
     #sheet-close {
       position: absolute; top: 12px; right: 14px;
       background: #21262d; border: none; color: #8b949e;
@@ -49,11 +105,9 @@
       transition: background .15s;
     }
     #sheet-close:hover { background: #30363d; }
-
     #sheet-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
     #sheet-flag { font-size: 34px; line-height: 1; }
     #sheet-name { font-size: 18px; font-weight: 700; color: #f0f6fc; }
-
     .irow {
       display: flex; align-items: flex-start; gap: 10px;
       padding: 9px 0; border-bottom: 1px solid #21262d;
@@ -77,25 +131,41 @@
 </head>
 <body>
 
-<div id="map"></div>
-<div id="loading"><div class="spinner"></div><p>Загрузка карты…</p></div>
-
-<div id="sheet">
-  <button id="sheet-close" onclick="close()">✕</button>
-  <div id="sheet-head">
-    <span id="sheet-flag">🌍</span>
-    <span id="sheet-name">—</span>
+<!-- Search bar -->
+<div id="search-bar">
+  <div id="search-wrap">
+    <span id="search-icon">🔍</span>
+    <input id="search-input" type="text" placeholder="Поиск страны…" autocomplete="off"
+      oninput="onSearch(this.value)" onfocus="onSearch(this.value)">
+    <button id="search-clear" onclick="clearSearch()">✕</button>
   </div>
-  <div id="sheet-body"></div>
+  <div id="suggestions"></div>
+</div>
+
+<!-- Map -->
+<div id="map-wrap">
+  <div id="map"></div>
+  <div id="loading"><div class="spinner"></div><p>Загрузка карты…</p></div>
+  <div id="sheet">
+    <button id="sheet-close" onclick="closeSheet()">✕</button>
+    <div id="sheet-head">
+      <span id="sheet-flag">🌍</span>
+      <span id="sheet-name">—</span>
+    </div>
+    <div id="sheet-body"></div>
+  </div>
 </div>
 
 <script>
 const tg = window.Telegram.WebApp;
 tg.ready(); tg.expand();
-if (tg.setHeaderColor)    tg.setHeaderColor('#0d1117');
+if (tg.setHeaderColor)    tg.setHeaderColor('#161b22');
 if (tg.setBackgroundColor) tg.setBackgroundColor('#0d1117');
 
-/* ── Country data: [ru, flag, en_geojson, visa, best_time, budget] ── */
+/* ─────────────────────────────────────────────────
+   DATA: [ru, flag, en_geojson, visa, best_time, budget]
+   en_geojson = "" for territories not in GeoJSON
+───────────────────────────────────────────────── */
 const DATA = [
   ["Австралия","🇦🇺","Australia","Нужна виза","Сен–Ноя","$150–200/день"],
   ["Австрия","🇦🇹","Austria","Виза (Шенген)","Апр–Май, Окт","€100–150/день"],
@@ -135,6 +205,7 @@ const DATA = [
   ["Гвинея-Бисау","🇬🇼","Guinea Bissau","Нужна виза","Ноя–Май","$40–60/день"],
   ["Германия","🇩🇪","Germany","Виза (Шенген)","Май–Окт","€100–160/день"],
   ["Гондурас","🇭🇳","Honduras","Безвизово","Ноя–Апр","$40–70/день"],
+  ["Гонконг","🇭🇰","","Безвизово (90 д.)","Окт–Дек, Мар–Апр","$100–180/день"],
   ["Греция","🇬🇷","Greece","Виза (Шенген)","Май–Окт","€80–130/день"],
   ["Грузия","🇬🇪","Georgia","Безвизово (365 д.)","Апр–Июн, Сен–Ноя","$40–70/день"],
   ["Дания","🇩🇰","Denmark","Виза (Шенген)","Май–Авг","€150–200/день"],
@@ -143,6 +214,7 @@ const DATA = [
   ["ДР Конго","🇨🇩","Democratic Republic of the Congo","Нужна виза","Июн–Авг","$60–100/день"],
   ["Египет","🇪🇬","Egypt","Виза по прилёту","Окт–Апр","$40–70/день"],
   ["Замбия","🇿🇲","Zambia","Виза по прилёту","Май–Окт","$80–120/день"],
+  ["Западная Сахара","🇪🇭","Western Sahara","Спорная территория","Окт–Апр","$30–60/день"],
   ["Зимбабве","🇿🇼","Zimbabwe","Виза по прилёту","Май–Окт","$60–100/день"],
   ["Израиль","🇮🇱","Israel","Нужна виза","Мар–Май, Окт–Ноя","$150–200/день"],
   ["Индия","🇮🇳","India","e-Visa","Окт–Мар","$30–60/день"],
@@ -165,6 +237,7 @@ const DATA = [
   ["Китай","🇨🇳","China","Безвизово (15 д.)","Апр–Май, Сен–Окт","$50–100/день"],
   ["Колумбия","🇨🇴","Colombia","Безвизово","Дек–Мар, Июл–Авг","$40–70/день"],
   ["Конго","🇨🇬","Republic of Congo","Нужна виза","Июн–Сен","$60–100/день"],
+  ["Косово","🇽🇰","Kosovo","Безвизово (90 д.)","Май–Сен","$30–50/день"],
   ["Коста-Рика","🇨🇷","Costa Rica","Безвизово","Дек–Апр","$70–100/день"],
   ["Кот-д'Ивуар","🇨🇮","Ivory Coast","Нужна виза","Ноя–Апр","$60–90/день"],
   ["Куба","🇨🇺","Cuba","Тур. карта","Ноя–Апр","$60–100/день"],
@@ -181,6 +254,7 @@ const DATA = [
   ["Маврикий","🇲🇺","Mauritius","Безвизово (60 д.)","Май–Дек","$100–180/день"],
   ["Мавритания","🇲🇷","Mauritania","Виза по прилёту","Ноя–Фев","$40–70/день"],
   ["Мадагаскар","🇲🇬","Madagascar","Виза по прилёту","Апр–Ноя","$50–90/день"],
+  ["Макао","🇲🇴","","Безвизово (90 д.)","Окт–Дек","$80–150/день"],
   ["Малави","🇲🇼","Malawi","Виза по прилёту","Май–Авг","$50–80/день"],
   ["Малайзия","🇲🇾","Malaysia","Безвизово (30 д.)","Март–Окт","$40–80/день"],
   ["Мали","🇲🇱","Mali","Нужна виза","Ноя–Фев","$40–70/день"],
@@ -206,10 +280,11 @@ const DATA = [
   ["Палестина","🇵🇸","Palestine","Нужна виза","Мар–Май, Окт–Ноя","$50–80/день"],
   ["Панама","🇵🇦","Panama","Безвизово","Янв–Апр","$60–100/день"],
   ["Папуа Новая Гвинея","🇵🇬","Papua New Guinea","Виза по прилёту","Май–Окт","$80–130/день"],
-  ["Парагвай","🇵🇾","Paraguay","Безвизово","Май–Сен","$30–50/день"],
+  ["Парагвай","🇵🇾","Paraguay","Безвизово","Май–Сен","$30–50/День"],
   ["Перу","🇵🇪","Peru","Безвизово","Май–Окт","$40–70/день"],
   ["Польша","🇵🇱","Poland","Виза (Шенген)","Май–Авг","€60–100/день"],
   ["Португалия","🇵🇹","Portugal","Виза (Шенген)","Апр–Окт","€80–130/день"],
+  ["Приднестровье","🏴","","Особый статус","Май–Окт","$20–40/день"],
   ["Руанда","🇷🇼","Rwanda","e-Visa","Июн–Сен","$80–130/день"],
   ["Румыния","🇷🇴","Romania","Виза (Шенген)","Май–Сен","€50–80/день"],
   ["Сальвадор","🇸🇻","El Salvador","Безвизово","Ноя–Апр","$40–70/день"],
@@ -229,6 +304,7 @@ const DATA = [
   ["США","🇺🇸","United States of America","Нужна виза","Апр–Май, Сен–Окт","$150–200/день"],
   ["Таджикистан","🇹🇯","Tajikistan","Безвизово","Май–Сен","$20–40/день"],
   ["Таиланд","🇹🇭","Thailand","Безвизово (60 д.)","Ноя–Фев","$30–70/день"],
+  ["Тайвань","🇹🇼","Taiwan","Безвизово (90 д.)","Окт–Дек, Мар–Апр","$60–100/день"],
   ["Танзания","🇹🇿","Tanzania","Виза по прилёту","Июн–Окт","$80–150/день"],
   ["Того","🇹🇬","Togo","Виза по прилёту","Ноя–Фев","$40–60/день"],
   ["Тринидад и Тобаго","🇹🇹","Trinidad and Tobago","Безвизово","Янв–Май","$100–150/день"],
@@ -260,10 +336,24 @@ const DATA = [
   ["Япония","🇯🇵","Japan","Безвизово (90 д.)","Апр–Май, Окт–Ноя","$80–150/день"],
 ];
 
-/* lookup by English GeoJSON name (lowercase) */
+/* Fallback coordinates for territories not present in GeoJSON */
+const FALLBACK = {
+  'Гонконг':       { center: [22.35, 114.17], zoom: 10 },
+  'Макао':         { center: [22.20, 113.55], zoom: 12 },
+  'Косово':        { center: [42.57, 20.90],  zoom: 7  },
+  'Приднестровье': { center: [47.21, 29.46],  zoom: 8  },
+};
+
+/* GeoJSON name → info object */
 const BY_EN = {};
 DATA.forEach(([ru, flag, en, visa, time, budget]) => {
-  BY_EN[en.toLowerCase()] = { ru, flag, visa, time, budget };
+  if (en) BY_EN[en.toLowerCase()] = { ru, flag, visa, time, budget };
+});
+
+/* Russian name → info object */
+const BY_RU = {};
+DATA.forEach(([ru, flag, en, visa, time, budget]) => {
+  BY_RU[ru] = { flag, visa, time, budget };
 });
 
 /* ── Leaflet map ── */
@@ -276,9 +366,12 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png'
 const S = {
   def:   { fillColor: '#1f3a5f', fillOpacity: .55, color: '#2d5a8e', weight: .6 },
   hover: { fillColor: '#2d6aaf', fillOpacity: .78, color: '#4d9acf', weight: 1.1 },
+  found: { fillColor: '#e3a008', fillOpacity: .85, color: '#f0c040', weight: 2.2 },
 };
 
 let geojson;
+const layersByRu = {}; // ru_name → layer
+let highlighted = null;
 
 function getName(f) {
   return f.properties.name || f.properties.ADMIN || f.properties.NAME || '';
@@ -287,12 +380,19 @@ function getName(f) {
 function onEach(feature, layer) {
   const raw = getName(feature);
   const info = BY_EN[raw.toLowerCase()] || null;
+  if (info) layersByRu[info.ru] = layer;
 
   layer.on({
-    mouseover(e) { e.target.setStyle(S.hover); L.DomEvent.stopPropagation(e); },
-    mouseout(e)  { geojson.resetStyle(e.target); },
+    mouseover(e) {
+      if (highlighted !== e.target) e.target.setStyle(S.hover);
+      L.DomEvent.stopPropagation(e);
+    },
+    mouseout(e) {
+      if (highlighted !== e.target) geojson.resetStyle(e.target);
+    },
     click(e) {
       L.DomEvent.stopPropagation(e);
+      clearHighlight();
       showSheet(info, raw);
     },
   });
@@ -309,12 +409,14 @@ fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.g
       '<p style="color:#da3633;text-align:center;padding:24px 20px">Не удалось загрузить карту.<br>Проверь интернет-соединение.</p>';
   });
 
-/* ── Sheet ── */
+/* ── Info sheet ── */
 function showSheet(info, raw) {
-  const sheet = document.getElementById('sheet');
+  const name = info ? info.ru : (raw || '—');
+  const flag = info ? info.flag : '🌍';
+  document.getElementById('sheet-flag').textContent = flag;
+  document.getElementById('sheet-name').textContent = name;
+
   if (info) {
-    document.getElementById('sheet-flag').textContent = info.flag;
-    document.getElementById('sheet-name').textContent = info.ru;
     document.getElementById('sheet-body').innerHTML = `
       <div class="irow">
         <span class="iicon">🛂</span>
@@ -329,18 +431,98 @@ function showSheet(info, raw) {
         <div><div class="ilabel">Средний бюджет</div><div class="ival">${info.budget}</div></div>
       </div>`;
   } else {
-    document.getElementById('sheet-flag').textContent = '🌍';
-    document.getElementById('sheet-name').textContent = raw || '—';
     document.getElementById('sheet-body').innerHTML =
       '<div class="irow"><span class="iicon">ℹ️</span><div><div class="ival" style="color:#8b949e">Подробная информация пока не добавлена</div></div></div>';
   }
-  sheet.classList.add('open');
+  document.getElementById('sheet').classList.add('open');
 }
 
-function close() { document.getElementById('sheet').classList.remove('open'); }
+function closeSheet() { document.getElementById('sheet').classList.remove('open'); }
 
-/* close sheet when clicking map background */
-map.on('click', close);
+/* ── Highlight helpers ── */
+function clearHighlight() {
+  if (highlighted) { geojson && geojson.resetStyle(highlighted); highlighted = null; }
+}
+
+function highlightLayer(layer) {
+  clearHighlight();
+  highlighted = layer;
+  layer.setStyle(S.found);
+  layer.bringToFront();
+}
+
+/* ── Search ── */
+let searchTimer = null;
+
+function onSearch(val) {
+  document.getElementById('search-clear').classList.toggle('show', val.length > 0);
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => updateSuggestions(val.trim()), 120);
+}
+
+function updateSuggestions(q) {
+  const box = document.getElementById('suggestions');
+  if (!q) { box.classList.remove('show'); box.innerHTML = ''; return; }
+
+  const ql = q.toLowerCase();
+  const matches = DATA.filter(([ru]) => ru.toLowerCase().includes(ql)).slice(0, 7);
+
+  if (!matches.length) {
+    box.innerHTML = '<div class="sug-none">Ничего не найдено</div>';
+    box.classList.add('show');
+    return;
+  }
+
+  box.innerHTML = matches.map(([ru, flag]) =>
+    `<div class="sug-item" onclick="selectCountry('${ru.replace(/'/g, "\\'")}')">
+       <span class="sug-flag">${flag}</span>
+       <span class="sug-name">${ru}</span>
+     </div>`
+  ).join('');
+  box.classList.add('show');
+}
+
+function selectCountry(ru) {
+  /* close dropdown + clear input */
+  document.getElementById('suggestions').classList.remove('show');
+  document.getElementById('search-input').value = '';
+  document.getElementById('search-clear').classList.remove('show');
+
+  const info = BY_RU[ru] || null;
+  const layer = layersByRu[ru];
+
+  if (layer) {
+    highlightLayer(layer);
+    map.flyToBounds(layer.getBounds(), { maxZoom: 6, padding: [50, 50], duration: 0.8 });
+    showSheet(info, ru);
+  } else if (FALLBACK[ru]) {
+    const { center, zoom } = FALLBACK[ru];
+    map.flyTo(center, zoom, { duration: 0.8 });
+    showSheet(info, ru);
+  } else {
+    showSheet(info, ru);
+  }
+}
+
+function clearSearch() {
+  document.getElementById('search-input').value = '';
+  document.getElementById('search-clear').classList.remove('show');
+  document.getElementById('suggestions').classList.remove('show');
+  clearHighlight();
+}
+
+/* close dropdown on map click */
+map.on('click', () => {
+  document.getElementById('suggestions').classList.remove('show');
+  closeSheet();
+});
+
+/* close dropdown when tapping outside */
+document.addEventListener('click', e => {
+  if (!document.getElementById('search-bar').contains(e.target)) {
+    document.getElementById('suggestions').classList.remove('show');
+  }
+});
 </script>
 </body>
 </html>
