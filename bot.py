@@ -12,7 +12,7 @@ TOKEN = "8701321387:AAHwb_WkmrimPtInwDftv8jb0d03gTkogqA"
 MAIN_MENU, ANSWERING, HELP_MENU, HELP_TOPIC = range(4)
 
 # Замени на реальный HTTPS-URL после деплоя webapp/index.html
-WEBAPP_URL = "https://andreev032.github.io/Travel-Bot/webapp/index.html"
+WEBAPP_URL = "https://andreev032.github.io/Travel-Bot/"
 
 
 def get_main_keyboard():
