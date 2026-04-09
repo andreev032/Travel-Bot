@@ -1,7 +1,7 @@
 import os
 import json
 import logging
-from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton, WebAppInfo
+from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton, WebAppInfo, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler
 
 logging.basicConfig(level=logging.INFO)
@@ -12,11 +12,13 @@ TOKEN = "8701321387:AAHwb_WkmrimPtInwDftv8jb0d03gTkogqA"
 MAIN_MENU, ANSWERING, HELP_MENU, HELP_TOPIC = range(4)
 
 # Замени на реальный HTTPS-URL после деплоя webapp/index.html
-WEBAPP_URL     = "https://andreev032.github.io/Travel-Bot/"
+WEBAPP_URL   = "https://andreev032.github.io/Travel-Bot/"
 MAP_URL      = "https://andreev032.github.io/Travel-Bot/map.html"
+CHANNEL_URL  = "https://t.me/your_travel_channel"   # ← замени на свой канал
 
 
-HOME_BTN = "🏠 Главное меню"
+HOME_BTN    = "🏠 Главное меню"
+CHANNEL_BTN = "📢 Наш канал"
 
 
 def get_main_keyboard():
@@ -24,6 +26,7 @@ def get_main_keyboard():
         [
             [KeyboardButton("🌍 Подобрать страну"), KeyboardButton("📖 Инструкция для новичка")],
             [KeyboardButton("🗺 Мои страны", web_app=WebAppInfo(url=WEBAPP_URL)), KeyboardButton("🗺 Карта мира", web_app=WebAppInfo(url=MAP_URL))],
+            [KeyboardButton(CHANNEL_BTN)],
         ],
         resize_keyboard=True,
         one_time_keyboard=True,
@@ -306,6 +309,14 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ANSWERING
     elif text == "📖 Инструкция для новичка":
         return await show_help_menu(update, context)
+    elif text == CHANNEL_BTN:
+        inline_kb = InlineKeyboardMarkup([[InlineKeyboardButton("📢 Перейти в канал", url=CHANNEL_URL)]])
+        await update.message.reply_text(
+            "Подписывайся на наш канал — там лайфхаки, маршруты и вдохновение для путешествий 🌍✈️",
+            reply_markup=inline_kb,
+        )
+        await update.message.reply_text("Главное меню:", reply_markup=get_main_keyboard())
+        return MAIN_MENU
     else:
         await update.message.reply_text(
             "Выбери один из вариантов 👇",
