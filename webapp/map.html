@@ -210,14 +210,14 @@ tg.ready(); tg.expand();
 
 /* ── Map init with 2GIS tiles (Russian labels) ── */
 const map = L.map('map', {
-  center: [20, 10], zoom: 2, minZoom: 1, maxZoom: 18,
+  center: [20, 10], zoom: 3, minZoom: 1, maxZoom: 18,
   zoomControl: true,
 });
 
-L.tileLayer('https://tile2.maps.2gis.com/tiles?x={x}&y={y}&z={z}', {
-  attribution: '© OpenStreetMap contributors',
-  maxZoom: 18,
-  tileSize: 256,
+L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+  attribution: '© OpenStreetMap © CARTO',
+  subdomains: 'abcd',
+  maxZoom: 19,
 }).addTo(map);
 
 /* ── Custom marker icon ── */
