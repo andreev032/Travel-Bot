@@ -12,78 +12,98 @@
     html, body {
       height: 100%; overflow: hidden;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      display: flex; flex-direction: column; background: #f6f8fa;
+      display: flex; flex-direction: column;
+      background: #f0f4f8;
+      color: #1a202c;
     }
 
     /* ── Search bar ── */
     #search-bar {
       flex-shrink: 0;
-      background: #fff;
-      border-bottom: 1px solid #d0d7de;
-      padding: 8px 10px;
+      background: #ffffff;
+      border-bottom: 1px solid #e2e8f0;
+      padding: 10px 12px;
       position: relative;
       z-index: 700;
+      box-shadow: 0 1px 6px rgba(0,0,0,.06);
     }
     #search-wrap {
-      display: flex; align-items: center; gap: 6px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    #search-icon {
+      position: absolute;
+      left: 24px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #a0aec0;
+      font-size: 15px;
+      pointer-events: none;
     }
     #search-input {
       flex: 1;
-      background: #f6f8fa;
-      border: 1px solid #d0d7de;
-      border-radius: 8px;
-      padding: 9px 12px;
+      background: #f7fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 10px 12px 10px 36px;
       font-size: 14px;
-      color: #24292f;
+      color: #1a202c;
       outline: none;
-      transition: border-color .2s, box-shadow .2s;
+      transition: border-color .2s, box-shadow .2s, background .2s;
     }
-    #search-input::placeholder { color: #8c959f; }
+    #search-input::placeholder { color: #a0aec0; }
     #search-input:focus {
-      border-color: #0969da;
-      box-shadow: 0 0 0 3px rgba(9,105,218,.12);
+      border-color: #4299e1;
+      box-shadow: 0 0 0 3px rgba(66,153,225,.15);
       background: #fff;
     }
     #btn-search {
       flex-shrink: 0;
-      background: #0969da;
+      background: linear-gradient(135deg, #4299e1, #3182ce);
       color: #fff;
       border: none;
-      border-radius: 8px;
-      padding: 9px 16px;
+      border-radius: 10px;
+      padding: 10px 18px;
       font-size: 14px;
       font-weight: 600;
       cursor: pointer;
-      transition: background .15s;
+      transition: opacity .15s, transform .1s;
+      box-shadow: 0 2px 6px rgba(66,153,225,.4);
+      white-space: nowrap;
     }
-    #btn-search:hover  { background: #0550ae; }
-    #btn-search:active { background: #033d8b; }
-    #btn-search:disabled { background: #8c959f; cursor: default; }
+    #btn-search:hover  { opacity: .9; }
+    #btn-search:active { transform: scale(.97); opacity: .85; }
+    #btn-search:disabled {
+      background: linear-gradient(135deg, #a0aec0, #718096);
+      box-shadow: none;
+      cursor: default;
+      transform: none;
+    }
 
     /* ── Suggestions dropdown ── */
     #suggestions {
-      position: absolute; top: 100%; left: 10px; right: 10px;
+      position: absolute; top: calc(100% - 1px); left: 12px; right: 12px;
       background: #fff;
-      border: 1px solid #d0d7de;
+      border: 1.5px solid #e2e8f0;
       border-top: none;
-      border-radius: 0 0 8px 8px;
+      border-radius: 0 0 10px 10px;
       overflow: hidden;
       z-index: 800;
-      box-shadow: 0 8px 24px rgba(140,149,159,.2);
+      box-shadow: 0 8px 24px rgba(0,0,0,.1);
       display: none;
     }
     #suggestions.show { display: block; }
     .sug-item {
-      display: flex; align-items: baseline; gap: 8px;
-      padding: 10px 12px; cursor: pointer;
-      border-bottom: 1px solid #f6f8fa;
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; cursor: pointer;
+      border-bottom: 1px solid #f7fafc;
       transition: background .1s;
     }
     .sug-item:last-child { border-bottom: none; }
-    .sug-item:hover, .sug-item:active { background: #f6f8fa; }
-    .sug-name { font-size: 14px; color: #24292f; flex: 1; }
-    .sug-hint { font-size: 12px; color: #8c959f; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 40%; }
-    .sug-none { padding: 12px; text-align: center; color: #8c959f; font-size: 13px; }
+    .sug-item:hover, .sug-item:active { background: #ebf8ff; }
+    .sug-pin { color: #4299e1; font-size: 14px; flex-shrink: 0; }
+    .sug-name { font-size: 14px; color: #2d3748; flex: 1; font-weight: 500; }
+    .sug-hint { font-size: 11px; color: #a0aec0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 38%; }
+    .sug-none { padding: 14px; text-align: center; color: #a0aec0; font-size: 13px; }
 
     /* ── Map ── */
     #map-wrap { flex: 1; position: relative; min-height: 0; }
@@ -92,42 +112,76 @@
     /* ── Status toast ── */
     #status-msg {
       position: absolute;
-      bottom: 20px; left: 50%; transform: translateX(-50%);
-      background: rgba(255,255,255,.96);
-      border: 1px solid #d0d7de;
-      border-radius: 20px;
-      padding: 7px 18px;
+      bottom: 24px; left: 50%; transform: translateX(-50%) translateY(8px);
+      background: rgba(255,255,255,.97);
+      border: 1.5px solid #e2e8f0;
+      border-radius: 24px;
+      padding: 8px 20px;
       font-size: 13px;
-      color: #24292f;
+      font-weight: 500;
+      color: #2d3748;
       z-index: 600;
       white-space: nowrap;
-      box-shadow: 0 4px 16px rgba(140,149,159,.25);
+      box-shadow: 0 4px 20px rgba(0,0,0,.12);
       pointer-events: none;
       opacity: 0;
-      transition: opacity .2s;
+      transition: opacity .22s ease, transform .22s ease;
     }
-    #status-msg.show  { opacity: 1; }
-    #status-msg.error { color: #d1242f; border-color: #d1242f; }
+    #status-msg.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    #status-msg.error {
+      color: #c53030;
+      border-color: #feb2b2;
+      background: rgba(255,245,245,.97);
+    }
 
-    /* ── Leaflet light overrides ── */
-    .leaflet-control-zoom a {
-      background: #fff !important; color: #24292f !important;
-      border-color: #d0d7de !important;
+    /* ── Leaflet overrides ── */
+    .leaflet-control-zoom {
+      border-radius: 10px !important;
+      overflow: hidden;
     }
-    .leaflet-control-zoom a:hover { background: #f6f8fa !important; }
+    .leaflet-control-zoom a {
+      background: #fff !important;
+      color: #4a5568 !important;
+      border-color: #e2e8f0 !important;
+      font-size: 16px !important;
+      line-height: 28px !important;
+      width: 30px !important;
+      height: 30px !important;
+    }
+    .leaflet-control-zoom a:hover { background: #ebf8ff !important; color: #3182ce !important; }
     .leaflet-bar {
-      border: 1px solid #d0d7de !important;
-      box-shadow: 0 2px 8px rgba(140,149,159,.2) !important;
+      border: 1.5px solid #e2e8f0 !important;
+      box-shadow: 0 2px 10px rgba(0,0,0,.08) !important;
     }
     .leaflet-control-attribution {
-      background: rgba(255,255,255,.8) !important;
-      color: #8c959f !important;
+      background: rgba(255,255,255,.75) !important;
+      color: #a0aec0 !important;
       font-size: 9px !important;
+      border-radius: 4px 0 0 0 !important;
     }
-    .leaflet-control-attribution a { color: #0969da !important; }
+    .leaflet-control-attribution a { display: none !important; }
     .leaflet-popup-content-wrapper {
-      border-radius: 8px !important;
-      box-shadow: 0 4px 16px rgba(140,149,159,.3) !important;
+      border-radius: 12px !important;
+      box-shadow: 0 8px 24px rgba(0,0,0,.15) !important;
+      border: 1px solid #e2e8f0 !important;
+      padding: 0 !important;
+    }
+    .leaflet-popup-content {
+      margin: 12px 16px !important;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+      font-size: 14px !important;
+      font-weight: 600 !important;
+      color: #2d3748 !important;
+    }
+    .leaflet-popup-tip { background: #fff !important; }
+    .leaflet-popup-close-button {
+      color: #a0aec0 !important;
+      font-size: 16px !important;
+      top: 6px !important;
+      right: 8px !important;
     }
   </style>
 </head>
@@ -135,8 +189,9 @@
 
 <!-- Search bar -->
 <div id="search-bar">
-  <div id="search-wrap">
-    <input id="search-input" type="text" placeholder="🔍 Введите страну или город…"
+  <div id="search-wrap" style="position:relative">
+    <span id="search-icon">📍</span>
+    <input id="search-input" type="text" placeholder="Введите страну или город…"
       autocomplete="off" oninput="onInput(this.value)" onkeydown="onKey(event)">
     <button id="btn-search" onclick="doSearch()">Найти</button>
   </div>
@@ -153,20 +208,41 @@
 const tg = window.Telegram.WebApp;
 tg.ready(); tg.expand();
 
-/* ── Map init ── */
-const map = L.map('map', { center: [20, 10], zoom: 2, minZoom: 1, maxZoom: 18 });
+/* ── Map init with 2GIS tiles (Russian labels) ── */
+const map = L.map('map', {
+  center: [20, 10], zoom: 2, minZoom: 1, maxZoom: 18,
+  zoomControl: true,
+});
 
-L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-  maxZoom: 19,
+L.tileLayer('https://tile2.maps.2gis.com/tiles?x={x}&y={y}&z={z}', {
+  attribution: '© OpenStreetMap contributors',
+  maxZoom: 18,
+  tileSize: 256,
 }).addTo(map);
+
+/* ── Custom marker icon ── */
+const pinIcon = L.divIcon({
+  className: '',
+  html: `<div style="
+    width:32px;height:40px;position:relative;
+    filter:drop-shadow(0 3px 6px rgba(0,0,0,.25));
+  ">
+    <svg viewBox="0 0 32 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M16 0C7.16 0 0 7.16 0 16c0 11 16 24 16 24s16-13 16-24C32 7.16 24.84 0 16 0z" fill="#4299e1"/>
+      <circle cx="16" cy="16" r="7" fill="white"/>
+    </svg>
+  </div>`,
+  iconSize: [32, 40],
+  iconAnchor: [16, 40],
+  popupAnchor: [0, -42],
+});
 
 let marker = null;
 
 function placeMarker(lat, lon, label) {
   if (marker) map.removeLayer(marker);
-  marker = L.marker([lat, lon]).addTo(map);
-  if (label) marker.bindPopup(`<b>${label}</b>`).openPopup();
+  marker = L.marker([lat, lon], { icon: pinIcon }).addTo(map);
+  if (label) marker.bindPopup(label).openPopup();
 }
 
 /* ── Status toast ── */
@@ -178,12 +254,8 @@ function showStatus(msg, isError = false, duration = 3000) {
   clearTimeout(statusTimer);
   if (duration > 0) statusTimer = setTimeout(() => { el.className = ''; }, duration);
 }
-function hideStatus() {
-  clearTimeout(statusTimer);
-  document.getElementById('status-msg').className = '';
-}
 
-/* ── Suggestions (Nominatim) ── */
+/* ── Suggestions via Nominatim ── */
 let sugTimer = null;
 let lastQ = '';
 
@@ -194,7 +266,7 @@ function onInput(val) {
 }
 
 function onKey(e) {
-  if (e.key === 'Enter') { e.preventDefault(); hideSuggestions(); doSearch(); }
+  if (e.key === 'Enter')  { e.preventDefault(); hideSuggestions(); doSearch(); }
   if (e.key === 'Escape') { hideSuggestions(); }
 }
 
@@ -205,7 +277,7 @@ async function loadSuggestions(q) {
     const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=5&accept-language=ru`;
     const data = await fetch(url).then(r => r.json());
     renderSuggestions(data);
-  } catch { /* ignore */ }
+  } catch { /* ignore network errors */ }
 }
 
 function renderSuggestions(items) {
@@ -222,6 +294,7 @@ function renderSuggestions(items) {
     const lat = parseFloat(it.lat), lon = parseFloat(it.lon);
     const safeName = name.replace(/'/g, "\\'");
     return `<div class="sug-item" onclick="pickSuggestion(${lat},${lon},'${safeName}')">
+      <span class="sug-pin">📍</span>
       <span class="sug-name">${name}</span>
       <span class="sug-hint">${hint}</span>
     </div>`;
@@ -275,7 +348,7 @@ function flyToAndMark(lat, lon, label) {
   map.flyTo([lat, lon], 5, { duration: 1 });
 }
 
-/* ── Close suggestions on outside click / map tap ── */
+/* ── Close suggestions ── */
 map.on('click', hideSuggestions);
 document.addEventListener('click', e => {
   if (!document.getElementById('search-bar').contains(e.target)) hideSuggestions();
