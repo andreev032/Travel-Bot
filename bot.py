@@ -14,7 +14,7 @@ MAIN_MENU, ANSWERING, HELP_MENU, HELP_TOPIC = range(4)
 # Замени на реальный HTTPS-URL после деплоя webapp/index.html
 WEBAPP_URL   = "https://andreev032.github.io/Travel-Bot/"
 MAP_URL      = "https://andreev032.github.io/Travel-Bot/map.html"
-CHANNEL_URL  = "https://t.me/your_travel_channel"   # ← замени на свой канал
+CHANNEL_URL  = "https://t.me/https://t.me/+iZXusTPaFOIyYWZi"   # ← замени на свой канал
 
 
 HOME_BTN    = "🏠 Главное меню"
