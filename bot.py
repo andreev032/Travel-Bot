@@ -1,6 +1,9 @@
 import os
 import json
 import logging
+import asyncio
+import urllib.request
+import urllib.parse
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton, WebAppInfo, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler
 
@@ -9,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 TOKEN = "8701321387:AAHwb_WkmrimPtInwDftv8jb0d03gTkogqA"
 
-MAIN_MENU, ANSWERING, HELP_MENU, HELP_TOPIC, PHRASEBOOK_MENU, PHRASEBOOK_CATEGORY = range(6)
+MAIN_MENU, ANSWERING, HELP_MENU, HELP_TOPIC, TRANSLATING = range(5)
 
 # Замени на реальный HTTPS-URL после деплоя webapp/index.html
 WEBAPP_URL   = "https://andreev032.github.io/Travel-Bot/"
@@ -26,7 +29,7 @@ def get_main_keyboard():
         [
             [KeyboardButton("🌍 Подобрать страну"), KeyboardButton("📖 Инструкция для новичка")],
             [KeyboardButton("🗺 Мои страны", web_app=WebAppInfo(url=WEBAPP_URL)), KeyboardButton("🗺 Карта мира", web_app=WebAppInfo(url=MAP_URL))],
-            [KeyboardButton("🗣 Разговорник"), KeyboardButton(CHANNEL_BTN)],
+            [KeyboardButton("🔤 Переводчик"), KeyboardButton(CHANNEL_BTN)],
         ],
         resize_keyboard=True,
         one_time_keyboard=True,
@@ -205,111 +208,24 @@ HELP_TOPICS = {
     ),
 }
 
-PHRASES = {
-    "🏨 Отель": (
-        "🏨 *Отель*\n\n"
-        "🇬🇧 I have a reservation / [ай хэв э резервэйшн] — У меня есть бронь\n"
-        "🇬🇧 I'd like to check in / [айд лайк ту чек ин] — Я хочу заселиться\n"
-        "🇬🇧 What time is check-out? / [уот тайм из чек-аут?] — Во сколько выезд?\n"
-        "🇬🇧 Could I have the key, please? / [куд ай хэв зэ ки, плиз?] — Можно ключ, пожалуйста?\n"
-        "🇬🇧 Is breakfast included? / [из брекфэст инклудэд?] — Завтрак включён?\n"
-        "🇬🇧 Could you call a taxi? / [куд ю кол э тэкси?] — Можете вызвать такси?\n"
-        "🇬🇧 The Wi-Fi doesn't work / [зэ вай-фай дазнт уёрк] — Wi-Fi не работает\n"
-        "🇬🇧 Please clean my room / [плиз клин май рум] — Пожалуйста, уберите номер\n"
-        "🇬🇧 Do you have a safe? / [ду ю хэв э сейф?] — У вас есть сейф?\n"
-        "🇬🇧 I'd like a room with a view / [айд лайк э рум уиз э вью] — Хочу номер с видом\n"
-        "🇬🇧 Late check-out, please / [лейт чек-аут, плиз] — Поздний выезд, пожалуйста\n"
-        "🇬🇧 There's a problem with my room / [зэрз э проблем уиз май рум] — Проблема с номером"
-    ),
-    "✈️ Аэропорт": (
-        "✈️ *Аэропорт*\n\n"
-        "🇬🇧 Where is the check-in counter? / [уэр из зэ чек-ин каунтер?] — Где стойка регистрации?\n"
-        "🇬🇧 I'd like a window seat / [айд лайк э уиндоу сит] — Хочу место у окна\n"
-        "🇬🇧 I have only carry-on luggage / [ай хэв онли кэрри-он лагидж] — Только ручная кладь\n"
-        "🇬🇧 Where is gate …? / [уэр из гейт...?] — Где выход №...?\n"
-        "🇬🇧 Is my flight on time? / [из май флайт он тайм?] — Мой рейс вовремя?\n"
-        "🇬🇧 I missed my flight / [ай мист май флайт] — Я опоздал на рейс\n"
-        "🇬🇧 How long is the layover? / [хау лонг из зэ лейовер?] — Сколько длится пересадка?\n"
-        "🇬🇧 My luggage is lost / [май лагидж из лост] — Мой багаж потерян\n"
-        "🇬🇧 Where is the currency exchange? / [уэр из зэ карэнси экстчейндж?] — Где обмен валюты?\n"
-        "🇬🇧 Nothing to declare / [натинг ту деклэр] — Нечего декларировать\n"
-        "🇬🇧 Do I need to collect my baggage? / [ду ай нид ту кэлект май бэгидж?] — Мне получать багаж?"
-    ),
-    "🍽 Ресторан": (
-        "🍽 *Ресторан*\n\n"
-        "🇬🇧 A table for two, please / [э тейбл фор ту, плиз] — Столик на двоих, пожалуйста\n"
-        "🇬🇧 Could I see the menu? / [куд ай си зэ меню?] — Можно меню?\n"
-        "🇬🇧 What do you recommend? / [уот ду ю рекомэнд?] — Что посоветуете?\n"
-        "🇬🇧 I'm vegetarian / [айм веджетэриэн] — Я вегетарианец\n"
-        "🇬🇧 I'm allergic to… / [айм элёрджик ту...] — У меня аллергия на...\n"
-        "🇬🇧 Well done / medium / rare / [уэл дан / мидиум / рэр] — Прожарка: сильная / средняя / слабая\n"
-        "🇬🇧 The bill, please / [зэ бил, плиз] — Счёт, пожалуйста\n"
-        "🇬🇧 Is service included? / [из сёрвис инклудэд?] — Обслуживание включено?\n"
-        "🇬🇧 Could you split the bill? / [куд ю сплит зэ бил?] — Можно разделить счёт?\n"
-        "🇬🇧 No ice, please / [ноу айс, плиз] — Без льда, пожалуйста\n"
-        "🇬🇧 It's delicious! / [итс делишэс!] — Это очень вкусно!\n"
-        "🇬🇧 I didn't order this / [ай дидэнт ордер зис] — Я этого не заказывал"
-    ),
-    "🚕 Транспорт": (
-        "🚕 *Транспорт*\n\n"
-        "🇬🇧 Take me to… / [тейк ми ту...] — Отвезите меня к...\n"
-        "🇬🇧 How much to the airport? / [хау мач ту зэ эйрпорт?] — Сколько до аэропорта?\n"
-        "🇬🇧 Please turn on the meter / [плиз тёрн он зэ митер] — Включите счётчик, пожалуйста\n"
-        "🇬🇧 Stop here, please / [стоп хиэр, плиз] — Остановите здесь\n"
-        "🇬🇧 Where is the bus stop? / [уэр из зэ бас стоп?] — Где автобусная остановка?\n"
-        "🇬🇧 A ticket to… please / [э тикит ту... плиз] — Один билет до..., пожалуйста\n"
-        "🇬🇧 Does this train go to…? / [даз зис трейн гоу ту...?] — Этот поезд идёт до...?\n"
-        "🇬🇧 Where do I transfer? / [уэр ду ай трэнсфёр?] — Где пересаживаться?\n"
-        "🇬🇧 I'm lost / [айм лост] — Я заблудился\n"
-        "🇬🇧 How far is it? / [хау фар из ит?] — Как далеко?\n"
-        "🇬🇧 Is it within walking distance? / [из ит уизин уокинг дистэнс?] — Можно дойти пешком?\n"
-        "🇬🇧 Can you go faster? / [кэн ю гоу фастер?] — Можете ехать быстрее?"
-    ),
-    "🛍 Шоппинг": (
-        "🛍 *Шоппинг*\n\n"
-        "🇬🇧 How much does this cost? / [хау мач даз зис кост?] — Сколько это стоит?\n"
-        "🇬🇧 Do you have a smaller / bigger size? / [ду ю хэв э смолер / биггер сайз?] — Есть меньше / больше?\n"
-        "🇬🇧 Can I try this on? / [кэн ай трай зис он?] — Можно примерить?\n"
-        "🇬🇧 Do you accept cards? / [ду ю эксепт кардз?] — Принимаете карты?\n"
-        "🇬🇧 I'm just looking / [айм джаст лукинг] — Я просто смотрю\n"
-        "🇬🇧 Can you give me a discount? / [кэн ю гив ми э дискаунт?] — Можете сделать скидку?\n"
-        "🇬🇧 I'll take it / [айл тейк ит] — Я возьму это\n"
-        "🇬🇧 Where is the fitting room? / [уэр из зэ фитинг рум?] — Где примерочная?\n"
-        "🇬🇧 This is too expensive / [зис из ту экспэнсив] — Это слишком дорого\n"
-        "🇬🇧 Do you have a receipt? / [ду ю хэв э рисит?] — Дайте чек, пожалуйста\n"
-        "🇬🇧 Do you have a bag? / [ду ю хэв э бэг?] — Есть пакет?"
-    ),
-    "🆘 Помощь": (
-        "🆘 *Помощь и экстренные ситуации*\n\n"
-        "🇬🇧 Help! / [хэлп!] — Помогите!\n"
-        "🇬🇧 Call the police! / [кол зэ полис!] — Вызовите полицию!\n"
-        "🇬🇧 Call an ambulance! / [кол эн эмбьюлэнс!] — Вызовите скорую!\n"
-        "🇬🇧 I've been robbed / [айв бин робд] — Меня ограбили\n"
-        "🇬🇧 I lost my passport / [ай лост май пэспорт] — Я потерял паспорт\n"
-        "🇬🇧 I need help / [ай нид хэлп] — Мне нужна помощь\n"
-        "🇬🇧 Where is the nearest police station? / [уэр из зэ ниэрэст полис стейшн?] — Где полицейский участок?\n"
-        "🇬🇧 I don't understand / [ай донт андэрстэнд] — Я не понимаю\n"
-        "🇬🇧 Speak slowly, please / [спик слоули, плиз] — Говорите медленно, пожалуйста\n"
-        "🇬🇧 Do you speak Russian? / [ду ю спик рашн?] — Вы говорите по-русски?\n"
-        "🇬🇧 I need an interpreter / [ай нид эн интёрпрэтер] — Мне нужен переводчик\n"
-        "🇬🇧 I need to contact my embassy / [ай нид ту контэкт май эмбэси] — Мне нужно позвонить в посольство"
-    ),
-    "🏥 Медицина": (
-        "🏥 *Медицина*\n\n"
-        "🇬🇧 I need a doctor / [ай нид э доктор] — Мне нужен врач\n"
-        "🇬🇧 I have a headache / [ай хэв э хэдэйк] — У меня болит голова\n"
-        "🇬🇧 I have a stomachache / [ай хэв э стомэкэйк] — У меня болит живот\n"
-        "🇬🇧 I have a fever / [ай хэв э фивэр] — У меня высокая температура\n"
-        "🇬🇧 I can't breathe / [ай кант бриз] — Мне трудно дышать\n"
-        "🇬🇧 I'm allergic to penicillin / [айм элёрджик ту пенисилин] — У меня аллергия на пенициллин\n"
-        "🇬🇧 I'm diabetic / [айм дайэбетик] — У меня диабет\n"
-        "🇬🇧 Where is the nearest pharmacy? / [уэр из зэ ниэрэст фармэси?] — Где ближайшая аптека?\n"
-        "🇬🇧 I need this medicine / [ай нид зис мэдисин] — Мне нужно это лекарство\n"
-        "🇬🇧 I have insurance / [ай хэв иншурэнс] — У меня есть страховка\n"
-        "🇬🇧 I need a prescription / [ай нид э прескрипшн] — Мне нужен рецепт\n"
-        "🇬🇧 It hurts here / [ит хёртс хиэр] — Вот здесь болит"
-    ),
-}
+MYMEMORY_URL = "https://api.mymemory.translated.net/get?q={q}&langpair={lp}"
+
+
+async def translate_text(text: str) -> tuple:
+    """Return (translated, src_lang, dst_lang). Uses MyMemory API."""
+    has_cyrillic = any('\u0400' <= ch <= '\u04ff' for ch in text)
+    src, dst = ('ru', 'en') if has_cyrillic else ('en', 'ru')
+    url = MYMEMORY_URL.format(
+        q=urllib.parse.quote(text, safe=''),
+        lp=f"{src}|{dst}",
+    )
+    loop = asyncio.get_event_loop()
+    raw = await loop.run_in_executor(
+        None, lambda: urllib.request.urlopen(url, timeout=8).read()
+    )
+    data = json.loads(raw)
+    translated = data['responseData']['translatedText']
+    return translated, src, dst
 
 QUESTIONS = [
     {"id": "company", "text": "Привет! Я твой travel-помощник 🌍\n\nС кем планируешь путешествие?", "opts": ["Один", "С партнёром", "С друзьями", "С семьёй и детьми"]},
@@ -415,8 +331,8 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ANSWERING
     elif text == "📖 Инструкция для новичка":
         return await show_help_menu(update, context)
-    elif text == "🗣 Разговорник":
-        return await show_phrasebook_menu(update, context)
+    elif text == "🔤 Переводчик":
+        return await start_translator(update, context)
     elif text == CHANNEL_BTN:
         inline_kb = InlineKeyboardMarkup([[InlineKeyboardButton("📢 Перейти в канал", url=CHANNEL_URL)]])
         await update.message.reply_text(
@@ -551,33 +467,48 @@ async def handle_webapp_data(update: Update, context: ContextTypes.DEFAULT_TYPE)
     return MAIN_MENU
 
 
-async def show_phrasebook_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    keyboard = [[cat] for cat in PHRASES.keys()] + [["🏠 Главное меню"]]
+async def start_translator(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "🗣 *Разговорник*\n\nВыбери категорию — получишь самые нужные фразы на английском с транскрипцией:",
+        "🔤 *Переводчик*\n\n"
+        "Напиши слово или фразу — переведу автоматически:\n"
+        "🇷🇺 русский → 🇬🇧 английский\n"
+        "🇬🇧 английский → 🇷🇺 русский\n\n"
+        "_Язык определяется автоматически по наличию кириллицы._",
         parse_mode="Markdown",
-        reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True),
+        reply_markup=ReplyKeyboardMarkup([[HOME_BTN]], resize_keyboard=True, one_time_keyboard=False),
     )
-    return PHRASEBOOK_MENU
+    return TRANSLATING
 
 
-async def phrasebook_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text
-    if text in PHRASES:
-        keyboard = [["◀️ Назад"]]
-        await update.message.reply_text(
-            PHRASES[text],
-            parse_mode="Markdown",
-            reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True),
+async def handle_translation(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text.strip()
+    if not text:
+        return TRANSLATING
+
+    await update.message.reply_chat_action("typing")
+
+    try:
+        translated, src, dst = await translate_text(text)
+        flag = {"ru": "🇷🇺", "en": "🇬🇧"}
+        lang_name = {"ru": "Русский", "en": "Английский"}
+        reply = (
+            f"{flag[src]} *{lang_name[src]}* → {flag[dst]} *{lang_name[dst]}*\n\n"
+            f"*Оригинал:* {text}\n"
+            f"*Перевод:* {translated}"
         )
-        return PHRASEBOOK_CATEGORY
-    return await show_phrasebook_menu(update, context)
+    except Exception:
+        reply = "⚠️ Не удалось получить перевод. Проверь соединение и попробуй ещё раз."
 
-
-async def phrasebook_category_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message.text == "◀️ Назад":
-        return await show_phrasebook_menu(update, context)
-    return await show_phrasebook_menu(update, context)
+    await update.message.reply_text(
+        reply,
+        parse_mode="Markdown",
+        reply_markup=ReplyKeyboardMarkup(
+            [["🔤 Перевести ещё"], [HOME_BTN]],
+            resize_keyboard=True,
+            one_time_keyboard=True,
+        ),
+    )
+    return TRANSLATING
 
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -612,13 +543,10 @@ def main():
                 home,
                 MessageHandler(filters.TEXT & ~filters.COMMAND, help_topic_handler),
             ],
-            PHRASEBOOK_MENU: [
+            TRANSLATING: [
                 home,
-                MessageHandler(filters.TEXT & ~filters.COMMAND, phrasebook_menu_handler),
-            ],
-            PHRASEBOOK_CATEGORY: [
-                home,
-                MessageHandler(filters.TEXT & ~filters.COMMAND, phrasebook_category_handler),
+                MessageHandler(filters.Regex(r"^🔤 Перевести ещё$"), start_translator),
+                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_translation),
             ],
         },
         fallbacks=[
