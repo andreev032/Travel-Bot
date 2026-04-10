@@ -208,34 +208,16 @@
 const tg = window.Telegram.WebApp;
 tg.ready(); tg.expand();
 
-/* ── Map init with 2GIS tiles (Russian labels) ── */
+/* ── Map init — Wikimedia tiles, Russian labels ── */
 const map = L.map('map', {
-  center: [20, 0], zoom: 2, minZoom: 1, maxZoom: 18,
+  center: [20, 20], zoom: 2, minZoom: 1, maxZoom: 18,
   zoomControl: true,
 });
 
-/* Primary: 2GIS tiles — bright, colorful, Russian labels natively.
-   Fallback: OSM tiles if 2GIS is unavailable. */
-const tileLayer2gis = L.tileLayer('https://tile2.maps.2gis.com/tiles?x={x}&y={y}&z={z}&v=1', {
-  attribution: '© <a href="https://2gis.ru">2GIS</a> © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-  maxZoom: 18,
-});
-
-const tileLayerOsm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+L.tileLayer('https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png', {
+  attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, © <a href="https://maps.wikimedia.org">Wikimedia Maps</a>',
   maxZoom: 19,
-});
-
-// Test 2GIS availability — fall back to OSM on error
-let fallbackTriggered = false;
-tileLayer2gis.on('tileerror', function() {
-  if (!fallbackTriggered) {
-    fallbackTriggered = true;
-    map.removeLayer(tileLayer2gis);
-    tileLayerOsm.addTo(map);
-  }
-});
-tileLayer2gis.addTo(map);
+}).addTo(map);
 
 /* ── Custom marker icon ── */
 const pinIcon = L.divIcon({
