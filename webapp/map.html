@@ -5,8 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Карта мира</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
     html, body {
@@ -29,10 +27,11 @@
     }
     #search-wrap {
       display: flex; align-items: center; gap: 8px;
+      position: relative;
     }
     #search-icon {
       position: absolute;
-      left: 24px;
+      left: 12px;
       top: 50%;
       transform: translateY(-50%);
       color: #a0aec0;
@@ -72,116 +71,14 @@
     }
     #btn-search:hover  { opacity: .9; }
     #btn-search:active { transform: scale(.97); opacity: .85; }
-    #btn-search:disabled {
-      background: linear-gradient(135deg, #a0aec0, #718096);
-      box-shadow: none;
-      cursor: default;
-      transform: none;
-    }
-
-    /* ── Suggestions dropdown ── */
-    #suggestions {
-      position: absolute; top: calc(100% - 1px); left: 12px; right: 12px;
-      background: #fff;
-      border: 1.5px solid #e2e8f0;
-      border-top: none;
-      border-radius: 0 0 10px 10px;
-      overflow: hidden;
-      z-index: 800;
-      box-shadow: 0 8px 24px rgba(0,0,0,.1);
-      display: none;
-    }
-    #suggestions.show { display: block; }
-    .sug-item {
-      display: flex; align-items: center; gap: 10px;
-      padding: 10px 14px; cursor: pointer;
-      border-bottom: 1px solid #f7fafc;
-      transition: background .1s;
-    }
-    .sug-item:last-child { border-bottom: none; }
-    .sug-item:hover, .sug-item:active { background: #ebf8ff; }
-    .sug-pin { color: #4299e1; font-size: 14px; flex-shrink: 0; }
-    .sug-name { font-size: 14px; color: #2d3748; flex: 1; font-weight: 500; }
-    .sug-hint { font-size: 11px; color: #a0aec0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 38%; }
-    .sug-none { padding: 14px; text-align: center; color: #a0aec0; font-size: 13px; }
 
     /* ── Map ── */
     #map-wrap { flex: 1; position: relative; min-height: 0; }
-    #map { width: 100%; height: 100%; }
-
-    /* ── Status toast ── */
-    #status-msg {
-      position: absolute;
-      bottom: 24px; left: 50%; transform: translateX(-50%) translateY(8px);
-      background: rgba(255,255,255,.97);
-      border: 1.5px solid #e2e8f0;
-      border-radius: 24px;
-      padding: 8px 20px;
-      font-size: 13px;
-      font-weight: 500;
-      color: #2d3748;
-      z-index: 600;
-      white-space: nowrap;
-      box-shadow: 0 4px 20px rgba(0,0,0,.12);
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity .22s ease, transform .22s ease;
-    }
-    #status-msg.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
-    }
-    #status-msg.error {
-      color: #c53030;
-      border-color: #feb2b2;
-      background: rgba(255,245,245,.97);
-    }
-
-    /* ── Leaflet overrides ── */
-    .leaflet-control-zoom {
-      border-radius: 10px !important;
-      overflow: hidden;
-    }
-    .leaflet-control-zoom a {
-      background: #fff !important;
-      color: #4a5568 !important;
-      border-color: #e2e8f0 !important;
-      font-size: 16px !important;
-      line-height: 28px !important;
-      width: 30px !important;
-      height: 30px !important;
-    }
-    .leaflet-control-zoom a:hover { background: #ebf8ff !important; color: #3182ce !important; }
-    .leaflet-bar {
-      border: 1.5px solid #e2e8f0 !important;
-      box-shadow: 0 2px 10px rgba(0,0,0,.08) !important;
-    }
-    .leaflet-control-attribution {
-      background: rgba(255,255,255,.75) !important;
-      color: #a0aec0 !important;
-      font-size: 9px !important;
-      border-radius: 4px 0 0 0 !important;
-    }
-    .leaflet-control-attribution a { display: none !important; }
-    .leaflet-popup-content-wrapper {
-      border-radius: 12px !important;
-      box-shadow: 0 8px 24px rgba(0,0,0,.15) !important;
-      border: 1px solid #e2e8f0 !important;
-      padding: 0 !important;
-    }
-    .leaflet-popup-content {
-      margin: 12px 16px !important;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-      font-size: 14px !important;
-      font-weight: 600 !important;
-      color: #2d3748 !important;
-    }
-    .leaflet-popup-tip { background: #fff !important; }
-    .leaflet-popup-close-button {
-      color: #a0aec0 !important;
-      font-size: 16px !important;
-      top: 6px !important;
-      right: 8px !important;
+    #map-frame {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
     }
   </style>
 </head>
@@ -189,169 +86,38 @@
 
 <!-- Search bar -->
 <div id="search-bar">
-  <div id="search-wrap" style="position:relative">
+  <div id="search-wrap">
     <span id="search-icon">📍</span>
     <input id="search-input" type="text" placeholder="Введите страну или город…"
-      autocomplete="off" oninput="onInput(this.value)" onkeydown="onKey(event)">
+      autocomplete="off" onkeydown="onKey(event)">
     <button id="btn-search" onclick="doSearch()">Найти</button>
   </div>
-  <div id="suggestions"></div>
 </div>
 
-<!-- Map -->
+<!-- Google Maps iframe -->
 <div id="map-wrap">
-  <div id="map"></div>
-  <div id="status-msg"></div>
+  <iframe id="map-frame"
+    src="https://maps.google.com/maps?hl=ru&output=embed&z=2&ll=20,20"
+    allowfullscreen
+    loading="lazy"
+    referrerpolicy="no-referrer-when-downgrade">
+  </iframe>
 </div>
 
 <script>
 const tg = window.Telegram.WebApp;
 tg.ready(); tg.expand();
 
-/* ── Map init — Wikimedia tiles, Russian labels ── */
-const map = L.map('map', {
-  center: [20, 20], zoom: 2, minZoom: 1, maxZoom: 18,
-  zoomControl: true,
-});
-
-L.tileLayer('https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png', {
-  attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, © <a href="https://maps.wikimedia.org">Wikimedia Maps</a>',
-  maxZoom: 19,
-}).addTo(map);
-
-/* ── Custom marker icon ── */
-const pinIcon = L.divIcon({
-  className: '',
-  html: `<div style="
-    width:32px;height:40px;position:relative;
-    filter:drop-shadow(0 3px 6px rgba(0,0,0,.25));
-  ">
-    <svg viewBox="0 0 32 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M16 0C7.16 0 0 7.16 0 16c0 11 16 24 16 24s16-13 16-24C32 7.16 24.84 0 16 0z" fill="#4299e1"/>
-      <circle cx="16" cy="16" r="7" fill="white"/>
-    </svg>
-  </div>`,
-  iconSize: [32, 40],
-  iconAnchor: [16, 40],
-  popupAnchor: [0, -42],
-});
-
-let marker = null;
-
-function placeMarker(lat, lon, label) {
-  if (marker) map.removeLayer(marker);
-  marker = L.marker([lat, lon], { icon: pinIcon }).addTo(map);
-  if (label) marker.bindPopup(label).openPopup();
-}
-
-/* ── Status toast ── */
-let statusTimer = null;
-function showStatus(msg, isError = false, duration = 3000) {
-  const el = document.getElementById('status-msg');
-  el.textContent = msg;
-  el.className = 'show' + (isError ? ' error' : '');
-  clearTimeout(statusTimer);
-  if (duration > 0) statusTimer = setTimeout(() => { el.className = ''; }, duration);
-}
-
-/* ── Suggestions via Nominatim ── */
-let sugTimer = null;
-let lastQ = '';
-
-function onInput(val) {
-  clearTimeout(sugTimer);
-  if (!val.trim()) { hideSuggestions(); return; }
-  sugTimer = setTimeout(() => loadSuggestions(val.trim()), 350);
-}
-
 function onKey(e) {
-  if (e.key === 'Enter')  { e.preventDefault(); hideSuggestions(); doSearch(); }
-  if (e.key === 'Escape') { hideSuggestions(); }
+  if (e.key === 'Enter') { e.preventDefault(); doSearch(); }
 }
 
-async function loadSuggestions(q) {
-  if (q === lastQ) return;
-  lastQ = q;
-  try {
-    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=5&accept-language=ru`;
-    const data = await fetch(url).then(r => r.json());
-    renderSuggestions(data);
-  } catch { /* ignore network errors */ }
-}
-
-function renderSuggestions(items) {
-  const box = document.getElementById('suggestions');
-  if (!items.length) {
-    box.innerHTML = '<div class="sug-none">Ничего не найдено</div>';
-    box.classList.add('show');
-    return;
-  }
-  box.innerHTML = items.map(it => {
-    const parts = it.display_name.split(',');
-    const name = parts[0].trim();
-    const hint = parts.slice(1, 3).join(',').trim();
-    const lat = parseFloat(it.lat), lon = parseFloat(it.lon);
-    const safeName = name.replace(/'/g, "\\'");
-    return `<div class="sug-item" onclick="pickSuggestion(${lat},${lon},'${safeName}')">
-      <span class="sug-pin">📍</span>
-      <span class="sug-name">${name}</span>
-      <span class="sug-hint">${hint}</span>
-    </div>`;
-  }).join('');
-  box.classList.add('show');
-}
-
-function hideSuggestions() {
-  const box = document.getElementById('suggestions');
-  box.classList.remove('show');
-  box.innerHTML = '';
-  lastQ = '';
-}
-
-function pickSuggestion(lat, lon, name) {
-  hideSuggestions();
-  document.getElementById('search-input').value = name;
-  flyToAndMark(lat, lon, name);
-}
-
-/* ── Main search ── */
-async function doSearch() {
+function doSearch() {
   const q = document.getElementById('search-input').value.trim();
   if (!q) return;
-  hideSuggestions();
-
-  const btn = document.getElementById('btn-search');
-  btn.disabled = true;
-  showStatus('Поиск…', false, 0);
-
-  try {
-    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1&accept-language=ru`;
-    const data = await fetch(url).then(r => r.json());
-
-    if (!data.length) {
-      showStatus('Место не найдено', true, 3000);
-    } else {
-      const name = data[0].display_name.split(',')[0].trim();
-      flyToAndMark(parseFloat(data[0].lat), parseFloat(data[0].lon), name);
-      showStatus(`📍 ${name}`, false, 3000);
-    }
-  } catch {
-    showStatus('Ошибка соединения', true, 3000);
-  } finally {
-    btn.disabled = false;
-  }
+  const src = 'https://maps.google.com/maps?hl=ru&output=embed&q=' + encodeURIComponent(q);
+  document.getElementById('map-frame').src = src;
 }
-
-function flyToAndMark(lat, lon, label) {
-  placeMarker(lat, lon, label);
-  map.flyTo([lat, lon], 5, { duration: 1 });
-}
-
-/* ── Close suggestions ── */
-map.on('click', hideSuggestions);
-document.addEventListener('click', e => {
-  if (!document.getElementById('search-bar').contains(e.target)) hideSuggestions();
-});
 </script>
 </body>
 </html>
