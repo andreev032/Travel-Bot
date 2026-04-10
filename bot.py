@@ -4,13 +4,31 @@ import logging
 import asyncio
 import urllib.request
 import urllib.parse
+from datetime import datetime
+from zoneinfo import ZoneInfo
+import anthropic
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton, WebAppInfo, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-TOKEN = "8701321387:AAHwb_WkmrimPtInwDftv8jb0d03gTkogqA"
+TOKEN           = "8701321387:AAHwb_WkmrimPtInwDftv8jb0d03gTkogqA"
+ANTHROPIC_KEY   = os.environ.get("ANTHROPIC_API_KEY", "")
+CHANNEL_ID      = -1002079377291
+MOSCOW_TZ       = ZoneInfo("Europe/Moscow")
+
+# Темы постов — перебираются по очереди
+POST_TOPICS = [
+    "интересное малоизвестное место в мире",
+    "практичный лайфхак для путешественников",
+    "удивительный факт о какой-нибудь стране",
+    "совет по экономии денег в путешествии",
+    "необычная традиция или обычай в мире",
+    "красивое место которое мало кто знает",
+]
+_post_topic_index = 0
 
 MAIN_MENU, ANSWERING, HELP_MENU, HELP_TOPIC, TRANSLATING, VISA_MENU, VISA_CATEGORY, \
     MOVIES_MENU, MOVIES_REGION, MOVIES_LIST = range(10)
@@ -1087,6 +1105,47 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 
+## ── AUTOPOST ─────────────────────────────────────────────────────────────────
+
+async def generate_post(topic: str) -> str:
+    """Generate a channel post via Anthropic API."""
+    client = anthropic.AsyncAnthropic(api_key=ANTHROPIC_KEY)
+    prompt = (
+        f"Напиши пост для Telegram-канала о путешествиях на тему: «{topic}».\n\n"
+        "Требования:\n"
+        "— Начни с яркого релевантного эмодзи и короткого заголовка (одна строка)\n"
+        "— Затем 3–4 содержательных предложения — интересно, живо, без воды\n"
+        "— В конце добавь хэштеги: #какместный #путешествия #travel\n"
+        "— Общий объём: 150–220 слов\n"
+        "— Только текст поста, без пояснений и вводных фраз"
+    )
+    message = await client.messages.create(
+        model="claude-opus-4-5",
+        max_tokens=512,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    return message.content[0].text.strip()
+
+
+async def send_scheduled_post(app: Application) -> None:
+    """Pick next topic, generate post and send to channel."""
+    global _post_topic_index
+    if not ANTHROPIC_KEY:
+        logger.warning("ANTHROPIC_API_KEY не задан — автопостинг пропущен")
+        return
+
+    topic = POST_TOPICS[_post_topic_index % len(POST_TOPICS)]
+    _post_topic_index += 1
+
+    logger.info(f"Автопост: тема «{topic}»")
+    try:
+        text = await generate_post(topic)
+        await app.bot.send_message(chat_id=CHANNEL_ID, text=text, parse_mode="Markdown")
+        logger.info("Автопост отправлен успешно")
+    except Exception as e:
+        logger.error(f"Ошибка автопоста: {e}")
+
+
 def main():
     app = Application.builder().token(TOKEN).build()
 
@@ -1146,6 +1205,20 @@ def main():
         ],
     )
     app.add_handler(conv)
+
+    # ── Scheduler: 9:00, 14:00, 19:00 Moscow time ──
+    scheduler = AsyncIOScheduler(timezone=MOSCOW_TZ)
+    for hour in (9, 14, 19):
+        scheduler.add_job(
+            send_scheduled_post,
+            trigger="cron",
+            hour=hour,
+            minute=0,
+            args=[app],
+        )
+    scheduler.start()
+    logger.info("Планировщик автопостинга запущен (9:00, 14:00, 19:00 МСК)")
+
     logger.info("Бот запущен!")
     app.run_polling(allowed_updates=Update.ALL_TYPES)
 
