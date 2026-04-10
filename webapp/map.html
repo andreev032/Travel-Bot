@@ -97,7 +97,7 @@
 <!-- Yandex Maps iframe -->
 <div id="map-wrap">
   <iframe id="map-frame"
-    src="https://yandex.ru/map-widget/v1/?ll=20,30&z=2&l=map"
+    src="https://yandex.ru/map-widget/v1/?ll=20,30&z=2&l=map&no-disclosure=1"
     allowfullscreen
     loading="lazy">
   </iframe>
@@ -114,7 +114,7 @@ function onKey(e) {
 function doSearch() {
   const q = document.getElementById('search-input').value.trim();
   if (!q) return;
-  const src = 'https://yandex.ru/map-widget/v1/?text=' + encodeURIComponent(q) + '&z=10';
+  const src = 'https://yandex.ru/map-widget/v1/?text=' + encodeURIComponent(q) + '&z=6&no-disclosure=1&mode=search';
   document.getElementById('map-frame').src = src;
 }
 </script>
