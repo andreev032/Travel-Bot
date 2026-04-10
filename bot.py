@@ -15,9 +15,10 @@ TOKEN = "8701321387:AAHwb_WkmrimPtInwDftv8jb0d03gTkogqA"
 MAIN_MENU, ANSWERING, HELP_MENU, HELP_TOPIC, TRANSLATING, VISA_MENU, VISA_CATEGORY = range(7)
 
 # Замени на реальный HTTPS-URL после деплоя webapp/index.html
-WEBAPP_URL   = "https://andreev032.github.io/Travel-Bot/"
-MAP_URL      = "https://andreev032.github.io/Travel-Bot/map.html"
-CHANNEL_URL  = "https://t.me/like_a_local"
+WEBAPP_URL      = "https://andreev032.github.io/Travel-Bot/"
+MAP_URL         = "https://andreev032.github.io/Travel-Bot/map.html"
+CHECKLIST_URL   = "https://andreev032.github.io/Travel-Bot/checklist.html"
+CHANNEL_URL     = "https://t.me/like_a_local"
 
 
 HOME_BTN    = "🏠 Главное меню"
@@ -30,7 +31,7 @@ def get_main_keyboard():
             [KeyboardButton("🌍 Подобрать страну"), KeyboardButton("📖 Инструкция для новичка")],
             [KeyboardButton("🗺 Мои страны", web_app=WebAppInfo(url=WEBAPP_URL)), KeyboardButton("🗺 Карта мира", web_app=WebAppInfo(url=MAP_URL))],
             [KeyboardButton("🔤 Переводчик"), KeyboardButton(CHANNEL_BTN)],
-            [KeyboardButton("🛂 Визы для россиян")],
+            [KeyboardButton("🛂 Визы для россиян"), KeyboardButton("✅ Чеклист путешественника", web_app=WebAppInfo(url=CHECKLIST_URL))],
         ],
         resize_keyboard=True,
         one_time_keyboard=True,
