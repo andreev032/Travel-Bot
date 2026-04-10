@@ -94,13 +94,12 @@
   </div>
 </div>
 
-<!-- Google Maps iframe -->
+<!-- Yandex Maps iframe -->
 <div id="map-wrap">
   <iframe id="map-frame"
-    src="https://maps.google.com/maps?hl=ru&output=embed&z=2&ll=20,20"
+    src="https://yandex.ru/map-widget/v1/?ll=20,30&z=2&l=map"
     allowfullscreen
-    loading="lazy"
-    referrerpolicy="no-referrer-when-downgrade">
+    loading="lazy">
   </iframe>
 </div>
 
@@ -115,7 +114,7 @@ function onKey(e) {
 function doSearch() {
   const q = document.getElementById('search-input').value.trim();
   if (!q) return;
-  const src = 'https://maps.google.com/maps?hl=ru&output=embed&q=' + encodeURIComponent(q);
+  const src = 'https://yandex.ru/map-widget/v1/?text=' + encodeURIComponent(q) + '&z=10';
   document.getElementById('map-frame').src = src;
 }
 </script>
