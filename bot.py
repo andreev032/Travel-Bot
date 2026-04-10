@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 TOKEN = "8701321387:AAHwb_WkmrimPtInwDftv8jb0d03gTkogqA"
 
-MAIN_MENU, ANSWERING, HELP_MENU, HELP_TOPIC, TRANSLATING = range(5)
+MAIN_MENU, ANSWERING, HELP_MENU, HELP_TOPIC, TRANSLATING, VISA_MENU, VISA_CATEGORY = range(7)
 
 # Замени на реальный HTTPS-URL после деплоя webapp/index.html
 WEBAPP_URL   = "https://andreev032.github.io/Travel-Bot/"
@@ -30,6 +30,7 @@ def get_main_keyboard():
             [KeyboardButton("🌍 Подобрать страну"), KeyboardButton("📖 Инструкция для новичка")],
             [KeyboardButton("🗺 Мои страны", web_app=WebAppInfo(url=WEBAPP_URL)), KeyboardButton("🗺 Карта мира", web_app=WebAppInfo(url=MAP_URL))],
             [KeyboardButton("🔤 Переводчик"), KeyboardButton(CHANNEL_BTN)],
+            [KeyboardButton("🛂 Визы для россиян")],
         ],
         resize_keyboard=True,
         one_time_keyboard=True,
@@ -210,6 +211,218 @@ HELP_TOPICS = {
 
 MYMEMORY_URL = "https://api.mymemory.translated.net/get?q={q}&langpair={lp}"
 
+VISAS = {
+    "✅ Без визы": (
+        "✅ *Без визы для граждан России*\n\n"
+        "🇦🇿 Азербайджан — 90 дней\n"
+        "🇦🇱 Албания — 90 дней\n"
+        "🇩🇿 Алжир — 90 дней\n"
+        "🇦🇩 Андорра — 90 дней\n"
+        "🇦🇬 Антигуа и Барбуда — 30 дней\n"
+        "🇦🇷 Аргентина — 90 дней\n"
+        "🇦🇲 Армения — без ограничений\n"
+        "🇧🇸 Багамские острова — 30 дней\n"
+        "🇧🇧 Барбадос — 90 дней\n"
+        "🇧🇾 Беларусь — без ограничений\n"
+        "🇧🇿 Белиз — 30 дней\n"
+        "🇧🇴 Боливия — 90 дней\n"
+        "🇧🇦 Босния и Герцеговина — 30 дней\n"
+        "🇧🇼 Ботсвана — 90 дней\n"
+        "🇧🇷 Бразилия — 90 дней\n"
+        "🇧🇳 Бруней — 14 дней\n"
+        "🇻🇺 Вануату — 30 дней\n"
+        "🇻🇪 Венесуэла — 90 дней\n"
+        "🇻🇳 Вьетнам — 45 дней\n"
+        "🇬🇾 Гайана — 30 дней\n"
+        "🇬🇹 Гватемала — 90 дней\n"
+        "🇭🇰 Гонконг — 14 дней\n"
+        "🇭🇳 Гондурас — 90 дней\n"
+        "🇬🇩 Гренада — 30 дней\n"
+        "🇬🇪 Грузия — 365 дней\n"
+        "🇩🇴 Доминиканская Республика — 30 дней\n"
+        "🇮🇱 Израиль — 90 дней\n"
+        "🇮🇩 Индонезия — 30 дней\n"
+        "🇰🇿 Казахстан — 30 дней\n"
+        "🇨🇳 Китай — 15 дней\n"
+        "🇨🇴 Колумбия — 90 дней\n"
+        "🇨🇷 Коста-Рика — 90 дней\n"
+        "🇨🇺 Куба — 30 дней\n"
+        "🇰🇬 Кыргызстан — без ограничений\n"
+        "🇲🇴 Макао — 30 дней\n"
+        "🇲🇺 Маврикий — 60 дней\n"
+        "🇲🇾 Малайзия — 30 дней\n"
+        "🇲🇻 Мальдивы — 30 дней\n"
+        "🇲🇦 Марокко — 90 дней\n"
+        "🇲🇽 Мексика — 180 дней\n"
+        "🇲🇩 Молдова — 90 дней\n"
+        "🇲🇳 Монголия — 30 дней\n"
+        "🇳🇦 Намибия — 90 дней\n"
+        "🇳🇮 Никарагуа — 90 дней\n"
+        "🇦🇪 ОАЭ — 90 дней\n"
+        "🇵🇦 Панама — 90 дней\n"
+        "🇵🇾 Парагвай — 90 дней\n"
+        "🇵🇪 Перу — 90 дней\n"
+        "🇸🇻 Сальвадор — 90 дней\n"
+        "🇲🇰 Северная Македония — 90 дней\n"
+        "🇸🇨 Сейшелы — 30 дней\n"
+        "🇷🇸 Сербия — 30 дней\n"
+        "🇹🇯 Таджикистан — 30 дней\n"
+        "🇹🇭 Таиланд — 30 дней\n"
+        "🇹🇹 Тринидад и Тобаго — 90 дней\n"
+        "🇹🇳 Тунис — 30 дней\n"
+        "🇹🇷 Турция — 60 дней\n"
+        "🇺🇿 Узбекистан — 30 дней\n"
+        "🇺🇾 Уругвай — 90 дней\n"
+        "🇫🇯 Фиджи — 120 дней\n"
+        "🇵🇭 Филиппины — 30 дней\n"
+        "🇲🇪 Черногория — 30 дней\n"
+        "🇨🇱 Чили — 90 дней\n"
+        "🇪🇨 Эквадор — 90 дней\n"
+        "🇰🇷 Южная Корея — 60 дней\n"
+        "🇯🇲 Ямайка — 30 дней\n\n"
+        "⚠️ Визовые правила меняются — проверяй актуальную информацию на сайте посольства перед поездкой."
+    ),
+    "📱 Электронная виза": (
+        "📱 *Электронная виза для граждан России*\n\n"
+        "🇦🇴 Ангола — 30 дней\n"
+        "🇧🇭 Бахрейн — 14 дней\n"
+        "🇧🇯 Бенин — 30 дней\n"
+        "🇧🇫 Буркина-Фасо — 30 дней\n"
+        "🇹🇱 Восточный Тимор — 30 дней\n"
+        "🇬🇦 Габон — 30 дней\n"
+        "🇬🇲 Гамбия — 30 дней\n"
+        "🇬🇭 Гана — 30 дней\n"
+        "🇬🇳 Гвинея — 30 дней\n"
+        "🇩🇯 Джибути — 31 день\n"
+        "🇪🇬 Египет — 30 дней\n"
+        "🇿🇲 Замбия — 30 дней\n"
+        "🇿🇼 Зимбабве — 30 дней\n"
+        "🇮🇳 Индия — 30 дней\n"
+        "🇯🇴 Иордания — 30 дней\n"
+        "🇮🇷 Иран — 30 дней\n"
+        "🇨🇻 Кабо-Верде — 30 дней\n"
+        "🇰🇭 Камбоджа — 30 дней\n"
+        "🇶🇦 Катар — 30 дней\n"
+        "🇰🇪 Кения — 30 дней\n"
+        "🇰🇲 Коморские острова — 30 дней\n"
+        "🇨🇮 Кот-д'Ивуар — 30 дней\n"
+        "🇰🇼 Кувейт — 90 дней\n"
+        "🇱🇦 Лаос — 30 дней\n"
+        "🇲🇷 Мавритания — 30 дней\n"
+        "🇲🇬 Мадагаскар — 30 дней\n"
+        "🇲🇼 Малави — 30 дней\n"
+        "🇲🇿 Мозамбик — 30 дней\n"
+        "🇲🇲 Мьянма — 28 дней\n"
+        "🇳🇵 Непал — 30 дней\n"
+        "🇳🇬 Нигерия — 30 дней\n"
+        "🇴🇲 Оман — 30 дней\n"
+        "🇵🇰 Пакистан — 30 дней\n"
+        "🇵🇬 Папуа Новая Гвинея — 60 дней\n"
+        "🇷🇼 Руанда — 30 дней\n"
+        "🇼🇸 Самоа — 60 дней\n"
+        "🇸🇹 Сан-Томе и Принсипи — 30 дней\n"
+        "🇸🇦 Саудовская Аравия — 90 дней\n"
+        "🇸🇳 Сенегал — 90 дней\n"
+        "🇸🇩 Судан — 30 дней\n"
+        "🇸🇱 Сьерра-Леоне — 30 дней\n"
+        "🇹🇿 Танзания — 30 дней\n"
+        "🇹🇬 Того — 7 дней\n"
+        "🇺🇬 Уганда — 30 дней\n"
+        "🇬🇶 Экваториальная Гвинея — 30 дней\n"
+        "🇱🇰 Шри-Ланка — 30 дней\n"
+        "🇪🇹 Эфиопия — 30 дней\n\n"
+        "⚠️ Визовые правила меняются — проверяй актуальную информацию на сайте посольства перед поездкой."
+    ),
+    "📋 Нужна виза": (
+        "📋 *Нужна виза для граждан России*\n\n"
+        "🇦🇺 Австралия\n"
+        "🇦🇹 Австрия\n"
+        "🇦🇫 Афганистан\n"
+        "🇧🇩 Бангладеш\n"
+        "🇧🇪 Бельгия\n"
+        "🇧🇬 Болгария\n"
+        "🇧🇮 Бурунди\n"
+        "🇧🇹 Бутан\n"
+        "🇻🇦 Ватикан\n"
+        "🇬🇧 Великобритания\n"
+        "🇭🇺 Венгрия\n"
+        "🇭🇹 Гаити\n"
+        "🇬🇼 Гвинея-Бисау\n"
+        "🇩🇪 Германия\n"
+        "🇬🇷 Греция\n"
+        "🇩🇰 Дания\n"
+        "🇩🇲 Доминика\n"
+        "🇨🇩 ДР Конго\n"
+        "🇮🇶 Ирак\n"
+        "🇮🇪 Ирландия\n"
+        "🇮🇸 Исландия\n"
+        "🇪🇸 Испания\n"
+        "🇮🇹 Италия\n"
+        "🇾🇪 Йемен\n"
+        "🇨🇲 Камерун\n"
+        "🇨🇦 Канада\n"
+        "🇨🇾 Кипр\n"
+        "🇰🇮 Кирибати\n"
+        "🇨🇬 Конго\n"
+        "🇽🇰 Косово\n"
+        "🇱🇻 Латвия\n"
+        "🇱🇸 Лесото\n"
+        "🇱🇷 Либерия\n"
+        "🇱🇧 Ливан\n"
+        "🇱🇾 Ливия\n"
+        "🇱🇹 Литва\n"
+        "🇱🇮 Лихтенштейн\n"
+        "🇱🇺 Люксембург\n"
+        "🇲🇱 Мали\n"
+        "🇲🇹 Мальта\n"
+        "🇲🇭 Маршалловы острова\n"
+        "🇫🇲 Микронезия\n"
+        "🇲🇨 Монако\n"
+        "🇳🇷 Науру\n"
+        "🇳🇪 Нигер\n"
+        "🇳🇱 Нидерланды\n"
+        "🇳🇿 Новая Зеландия\n"
+        "🇳🇴 Норвегия\n"
+        "🇵🇼 Палау\n"
+        "🇵🇸 Палестина\n"
+        "🇵🇱 Польша\n"
+        "🇵🇹 Португалия\n"
+        "🇷🇴 Румыния\n"
+        "🇸🇲 Сан-Марино\n"
+        "🇰🇵 Северная Корея\n"
+        "🇻🇨 Сент-Винсент и Гренадины\n"
+        "🇰🇳 Сент-Китс и Невис\n"
+        "🇱🇨 Сент-Люсия\n"
+        "🇸🇬 Сингапур\n"
+        "🇸🇾 Сирия\n"
+        "🇸🇰 Словакия\n"
+        "🇸🇮 Словения\n"
+        "🇸🇧 Соломоновы острова\n"
+        "🇸🇴 Сомали\n"
+        "🇺🇸 США\n"
+        "🇸🇷 Суринам\n"
+        "🇹🇼 Тайвань\n"
+        "🇹🇴 Тонга\n"
+        "🇹🇻 Тувалу\n"
+        "🇹🇲 Туркменистан\n"
+        "🇺🇦 Украина\n"
+        "🇫🇮 Финляндия\n"
+        "🇫🇷 Франция\n"
+        "🇭🇷 Хорватия\n"
+        "🇨🇫 ЦАР\n"
+        "🇹🇩 Чад\n"
+        "🇨🇿 Чехия\n"
+        "🇨🇭 Швейцария\n"
+        "🇸🇪 Швеция\n"
+        "🇪🇷 Эритрея\n"
+        "🇸🇿 Эсватини\n"
+        "🇪🇪 Эстония\n"
+        "🇸🇸 Южный Судан\n"
+        "🇯🇵 Япония\n\n"
+        "⚠️ Визовые правила меняются — проверяй актуальную информацию на сайте посольства перед поездкой."
+    ),
+}
+
 
 async def translate_text(text: str) -> tuple:
     """Return (translated, src_lang, dst_lang). Uses MyMemory API."""
@@ -333,6 +546,8 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await show_help_menu(update, context)
     elif text == "🔤 Переводчик":
         return await start_translator(update, context)
+    elif text == "🛂 Визы для россиян":
+        return await show_visa_menu(update, context)
     elif text == CHANNEL_BTN:
         inline_kb = InlineKeyboardMarkup([[InlineKeyboardButton("📢 Перейти в канал", url=CHANNEL_URL)]])
         await update.message.reply_text(
@@ -511,6 +726,35 @@ async def handle_translation(update: Update, context: ContextTypes.DEFAULT_TYPE)
     return TRANSLATING
 
 
+async def show_visa_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    keyboard = [[cat] for cat in VISAS.keys()] + [[HOME_BTN]]
+    await update.message.reply_text(
+        "🛂 *Визы для граждан России*\n\nВыбери категорию:",
+        parse_mode="Markdown",
+        reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True),
+    )
+    return VISA_MENU
+
+
+async def visa_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text
+    if text in VISAS:
+        await update.message.reply_text(
+            VISAS[text],
+            parse_mode="Markdown",
+            reply_markup=ReplyKeyboardMarkup([["◀️ Назад"], [HOME_BTN]], resize_keyboard=True, one_time_keyboard=True),
+        )
+        context.user_data["visa_category"] = text
+        return VISA_CATEGORY
+    return await show_visa_menu(update, context)
+
+
+async def visa_category_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.text == "◀️ Назад":
+        return await show_visa_menu(update, context)
+    return await show_visa_menu(update, context)
+
+
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("До встречи! Напиши /start чтобы начать заново.", reply_markup=ReplyKeyboardRemove())
     return ConversationHandler.END
@@ -547,6 +791,14 @@ def main():
                 home,
                 MessageHandler(filters.Regex(r"^🔤 Перевести ещё$"), start_translator),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, handle_translation),
+            ],
+            VISA_MENU: [
+                home,
+                MessageHandler(filters.TEXT & ~filters.COMMAND, visa_menu_handler),
+            ],
+            VISA_CATEGORY: [
+                home,
+                MessageHandler(filters.TEXT & ~filters.COMMAND, visa_category_handler),
             ],
         },
         fallbacks=[
