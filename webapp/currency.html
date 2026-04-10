@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Конвертер валют</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --bg:      #0d1117;
+      --surface: #161b22;
+      --card:    #1c2333;
+      --border:  #30363d;
+      --text:    #e6edf3;
+      --muted:   #7d8590;
+      --accent:  #58a6ff;
+      --green:   #3fb950;
+      --yellow:  #d29922;
+      --red:     #f85149;
+      --radius:  14px;
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      min-height: 100%; background: var(--bg);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: var(--text); font-size: 15px;
+    }
+    body { padding-bottom: 24px; }
+
+    /* ── Header ── */
+    #header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 16px 14px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    #header h1 { font-size: 18px; font-weight: 700; }
+    #rate-badge {
+      font-size: 11px; color: var(--muted);
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 20px; padding: 4px 10px;
+      white-space: nowrap;
+    }
+    #rate-badge.ok   { color: var(--green); border-color: #2ea04326; }
+    #rate-badge.err  { color: var(--red);   border-color: #f8514926; }
+    #rate-badge.spin::before { content: '⏳ '; }
+    #rate-badge.ok::before   { content: '🟢 '; }
+    #rate-badge.err::before  { content: '🔴 '; }
+
+    /* ── Quick pairs ── */
+    #quick-bar {
+      display: flex; gap: 8px; overflow-x: auto;
+      padding: 12px 16px; scrollbar-width: none;
+    }
+    #quick-bar::-webkit-scrollbar { display: none; }
+    .qbtn {
+      flex-shrink: 0;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 20px; padding: 7px 14px;
+      font-size: 13px; font-weight: 600; color: var(--muted);
+      cursor: pointer; transition: all .15s;
+      white-space: nowrap;
+    }
+    .qbtn:active, .qbtn.active {
+      background: var(--accent); border-color: var(--accent);
+      color: #fff;
+    }
+
+    /* ── Main card ── */
+    #converter {
+      margin: 0 12px; padding: 18px;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+
+    /* amount input */
+    .amount-wrap { margin-bottom: 16px; }
+    .amount-label {
+      font-size: 11px; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px;
+    }
+    #amount-input {
+      width: 100%; background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: 10px; padding: 14px 16px;
+      font-size: 28px; font-weight: 700; color: var(--text);
+      outline: none; transition: border-color .2s;
+      text-align: right;
+    }
+    #amount-input:focus { border-color: var(--accent); }
+
+    /* currency rows */
+    .pair-row {
+      display: flex; gap: 10px; align-items: center;
+      margin-bottom: 10px;
+    }
+    .currency-block { flex: 1; }
+    .currency-label {
+      font-size: 11px; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px;
+    }
+    .currency-select-wrap {
+      position: relative;
+    }
+    .currency-select-wrap::after {
+      content: '▾'; position: absolute; right: 12px; top: 50%;
+      transform: translateY(-50%); color: var(--muted); pointer-events: none;
+      font-size: 13px;
+    }
+    select {
+      width: 100%; background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: 10px; padding: 12px 32px 12px 14px;
+      font-size: 17px; font-weight: 700; color: var(--text);
+      outline: none; appearance: none; cursor: pointer;
+      transition: border-color .2s;
+    }
+    select:focus { border-color: var(--accent); }
+
+    /* swap button */
+    #btn-swap {
+      width: 40px; height: 40px; flex-shrink: 0;
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: 50%; font-size: 18px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all .15s; margin-top: 18px;
+    }
+    #btn-swap:active { background: var(--accent); border-color: var(--accent); transform: rotate(180deg); }
+
+    /* divider */
+    .divider {
+      border: none; border-top: 1px solid var(--border);
+      margin: 16px 0;
+    }
+
+    /* result */
+    #result-block { text-align: center; padding: 8px 0 4px; }
+    #result-amount {
+      font-size: 38px; font-weight: 900; color: var(--green);
+      line-height: 1; letter-spacing: -1px;
+      min-height: 46px;
+    }
+    #result-amount.loading { color: var(--muted); font-size: 24px; }
+    #result-amount.error   { color: var(--red);   font-size: 20px; }
+    #result-label {
+      font-size: 13px; color: var(--muted); margin-top: 6px;
+    }
+    #rate-line {
+      font-size: 12px; color: var(--muted); margin-top: 10px;
+      min-height: 16px;
+    }
+
+    /* ── Rate table ── */
+    #rate-table-wrap {
+      margin: 14px 12px 0;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+    }
+    #rate-table-head {
+      padding: 12px 16px 8px;
+      font-size: 12px; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .5px;
+      border-bottom: 1px solid var(--border);
+    }
+    .rate-row {
+      display: flex; align-items: center;
+      padding: 11px 16px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer; transition: background .12s;
+    }
+    .rate-row:last-child { border-bottom: none; }
+    .rate-row:active { background: rgba(88,166,255,.06); }
+    .rr-flag  { font-size: 20px; width: 28px; flex-shrink: 0; }
+    .rr-code  { font-size: 14px; font-weight: 700; width: 44px; flex-shrink: 0; }
+    .rr-name  { flex: 1; font-size: 12px; color: var(--muted); }
+    .rr-rate  { font-size: 14px; font-weight: 700; color: var(--accent); }
+  </style>
+</head>
+<body>
+
+<div id="header">
+  <h1>💱 Конвертер валют</h1>
+  <div id="rate-badge" class="spin">загрузка</div>
+</div>
+
+<div id="quick-bar">
+  <div class="qbtn" onclick="setQuick('RUB','THB')">RUB → THB</div>
+  <div class="qbtn" onclick="setQuick('RUB','USD')">RUB → USD</div>
+  <div class="qbtn" onclick="setQuick('RUB','EUR')">RUB → EUR</div>
+  <div class="qbtn" onclick="setQuick('RUB','AED')">RUB → AED</div>
+</div>
+
+<div id="converter">
+  <div class="amount-wrap">
+    <div class="amount-label">Сумма</div>
+    <input id="amount-input" type="number" inputmode="decimal" value="1000" min="0">
+  </div>
+
+  <div class="pair-row">
+    <div class="currency-block">
+      <div class="currency-label">Из</div>
+      <div class="currency-select-wrap">
+        <select id="from-select"></select>
+      </div>
+    </div>
+
+    <button id="btn-swap" onclick="swapCurrencies()" title="Поменять местами">⇄</button>
+
+    <div class="currency-block">
+      <div class="currency-label">В</div>
+      <div class="currency-select-wrap">
+        <select id="to-select"></select>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <div id="result-block">
+    <div id="result-amount" class="loading">…</div>
+    <div id="result-label">результат</div>
+    <div id="rate-line"></div>
+  </div>
+</div>
+
+<div id="rate-table-wrap">
+  <div id="rate-table-head">Популярные курсы к <span id="base-label">RUB</span></div>
+  <div id="rate-table-body"></div>
+</div>
+
+<script>
+const tg = window.Telegram.WebApp;
+tg.ready(); tg.expand();
+
+/* ── Currency catalogue ── */
+const CURRENCIES = [
+  { code: 'RUB', flag: '🇷🇺', name: 'Российский рубль' },
+  { code: 'USD', flag: '🇺🇸', name: 'Доллар США' },
+  { code: 'EUR', flag: '🇪🇺', name: 'Евро' },
+  { code: 'THB', flag: '🇹🇭', name: 'Тайский бат' },
+  { code: 'VND', flag: '🇻🇳', name: 'Вьетнамский донг' },
+  { code: 'KHR', flag: '🇰🇭', name: 'Камбоджийский риель' },
+  { code: 'LAK', flag: '🇱🇦', name: 'Лаосский кип' },
+  { code: 'SGD', flag: '🇸🇬', name: 'Сингапурский доллар' },
+  { code: 'MYR', flag: '🇲🇾', name: 'Малайзийский ринггит' },
+  { code: 'CNY', flag: '🇨🇳', name: 'Китайский юань' },
+  { code: 'KRW', flag: '🇰🇷', name: 'Южнокорейская вона' },
+  { code: 'JPY', flag: '🇯🇵', name: 'Японская иена' },
+  { code: 'AED', flag: '🇦🇪', name: 'Дирхам ОАЭ' },
+  { code: 'TRY', flag: '🇹🇷', name: 'Турецкая лира' },
+  { code: 'GEL', flag: '🇬🇪', name: 'Грузинский лари' },
+  { code: 'AMD', flag: '🇦🇲', name: 'Армянский драм' },
+  { code: 'KGS', flag: '🇰🇬', name: 'Киргизский сом' },
+  { code: 'UZS', flag: '🇺🇿', name: 'Узбекский сум' },
+  { code: 'EGP', flag: '🇪🇬', name: 'Египетский фунт' },
+  { code: 'MAD', flag: '🇲🇦', name: 'Марокканский дирхам' },
+  { code: 'CUP', flag: '🇨🇺', name: 'Кубинский песо' },
+  { code: 'HUF', flag: '🇭🇺', name: 'Венгерский форинт' },
+  { code: 'CZK', flag: '🇨🇿', name: 'Чешская крона' },
+  { code: 'PLN', flag: '🇵🇱', name: 'Польский злотый' },
+  { code: 'HRK', flag: '🇭🇷', name: 'Хорватская куна' },
+  { code: 'ALL', flag: '🇦🇱', name: 'Албанский лек' },
+  { code: 'MDL', flag: '🇲🇩', name: 'Молдавский лей' },
+  { code: 'BYN', flag: '🇧🇾', name: 'Белорусский рубль' },
+];
+
+/* Frankfurter doesn't have RUB/some exotic — we'll handle gracefully */
+const TABLE_SHOW = ['USD','EUR','THB','AED','GEL','AMD','TRY','CNY','JPY'];
+
+let rates = {};       // rates from API (base = some currency)
+let ratesBase = '';   // which base was fetched
+let ratesDate = '';
+let fromCode = 'RUB';
+let toCode   = 'USD';
+
+/* ── Build selects ── */
+function buildSelects() {
+  [document.getElementById('from-select'), document.getElementById('to-select')].forEach(sel => {
+    sel.innerHTML = CURRENCIES.map(c =>
+      `<option value="${c.code}">${c.flag} ${c.code} — ${c.name}</option>`
+    ).join('');
+  });
+  document.getElementById('from-select').value = fromCode;
+  document.getElementById('to-select').value   = toCode;
+}
+
+/* ── Fetch rates ── */
+async function fetchRates(base) {
+  const badge = document.getElementById('rate-badge');
+  badge.className = 'spin'; badge.textContent = 'загрузка';
+  try {
+    /* frankfurter doesn't support RUB as base — use USD, convert client-side */
+    const fetchBase = (base === 'RUB' || !isSupported(base)) ? 'USD' : base;
+    const resp = await fetch(`https://api.frankfurter.app/latest?from=${fetchBase}`);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    rates = data.rates;
+    rates[fetchBase] = 1;           // add self
+    ratesBase = fetchBase;
+    ratesDate = data.date;
+    badge.className = 'ok';
+    badge.textContent = ratesDate;
+    return true;
+  } catch(e) {
+    badge.className = 'err'; badge.textContent = 'нет данных';
+    return false;
+  }
+}
+
+function isSupported(code) {
+  /* frankfurter supports major currencies; RUB and some exotic — not */
+  const unsupported = new Set(['RUB','KHR','LAK','KGS','UZS','CUP','HRK','BYN','MDL','ALL']);
+  return !unsupported.has(code);
+}
+
+/* ── Convert ── */
+function getRate(from, to) {
+  /* All rates are relative to ratesBase.
+     rate(A→B) = rates[B] / rates[A]  (if both exist) */
+  const rA = rates[from];
+  const rB = rates[to];
+  if (!rA || !rB) return null;
+  return rB / rA;
+}
+
+function fmtResult(n) {
+  if (n === null) return null;
+  if (n >= 1000000) return n.toLocaleString('ru-RU', {maximumFractionDigits: 0});
+  if (n >= 100)     return n.toLocaleString('ru-RU', {maximumFractionDigits: 2});
+  if (n >= 1)       return n.toLocaleString('ru-RU', {maximumFractionDigits: 4});
+  return n.toLocaleString('ru-RU', {maximumFractionDigits: 6});
+}
+
+async function convert() {
+  const amount = parseFloat(document.getElementById('amount-input').value) || 0;
+  const resEl  = document.getElementById('result-amount');
+  const lblEl  = document.getElementById('result-label');
+  const rateLn = document.getElementById('rate-line');
+
+  fromCode = document.getElementById('from-select').value;
+  toCode   = document.getElementById('to-select').value;
+
+  /* need to (re)fetch if base changed or no rates yet */
+  if (!Object.keys(rates).length || !rates[fromCode] || !rates[toCode]) {
+    resEl.className = 'loading'; resEl.textContent = '…';
+    const ok = await fetchRates(fromCode);
+    if (!ok) {
+      resEl.className = 'error'; resEl.textContent = 'Ошибка загрузки';
+      rateLn.textContent = 'Проверь подключение к интернету';
+      return;
+    }
+  }
+
+  const rate = getRate(fromCode, toCode);
+  if (rate === null) {
+    resEl.className = 'error'; resEl.textContent = 'Нет данных';
+    rateLn.textContent = `Курс ${fromCode}→${toCode} недоступен`;
+    return;
+  }
+
+  const result = amount * rate;
+  const fromInfo = CURRENCIES.find(c => c.code === fromCode);
+  const toInfo   = CURRENCIES.find(c => c.code === toCode);
+
+  resEl.className = ''; resEl.textContent = fmtResult(result) + ' ' + toCode;
+  lblEl.textContent = `${amount.toLocaleString('ru-RU')} ${fromInfo.flag} ${fromCode} = … ${toInfo.flag} ${toCode}`;
+  rateLn.textContent = `1 ${fromCode} = ${fmtResult(rate)} ${toCode}  ·  курс от ${ratesDate}`;
+
+  updateRateTable();
+  savePrefs();
+}
+
+/* ── Rate table (popular currencies vs fromCode) ── */
+function updateRateTable() {
+  const baseLabel = document.getElementById('base-label');
+  baseLabel.textContent = fromCode;
+
+  const tbody = document.getElementById('rate-table-body');
+  const targets = TABLE_SHOW.filter(c => c !== fromCode);
+
+  tbody.innerHTML = targets.map(code => {
+    const info = CURRENCIES.find(c => c.code === code);
+    const rate = getRate(fromCode, code);
+    const rateStr = rate !== null ? fmtResult(rate) : '—';
+    return `<div class="rate-row" onclick="setTo('${code}')">
+      <span class="rr-flag">${info ? info.flag : '🏳'}</span>
+      <span class="rr-code">${code}</span>
+      <span class="rr-name">${info ? info.name : code}</span>
+      <span class="rr-rate">${rateStr}</span>
+    </div>`;
+  }).join('');
+}
+
+/* ── Actions ── */
+function swapCurrencies() {
+  const tmp = document.getElementById('from-select').value;
+  document.getElementById('from-select').value = document.getElementById('to-select').value;
+  document.getElementById('to-select').value   = tmp;
+  convert();
+}
+
+function setQuick(from, to) {
+  document.querySelectorAll('.qbtn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('from-select').value = from;
+  document.getElementById('to-select').value   = to;
+  convert();
+}
+
+function setTo(code) {
+  document.getElementById('to-select').value = code;
+  convert();
+}
+
+/* ── Persistence ── */
+const PREFS_KEY = 'currency_prefs_v1';
+function savePrefs() {
+  localStorage.setItem(PREFS_KEY, JSON.stringify({
+    from: document.getElementById('from-select').value,
+    to:   document.getElementById('to-select').value,
+    amt:  document.getElementById('amount-input').value,
+  }));
+}
+function loadPrefs() {
+  try {
+    const p = JSON.parse(localStorage.getItem(PREFS_KEY));
+    if (!p) return;
+    if (p.from) { fromCode = p.from; }
+    if (p.to)   { toCode   = p.to; }
+    if (p.amt)  { document.getElementById('amount-input').value = p.amt; }
+  } catch {}
+}
+
+/* ── Event listeners ── */
+document.getElementById('from-select').addEventListener('change', () => { rates = {}; convert(); });
+document.getElementById('to-select').addEventListener('change', convert);
+document.getElementById('amount-input').addEventListener('input', convert);
+
+/* ── Init ── */
+loadPrefs();
+buildSelects();
+fetchRates('USD').then(() => convert());
+</script>
+</body>
+</html>

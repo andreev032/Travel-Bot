@@ -28,6 +28,7 @@ WEBAPP_URL      = "https://andreev032.github.io/Travel-Bot/"
 MAP_URL         = "https://andreev032.github.io/Travel-Bot/map.html"
 CHECKLIST_URL   = "https://andreev032.github.io/Travel-Bot/checklist.html"
 STATS_URL       = "https://andreev032.github.io/Travel-Bot/stats.html"
+CURRENCY_URL    = "https://andreev032.github.io/Travel-Bot/currency.html"
 CHANNEL_URL     = "https://t.me/like_a_local"
 
 
@@ -43,6 +44,7 @@ def get_main_keyboard():
             [KeyboardButton("🔤 Переводчик"), KeyboardButton(CHANNEL_BTN)],
             [KeyboardButton("🛂 Визы для россиян"), KeyboardButton("✅ Чеклист путешественника", web_app=WebAppInfo(url=CHECKLIST_URL))],
             [KeyboardButton("🎬 Фильмы для путешественников"), KeyboardButton("📊 Моя статистика", web_app=WebAppInfo(url=STATS_URL))],
+            [KeyboardButton("💱 Конвертер валют", web_app=WebAppInfo(url=CURRENCY_URL))],
         ],
         resize_keyboard=True,
         one_time_keyboard=True,
