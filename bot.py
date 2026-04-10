@@ -1140,21 +1140,6 @@ async def post_init(app: Application) -> None:
     asyncio.create_task(scheduler(app.bot))
 
 
-async def testpost_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Send the next scheduled post immediately (admin test)."""
-    global _post_index
-    text = CHANNEL_POSTS[_post_index % len(CHANNEL_POSTS)]
-    _post_index += 1
-    try:
-        await context.bot.send_message(chat_id=CHANNEL_ID, text=text, parse_mode="Markdown")
-        await update.message.reply_text(
-            f"✅ Тестовый пост #{_post_index} отправлен в канал.\n"
-            f"Осталось постов в ротации: {len(CHANNEL_POSTS) - (_post_index % len(CHANNEL_POSTS))}"
-        )
-    except Exception as e:
-        await update.message.reply_text(f"❌ Ошибка: {e}")
-
-
 def main():
     app = Application.builder().token(TOKEN).post_init(post_init).build()
 
