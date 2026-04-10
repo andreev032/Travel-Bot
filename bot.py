@@ -4,9 +4,8 @@ import logging
 import asyncio
 import urllib.request
 import urllib.parse
-from datetime import datetime
+from datetime import datetime, time as dt_time
 from zoneinfo import ZoneInfo
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton, WebAppInfo, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler
 from posts import CHANNEL_POSTS
@@ -1098,14 +1097,14 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 ## ── AUTOPOST ─────────────────────────────────────────────────────────────────
 
-async def send_scheduled_post(app: Application) -> None:
-    """Send next post from CHANNEL_POSTS sequentially."""
+async def send_scheduled_post(context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Send next post from CHANNEL_POSTS sequentially (job_queue callback)."""
     global _post_index
     text = CHANNEL_POSTS[_post_index % len(CHANNEL_POSTS)]
     _post_index += 1
     logger.info(f"Автопост #{_post_index}: отправка в канал")
     try:
-        await app.bot.send_message(chat_id=CHANNEL_ID, text=text, parse_mode="Markdown")
+        await context.bot.send_message(chat_id=CHANNEL_ID, text=text, parse_mode="Markdown")
         logger.info("Автопост отправлен успешно")
     except Exception as e:
         logger.error(f"Ошибка автопоста: {e}")
@@ -1187,18 +1186,16 @@ def main():
     app.add_handler(conv)
     app.add_handler(CommandHandler("testpost", testpost_command))
 
-    # ── Scheduler: 9:00, 14:00, 19:00 Moscow time ──
-    scheduler = AsyncIOScheduler(timezone=MOSCOW_TZ)
-    for hour in (9, 14, 19):
-        scheduler.add_job(
-            send_scheduled_post,
-            trigger="cron",
-            hour=hour,
-            minute=0,
-            args=[app],
-        )
-    scheduler.start()
-    logger.info("Планировщик автопостинга запущен (9:00, 14:00, 19:00 МСК)")
+    # ── Scheduled posts: 10:00 and 16:00 Moscow time ──
+    app.job_queue.run_daily(
+        send_scheduled_post,
+        time=dt_time(10, 0, tzinfo=MOSCOW_TZ),
+    )
+    app.job_queue.run_daily(
+        send_scheduled_post,
+        time=dt_time(16, 0, tzinfo=MOSCOW_TZ),
+    )
+    logger.info("Автопостинг запланирован: 10:00 и 16:00 МСК")
 
     logger.info("Бот запущен!")
     app.run_polling(allowed_updates=Update.ALL_TYPES)
