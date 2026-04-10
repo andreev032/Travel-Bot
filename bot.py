@@ -4,7 +4,7 @@ import logging
 import asyncio
 import urllib.request
 import urllib.parse
-from datetime import datetime, time as dt_time
+from datetime import datetime
 from zoneinfo import ZoneInfo
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton, WebAppInfo, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler
@@ -1097,17 +1097,47 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 ## ── AUTOPOST ─────────────────────────────────────────────────────────────────
 
-async def send_scheduled_post(context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Send next post from CHANNEL_POSTS sequentially (job_queue callback)."""
+async def scheduler(bot) -> None:
+    """Infinite loop: sends next post at 10:00 and 16:00 MSK."""
+    global _post_index
+    sent_keys: set[str] = set()
+    logger.info("Планировщик автопостинга запущен (10:00 и 16:00 МСК)")
+    while True:
+        now = datetime.now(MOSCOW_TZ)
+        hhmm = now.strftime("%H:%M")
+        day  = now.strftime("%Y-%m-%d")
+        key  = f"{day}-{hhmm}"
+        if hhmm in ("10:00", "16:00") and key not in sent_keys:
+            sent_keys.add(key)
+            text = CHANNEL_POSTS[_post_index % len(CHANNEL_POSTS)]
+            _post_index += 1
+            logger.info(f"Автопост #{_post_index}: отправка в канал")
+            try:
+                await bot.send_message(chat_id=CHANNEL_ID, text=text, parse_mode="Markdown")
+                logger.info("Автопост отправлен успешно")
+            except Exception as e:
+                logger.error(f"Ошибка автопоста: {e}")
+        await asyncio.sleep(30)
+
+
+async def testpost_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Send the next post to the channel immediately (manual test)."""
     global _post_index
     text = CHANNEL_POSTS[_post_index % len(CHANNEL_POSTS)]
     _post_index += 1
-    logger.info(f"Автопост #{_post_index}: отправка в канал")
     try:
         await context.bot.send_message(chat_id=CHANNEL_ID, text=text, parse_mode="Markdown")
-        logger.info("Автопост отправлен успешно")
+        await update.message.reply_text(
+            f"✅ Тестовый пост #{_post_index} отправлен в канал.\n"
+            f"Следующий: #{(_post_index % len(CHANNEL_POSTS)) + 1} из {len(CHANNEL_POSTS)}"
+        )
     except Exception as e:
-        logger.error(f"Ошибка автопоста: {e}")
+        await update.message.reply_text(f"❌ Ошибка: {e}")
+
+
+async def post_init(app: Application) -> None:
+    """Called by PTB after init — launch scheduler as a background task."""
+    asyncio.create_task(scheduler(app.bot))
 
 
 async def testpost_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -1126,7 +1156,7 @@ async def testpost_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
 
 def main():
-    app = Application.builder().token(TOKEN).build()
+    app = Application.builder().token(TOKEN).post_init(post_init).build()
 
     home = MessageHandler(filters.Regex(f"^{HOME_BTN}$"), go_home)
 
@@ -1185,17 +1215,6 @@ def main():
     )
     app.add_handler(conv)
     app.add_handler(CommandHandler("testpost", testpost_command))
-
-    # ── Scheduled posts: 10:00 and 16:00 Moscow time ──
-    app.job_queue.run_daily(
-        send_scheduled_post,
-        time=dt_time(10, 0, tzinfo=MOSCOW_TZ),
-    )
-    app.job_queue.run_daily(
-        send_scheduled_post,
-        time=dt_time(16, 0, tzinfo=MOSCOW_TZ),
-    )
-    logger.info("Автопостинг запланирован: 10:00 и 16:00 МСК")
 
     logger.info("Бот запущен!")
     app.run_polling(allowed_updates=Update.ALL_TYPES)
