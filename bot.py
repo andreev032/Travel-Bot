@@ -6,29 +6,20 @@ import urllib.request
 import urllib.parse
 from datetime import datetime
 from zoneinfo import ZoneInfo
-import anthropic
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton, WebAppInfo, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler
+from posts import CHANNEL_POSTS
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-TOKEN           = "8701321387:AAHwb_WkmrimPtInwDftv8jb0d03gTkogqA"
-ANTHROPIC_KEY   = os.environ.get("ANTHROPIC_API_KEY", "")
-CHANNEL_ID      = -1002079377291
-MOSCOW_TZ       = ZoneInfo("Europe/Moscow")
+TOKEN      = "8701321387:AAHwb_WkmrimPtInwDftv8jb0d03gTkogqA"
+CHANNEL_ID = -1002079377291
+MOSCOW_TZ  = ZoneInfo("Europe/Moscow")
 
-# Темы постов — перебираются по очереди
-POST_TOPICS = [
-    "интересное малоизвестное место в мире",
-    "практичный лайфхак для путешественников",
-    "удивительный факт о какой-нибудь стране",
-    "совет по экономии денег в путешествии",
-    "необычная традиция или обычай в мире",
-    "красивое место которое мало кто знает",
-]
-_post_topic_index = 0
+# Счётчик текущего поста — перебираем по кругу
+_post_index = 0
 
 MAIN_MENU, ANSWERING, HELP_MENU, HELP_TOPIC, TRANSLATING, VISA_MENU, VISA_CATEGORY, \
     MOVIES_MENU, MOVIES_REGION, MOVIES_LIST = range(10)
@@ -1107,43 +1098,32 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 ## ── AUTOPOST ─────────────────────────────────────────────────────────────────
 
-async def generate_post(topic: str) -> str:
-    """Generate a channel post via Anthropic API."""
-    client = anthropic.AsyncAnthropic(api_key=ANTHROPIC_KEY)
-    prompt = (
-        f"Напиши пост для Telegram-канала о путешествиях на тему: «{topic}».\n\n"
-        "Требования:\n"
-        "— Начни с яркого релевантного эмодзи и короткого заголовка (одна строка)\n"
-        "— Затем 3–4 содержательных предложения — интересно, живо, без воды\n"
-        "— В конце добавь хэштеги: #какместный #путешествия #travel\n"
-        "— Общий объём: 150–220 слов\n"
-        "— Только текст поста, без пояснений и вводных фраз"
-    )
-    message = await client.messages.create(
-        model="claude-opus-4-5",
-        max_tokens=512,
-        messages=[{"role": "user", "content": prompt}],
-    )
-    return message.content[0].text.strip()
-
-
 async def send_scheduled_post(app: Application) -> None:
-    """Pick next topic, generate post and send to channel."""
-    global _post_topic_index
-    if not ANTHROPIC_KEY:
-        logger.warning("ANTHROPIC_API_KEY не задан — автопостинг пропущен")
-        return
-
-    topic = POST_TOPICS[_post_topic_index % len(POST_TOPICS)]
-    _post_topic_index += 1
-
-    logger.info(f"Автопост: тема «{topic}»")
+    """Send next post from CHANNEL_POSTS sequentially."""
+    global _post_index
+    text = CHANNEL_POSTS[_post_index % len(CHANNEL_POSTS)]
+    _post_index += 1
+    logger.info(f"Автопост #{_post_index}: отправка в канал")
     try:
-        text = await generate_post(topic)
         await app.bot.send_message(chat_id=CHANNEL_ID, text=text, parse_mode="Markdown")
         logger.info("Автопост отправлен успешно")
     except Exception as e:
         logger.error(f"Ошибка автопоста: {e}")
+
+
+async def testpost_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Send the next scheduled post immediately (admin test)."""
+    global _post_index
+    text = CHANNEL_POSTS[_post_index % len(CHANNEL_POSTS)]
+    _post_index += 1
+    try:
+        await context.bot.send_message(chat_id=CHANNEL_ID, text=text, parse_mode="Markdown")
+        await update.message.reply_text(
+            f"✅ Тестовый пост #{_post_index} отправлен в канал.\n"
+            f"Осталось постов в ротации: {len(CHANNEL_POSTS) - (_post_index % len(CHANNEL_POSTS))}"
+        )
+    except Exception as e:
+        await update.message.reply_text(f"❌ Ошибка: {e}")
 
 
 def main():
@@ -1205,6 +1185,7 @@ def main():
         ],
     )
     app.add_handler(conv)
+    app.add_handler(CommandHandler("testpost", testpost_command))
 
     # ── Scheduler: 9:00, 14:00, 19:00 Moscow time ──
     scheduler = AsyncIOScheduler(timezone=MOSCOW_TZ)
