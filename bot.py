@@ -12,7 +12,8 @@ logger = logging.getLogger(__name__)
 
 TOKEN = "8701321387:AAHwb_WkmrimPtInwDftv8jb0d03gTkogqA"
 
-MAIN_MENU, ANSWERING, HELP_MENU, HELP_TOPIC, TRANSLATING, VISA_MENU, VISA_CATEGORY = range(7)
+MAIN_MENU, ANSWERING, HELP_MENU, HELP_TOPIC, TRANSLATING, VISA_MENU, VISA_CATEGORY, \
+    MOVIES_MENU, MOVIES_REGION, MOVIES_LIST = range(10)
 
 # Замени на реальный HTTPS-URL после деплоя webapp/index.html
 WEBAPP_URL      = "https://andreev032.github.io/Travel-Bot/"
@@ -32,6 +33,7 @@ def get_main_keyboard():
             [KeyboardButton("🗺 Мои страны", web_app=WebAppInfo(url=WEBAPP_URL)), KeyboardButton("🗺 Карта мира", web_app=WebAppInfo(url=MAP_URL))],
             [KeyboardButton("🔤 Переводчик"), KeyboardButton(CHANNEL_BTN)],
             [KeyboardButton("🛂 Визы для россиян"), KeyboardButton("✅ Чеклист путешественника", web_app=WebAppInfo(url=CHECKLIST_URL))],
+            [KeyboardButton("🎬 Фильмы для путешественников")],
         ],
         resize_keyboard=True,
         one_time_keyboard=True,
@@ -653,6 +655,8 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await start_translator(update, context)
     elif text == "🛂 Визы для россиян":
         return await show_visa_menu(update, context)
+    elif text == "🎬 Фильмы для путешественников":
+        return await show_movies_menu(update, context)
     elif text == CHANNEL_BTN:
         inline_kb = InlineKeyboardMarkup([[InlineKeyboardButton("📢 Перейти в канал", url=CHANNEL_URL)]])
         await update.message.reply_text(
@@ -860,6 +864,284 @@ async def visa_category_handler(update: Update, context: ContextTypes.DEFAULT_TY
     return await show_visa_menu(update, context)
 
 
+## ── MOVIES ──────────────────────────────────────────────────────────────────
+
+MOVIES_LIST_DATA = {
+    "🌏 Фильмы про путешествия": (
+        "🌏 *Фильмы про путешествия — топ-20*\n\n"
+        "🎬 *В диких условиях* (2007) ⭐ 8.1\n"
+        "📝 Выпускник бросает всё и едет автостопом на Аляску\n"
+        "🔗 Кинопоиск / iTunes\n\n"
+        "🎬 *Мотоциклетные дневники* (2004) ⭐ 7.8\n"
+        "📝 Молодой Че Гевара путешествует по Латинской Америке на мотоцикле\n"
+        "🔗 YouTube / Кинопоиск\n\n"
+        "🎬 *До рассвета* (1995) ⭐ 8.1\n"
+        "📝 Двое незнакомцев проводят одну ночь в Вене — начало культовой трилогии\n"
+        "🔗 Кинопоиск\n\n"
+        "🎬 *Амели* (2001) ⭐ 8.3\n"
+        "📝 Мечтательница из Парижа тайно меняет жизни окружающих к лучшему\n"
+        "🔗 YouTube / Кинопоиск\n\n"
+        "🎬 *Римские каникулы* (1953) ⭐ 8.0\n"
+        "📝 Принцесса сбегает от протокола и влюбляется в журналиста в Риме\n"
+        "🔗 YouTube / Кинопоиск\n\n"
+        "🎬 *Потерянный в переводе* (2003) ⭐ 7.7\n"
+        "📝 Два одиноких американца случайно встречаются в токийском отеле\n"
+        "🔗 Кинопоиск\n\n"
+        "🎬 *Полночь в Париже* (2011) ⭐ 7.7\n"
+        "📝 Писатель переносится в Париж 1920-х — встречает Хемингуэя и Пикассо\n"
+        "🔗 Кинопоиск / iTunes\n\n"
+        "🎬 *Залечь на дно в Брюгге* (2008) ⭐ 7.9\n"
+        "📝 Два наёмных убийцы прячутся в средневековом бельгийском городке\n"
+        "🔗 Кинопоиск\n\n"
+        "🎬 *127 часов* (2010) ⭐ 7.6\n"
+        "📝 Альпинист застрял под камнем в каньоне Юты — реальная история выживания\n"
+        "🔗 Кинопоиск\n\n"
+        "🎬 *Дикая* (2014) ⭐ 7.1\n"
+        "📝 Женщина в одиночку проходит 1700 км по Тихоокеанскому горному маршруту\n"
+        "🔗 Кинопоиск\n\n"
+        "🎬 *Путь* (2010) ⭐ 7.6\n"
+        "📝 Отец проходит паломнический путь Камино де Сантьяго вместо погибшего сына\n"
+        "🔗 YouTube / Кинопоиск\n\n"
+        "🎬 *Пляж* (2000) ⭐ 6.7\n"
+        "📝 Американец ищет секретный идеальный пляж в Таиланде\n"
+        "🔗 Кинопоиск\n\n"
+        "🎬 *Тайная жизнь Уолтера Митти* (2013) ⭐ 7.3\n"
+        "📝 Офисный клерк впервые в жизни отправляется в реальное приключение\n"
+        "🔗 Disney+ / Кинопоиск\n\n"
+        "🎬 *Кочевница* (2020) ⭐ 7.3\n"
+        "📝 Женщина после потери дома путешествует по Америке в фургоне\n"
+        "🔗 Disney+ / Кинопоиск\n\n"
+        "🎬 *Миллионер из трущоб* (2008) ⭐ 8.0\n"
+        "📝 Парень из трущоб Мумбая попадает на шоу «Кто хочет стать миллионером»\n"
+        "🔗 Netflix / Кинопоиск\n\n"
+        "🎬 *Ешь, молись, люби* (2010) ⭐ 5.8\n"
+        "📝 После развода женщина едет в Италию, Индию и на Бали — искать себя\n"
+        "🔗 Netflix / Кинопоиск\n\n"
+        "🎬 *Под солнцем Тосканы* (2003) ⭐ 6.5\n"
+        "📝 Американка покупает виллу в Италии и начинает жизнь заново\n"
+        "🔗 Кинопоиск\n\n"
+        "🎬 *Неделимая земля* (2013) ⭐ 7.2\n"
+        "📝 Британка проходит 1700 км по пустыне Австралии с верблюдами\n"
+        "🔗 Кинопоиск\n\n"
+        "🎬 *Вавилон* (2006) ⭐ 7.5\n"
+        "📝 Четыре истории, связанные одним выстрелом — Марокко, Япония, Мексика\n"
+        "🔗 Кинопоиск\n\n"
+        "🎬 *Из Африки* (1985) ⭐ 7.1\n"
+        "📝 История любви датчанки на фоне кенийских просторов, 7 «Оскаров»\n"
+        "🔗 Кинопоиск"
+    ),
+    "🎒 Самостоятельные путешественники": (
+        "🎒 *Фильмы про самостоятельных путешественников — топ-10*\n\n"
+        "🎬 *В диких условиях* (2007) ⭐ 8.1\n"
+        "📝 Выпускник колледжа уходит в дикую природу Аляски в одиночку\n"
+        "🔗 Кинопоиск / iTunes\n\n"
+        "🎬 *Мотоциклетные дневники* (2004) ⭐ 7.8\n"
+        "📝 Два друга на разваливающемся мотоцикле — путешествие, изменившее историю\n"
+        "🔗 YouTube / Кинопоиск\n\n"
+        "🎬 *127 часов* (2010) ⭐ 7.6\n"
+        "📝 Один в каньоне, рука зажата камнем — реальная история Арона Ралстона\n"
+        "🔗 Кинопоиск\n\n"
+        "🎬 *Дикая* (2014) ⭐ 7.1\n"
+        "📝 Черил Стрэйд идёт 1700 км одна, чтобы найти себя после потерь\n"
+        "🔗 Кинопоиск\n\n"
+        "🎬 *Неделимая земля* (2013) ⭐ 7.2\n"
+        "📝 Робин Дэвидсон пересекает австралийскую пустыню с верблюдами и собакой\n"
+        "🔗 Кинопоиск\n\n"
+        "🎬 *Тайная жизнь Уолтера Митти* (2013) ⭐ 7.3\n"
+        "📝 Клерк из журнала LIFE впервые выходит за пределы офиса — в Гренландию и Гималаи\n"
+        "🔗 Disney+ / Кинопоиск\n\n"
+        "🎬 *Путь* (2010) ⭐ 7.6\n"
+        "📝 800 км пешком через Испанию — паломничество, меняющее взгляд на жизнь\n"
+        "🔗 YouTube / Кинопоиск\n\n"
+        "🎬 *Кочевница* (2020) ⭐ 7.3\n"
+        "📝 Современная кочевница живёт в фургоне и работает на сезонных работах по США\n"
+        "🔗 Disney+ / Кинопоиск\n\n"
+        "🎬 *Марсианин* (2015) ⭐ 8.0\n"
+        "📝 Самый одинокий путешественник в истории — выживание на Марсе в одиночку\n"
+        "🔗 Disney+ / Кинопоиск\n\n"
+        "🎬 *Ешь, молись, люби* (2010) ⭐ 5.8\n"
+        "📝 Год в одиночестве по трём странам в поисках баланса — вдохновляет миллионы\n"
+        "🔗 Netflix / Кинопоиск"
+    ),
+    "🌍 Документалки про мир": (
+        "🌍 *Документалки про мир — топ-10 на YouTube/стримингах*\n\n"
+        "🎬 *Наша планета* (2019) ⭐ 9.3\n"
+        "📝 Дэвид Аттенборо об исчезающей красоте нашей планеты\n"
+        "🔗 Netflix\n\n"
+        "🎬 *Планета Земля II* (2016) ⭐ 9.5\n"
+        "📝 BBC: острова, горы, джунгли, пустыни, города — лучшая природная съёмка в мире\n"
+        "🔗 YouTube / Кинопоиск\n\n"
+        "🎬 *Части неизвестного* с Бурденом (2013–2018) ⭐ 9.0\n"
+        "📝 Энтони Бурден едет в самые неожиданные места мира ради еды и культуры\n"
+        "🔗 YouTube\n\n"
+        "🎬 *Свободный одиночный восход* (2018) ⭐ 8.2\n"
+        "📝 Алекс Хоннольд лезет на Эль-Капитан без страховки — снято вживую\n"
+        "🔗 Disney+ / YouTube\n\n"
+        "🎬 *Спуск на Землю* с Заком Эфроном (2020)\n"
+        "📝 Актёр путешествует по миру в поисках устойчивого образа жизни\n"
+        "🔗 Netflix\n\n"
+        "🎬 *Дикая Россия* (2008)\n"
+        "📝 Шесть серий о нетронутой природе России — тайга, Камчатка, Байкал\n"
+        "🔗 YouTube\n\n"
+        "🎬 *Голубая планета II* (2017) ⭐ 9.3\n"
+        "📝 Глубины океанов, которые до этого никто не видел — BBC на максимуме\n"
+        "🔗 YouTube / Кинопоиск\n\n"
+        "🎬 *Куба и революция* (разные авторы)\n"
+        "📝 Подборка коротких документалок о жизни на Кубе сегодня\n"
+        "🔗 YouTube\n\n"
+        "🎬 *Вокруг света за 80 дней* с Майклом Пэйлином (1989)\n"
+        "📝 Монти Пайтон повторяет маршрут Филеаса Фогга — смешно и познавательно\n"
+        "🔗 YouTube\n\n"
+        "🎬 *Совершенный Планетарий* (2021)\n"
+        "📝 Дэвид Аттенборо о том, каким мог бы быть мир — призыв к действию\n"
+        "🔗 Netflix / YouTube"
+    ),
+}
+
+MOVIES_REGIONS_DATA = {
+    "🌏 Азия": (
+        "🌏 *Фильмы — Азия*\n\n"
+        "🎬 *Любовное настроение* (2000) ⭐ 8.1\n"
+        "📝 Гонконг 1960-х: два соседа подозревают измену супругов — визуальный шедевр\n"
+        "🔗 Кинопоиск\n\n"
+        "🎬 *Потерянный в переводе* (2003) ⭐ 7.7\n"
+        "📝 Токио глазами двух потерянных американцев — ночные огни, капсульный бар\n"
+        "🔗 Кинопоиск\n\n"
+        "🎬 *Пляж* (2000) ⭐ 6.7\n"
+        "📝 Таиланд, острова и поиск идеального места — с Ди Каприо\n"
+        "🔗 Кинопоиск\n\n"
+        "🎬 *Миллионер из трущоб* (2008) ⭐ 8.0\n"
+        "📝 Мумбай от трущоб до телестудии — Индия во всей своей яркости\n"
+        "🔗 Netflix / Кинопоиск\n\n"
+        "🎬 *Ешь, молись, люби* (2010) ⭐ 5.8\n"
+        "📝 Бали как место духовного поиска — рисовые поля, храмы, любовь\n"
+        "🔗 Netflix / Кинопоиск"
+    ),
+    "🇪🇺 Европа": (
+        "🇪🇺 *Фильмы — Европа*\n\n"
+        "🎬 *Амели* (2001) ⭐ 8.3\n"
+        "📝 Монмартр, кафе, рынки — самый парижский фильм всех времён\n"
+        "🔗 YouTube / Кинопоиск\n\n"
+        "🎬 *До рассвета* (1995) ⭐ 8.1\n"
+        "📝 Вена за одну ночь: трамваи, книжные магазины, мосты над Дунаем\n"
+        "🔗 Кинопоиск\n\n"
+        "🎬 *Римские каникулы* (1953) ⭐ 8.0\n"
+        "📝 Рим как герой фильма — Колизей, фонтан Треви, весёлый хаос улиц\n"
+        "🔗 YouTube / Кинопоиск\n\n"
+        "🎬 *Залечь на дно в Брюгге* (2008) ⭐ 7.9\n"
+        "📝 Средневековые каналы, колокольни и мрачный юмор в сердце Бельгии\n"
+        "🔗 Кинопоиск\n\n"
+        "🎬 *Полночь в Париже* (2011) ⭐ 7.7\n"
+        "📝 Ночной Париж как машина времени — Монпарнас, Сена, джаз\n"
+        "🔗 Кинопоиск / iTunes"
+    ),
+    "🌎 Америка": (
+        "🌎 *Фильмы — Америка*\n\n"
+        "🎬 *В диких условиях* (2007) ⭐ 8.1\n"
+        "📝 США от Атланты до Аляски — автостоп, фермы, горы и море\n"
+        "🔗 Кинопоиск / iTunes\n\n"
+        "🎬 *Мотоциклетные дневники* (2004) ⭐ 7.8\n"
+        "📝 От Аргентины до Венесуэлы — Латинская Америка на двух колёсах\n"
+        "🔗 YouTube / Кинопоиск\n\n"
+        "🎬 *Дикая* (2014) ⭐ 7.1\n"
+        "📝 Тихоокеанский маршрут PCT: пустыни, леса, Сьерра-Невада\n"
+        "🔗 Кинопоиск\n\n"
+        "🎬 *И твою маму тоже* (2001) ⭐ 7.6\n"
+        "📝 Дорожное путешествие двух парней и зрелой женщины по Мексике\n"
+        "🔗 Кинопоиск\n\n"
+        "🎬 *Кочевница* (2020) ⭐ 7.3\n"
+        "📝 Великие равнины, национальные парки, дороги Среднего Запада США\n"
+        "🔗 Disney+ / Кинопоиск"
+    ),
+    "🌍 Африка": (
+        "🌍 *Фильмы — Африка*\n\n"
+        "🎬 *Из Африки* (1985) ⭐ 7.1\n"
+        "📝 Кенийские саванны и рассветы над Килиманджаро — 7 «Оскаров»\n"
+        "🔗 Кинопоиск\n\n"
+        "🎬 *Английский пациент* (1996) ⭐ 7.4\n"
+        "📝 Пустыня Сахара, тунисские пещеры и тайна сгоревшего человека\n"
+        "🔗 Кинопоиск\n\n"
+        "🎬 *Кровавый алмаз* (2006) ⭐ 8.0\n"
+        "📝 Сьерра-Леоне, гражданская война и погоня за редким бриллиантом\n"
+        "🔗 Кинопоиск\n\n"
+        "🎬 *Последний король Шотландии* (2006) ⭐ 7.6\n"
+        "📝 Шотландский врач попадает в ближний круг диктатора Иди Амина в Уганде\n"
+        "🔗 Кинопоиск\n\n"
+        "🎬 *Преданный садовник* (2005) ⭐ 7.4\n"
+        "📝 Кения: дипломат расследует гибель жены и вскрывает фармацевтический заговор\n"
+        "🔗 Кинопоиск"
+    ),
+}
+
+MOVIES_MENU_BTNS = ["🌏 Фильмы про путешествия", "🎒 Самостоятельные путешественники",
+                    "🌍 Документалки про мир", "🗺 Фильмы по странам"]
+MOVIES_REGION_BTNS = list(MOVIES_REGIONS_DATA.keys())
+
+
+async def show_movies_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    keyboard = [[b] for b in MOVIES_MENU_BTNS] + [[HOME_BTN]]
+    await update.message.reply_text(
+        "🎬 *Фильмы для путешественников*\n\nВыбери категорию:",
+        parse_mode="Markdown",
+        reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True),
+    )
+    return MOVIES_MENU
+
+
+async def movies_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text
+    if text in MOVIES_LIST_DATA:
+        context.user_data["movies_back"] = "menu"
+        await update.message.reply_text(
+            MOVIES_LIST_DATA[text], parse_mode="Markdown",
+            reply_markup=ReplyKeyboardMarkup([["◀️ Назад"], [HOME_BTN]], resize_keyboard=True, one_time_keyboard=True),
+        )
+        return MOVIES_LIST
+    if text == "🗺 Фильмы по странам":
+        keyboard = [[b] for b in MOVIES_REGION_BTNS] + [["◀️ Назад"], [HOME_BTN]]
+        await update.message.reply_text(
+            "🗺 *Фильмы по странам*\n\nВыбери регион:",
+            parse_mode="Markdown",
+            reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True),
+        )
+        return MOVIES_REGION
+    return await show_movies_menu(update, context)
+
+
+async def movies_region_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text
+    if text == "◀️ Назад":
+        return await show_movies_menu(update, context)
+    if text in MOVIES_REGIONS_DATA:
+        context.user_data["movies_back"] = "region"
+        await update.message.reply_text(
+            MOVIES_REGIONS_DATA[text], parse_mode="Markdown",
+            reply_markup=ReplyKeyboardMarkup([["◀️ Назад"], [HOME_BTN]], resize_keyboard=True, one_time_keyboard=True),
+        )
+        return MOVIES_LIST
+    keyboard = [[b] for b in MOVIES_REGION_BTNS] + [["◀️ Назад"], [HOME_BTN]]
+    await update.message.reply_text(
+        "🗺 *Фильмы по странам*\n\nВыбери регион:",
+        parse_mode="Markdown",
+        reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True),
+    )
+    return MOVIES_REGION
+
+
+async def movies_list_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.text == "◀️ Назад":
+        if context.user_data.get("movies_back") == "region":
+            keyboard = [[b] for b in MOVIES_REGION_BTNS] + [["◀️ Назад"], [HOME_BTN]]
+            await update.message.reply_text(
+                "🗺 *Фильмы по странам*\n\nВыбери регион:",
+                parse_mode="Markdown",
+                reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True),
+            )
+            return MOVIES_REGION
+        return await show_movies_menu(update, context)
+    return await show_movies_menu(update, context)
+
+
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("До встречи! Напиши /start чтобы начать заново.", reply_markup=ReplyKeyboardRemove())
     return ConversationHandler.END
@@ -904,6 +1186,18 @@ def main():
             VISA_CATEGORY: [
                 home,
                 MessageHandler(filters.TEXT & ~filters.COMMAND, visa_category_handler),
+            ],
+            MOVIES_MENU: [
+                home,
+                MessageHandler(filters.TEXT & ~filters.COMMAND, movies_menu_handler),
+            ],
+            MOVIES_REGION: [
+                home,
+                MessageHandler(filters.TEXT & ~filters.COMMAND, movies_region_handler),
+            ],
+            MOVIES_LIST: [
+                home,
+                MessageHandler(filters.TEXT & ~filters.COMMAND, movies_list_handler),
             ],
         },
         fallbacks=[
