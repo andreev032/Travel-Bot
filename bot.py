@@ -13,9 +13,10 @@ from posts import CHANNEL_POSTS
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-TOKEN      = "8701321387:AAHwb_WkmrimPtInwDftv8jb0d03gTkogqA"
-CHANNEL_ID = -1002079377291
-MOSCOW_TZ  = ZoneInfo("Europe/Moscow")
+TOKEN            = "8701321387:AAHwb_WkmrimPtInwDftv8jb0d03gTkogqA"
+CHANNEL_ID       = -1002079377291   # основной канал — только автопосты по расписанию
+TEST_CHANNEL_ID  = -1003580791059   # тестовый канал — команда /testpost
+MOSCOW_TZ        = ZoneInfo("Europe/Moscow")
 
 # Счётчик текущего поста — перебираем по кругу
 _post_index = 0
@@ -1449,7 +1450,7 @@ def _scheduler_done_cb(task: asyncio.Task) -> None:
 
 
 async def testpost_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Detailed diagnostic: check channel access, admin rights, then send next post."""
+    """Diagnostic: check TEST channel access, admin rights, then send next post there."""
     global _post_index
 
     diag: list[str] = ["🔍 *Диагностика автопостинга*\n"]
@@ -1465,32 +1466,30 @@ async def testpost_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     except Exception as e:
         diag.append(f"🤖 get\\_me() ошибка: `{type(e).__name__}: {e}`")
 
-    # 3. Channel access
-    diag.append(f"📢 CHANNEL\\_ID: `{CHANNEL_ID}`")
-    channel_ok = False
+    # 3. Test channel access
+    diag.append(f"🧪 TEST\\_CHANNEL\\_ID: `{TEST_CHANNEL_ID}`")
     try:
-        chat = await context.bot.get_chat(CHANNEL_ID)
+        chat = await context.bot.get_chat(TEST_CHANNEL_ID)
         title = chat.title or "—"
         uname = f"@{chat.username}" if chat.username else "(нет username)"
-        diag.append(f"📢 Канал: *{title}* {uname}")
-        channel_ok = True
+        diag.append(f"🧪 Тестовый канал: *{title}* {uname}")
     except Exception as e:
-        diag.append(f"📢 get\\_chat() ошибка: `{type(e).__name__}: {e}`")
-        diag.append("⛔ Дальнейшая проверка невозможна — канал недоступен")
+        diag.append(f"🧪 get\\_chat() ошибка: `{type(e).__name__}: {e}`")
+        diag.append("⛔ Тестовый канал недоступен")
         await update.message.reply_text("\n".join(diag), parse_mode="Markdown")
         return
 
-    # 4. Admin rights
+    # 4. Admin rights in test channel
     try:
         me = await context.bot.get_me()
-        member = await context.bot.get_chat_member(CHANNEL_ID, me.id)
+        member = await context.bot.get_chat_member(TEST_CHANNEL_ID, me.id)
         status = member.status
         can_post = getattr(member, "can_post_messages", None)
-        diag.append(f"🔑 Статус в канале: `{status}`")
+        diag.append(f"🔑 Статус в тестовом канале: `{status}`")
         if can_post is not None:
             diag.append(f"🔑 can\\_post\\_messages: `{can_post}`")
         if status not in ("administrator", "creator"):
-            diag.append("⚠️ Бот не является администратором канала — отправка невозможна!")
+            diag.append("⚠️ Бот не является администратором тестового канала!")
     except Exception as e:
         diag.append(f"🔑 get\\_chat\\_member() ошибка: `{type(e).__name__}: {e}`")
 
@@ -1502,15 +1501,15 @@ async def testpost_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
     await update.message.reply_text("\n".join(diag), parse_mode="Markdown")
 
-    # 6. Attempt send
+    # 6. Attempt send → TEST_CHANNEL_ID only
     _post_index += 1
     label = f"/testpost #{_post_index}"
-    logger.info(f"{label}: попытка отправить пост {idx+1} в канал {CHANNEL_ID}")
+    logger.info(f"{label}: отправка поста {idx+1} в тестовый канал {TEST_CHANNEL_ID}")
 
     # Try Markdown
     try:
-        await context.bot.send_message(chat_id=CHANNEL_ID, text=post_text, parse_mode="Markdown")
-        await update.message.reply_text(f"✅ Пост #{_post_index} отправлен с Markdown")
+        await context.bot.send_message(chat_id=TEST_CHANNEL_ID, text=post_text, parse_mode="Markdown")
+        await update.message.reply_text(f"✅ Пост #{_post_index} отправлен в тестовый канал (Markdown)")
         return
     except Exception as e_md:
         logger.warning(f"{label} Markdown error: {type(e_md).__name__}: {e_md}")
@@ -1518,17 +1517,17 @@ async def testpost_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
     # Fallback: plain text
     try:
-        await context.bot.send_message(chat_id=CHANNEL_ID, text=post_text)
+        await context.bot.send_message(chat_id=TEST_CHANNEL_ID, text=post_text)
         await update.message.reply_text(
             f"⚠️ Markdown не сработал: {md_err}\n"
-            f"✅ Пост #{_post_index} отправлен без форматирования"
+            f"✅ Пост #{_post_index} отправлен в тестовый канал (plain)"
         )
     except Exception as e_plain:
         logger.error(f"{label} plain error: {type(e_plain).__name__}: {e_plain}")
         await update.message.reply_text(
             f"❌ Markdown: {md_err}\n"
             f"❌ Plain: `{type(e_plain).__name__}: {e_plain}`\n\n"
-            f"Убедись что бот — администратор канала с правом публикации сообщений.",
+            f"Убедись что бот — администратор тестового канала с правом публикации.",
             parse_mode="Markdown",
         )
 
