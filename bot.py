@@ -18,7 +18,7 @@ TOKEN            = "8701321387:AAHwb_WkmrimPtInwDftv8jb0d03gTkogqA"
 # CHANNEL_ID     = -1002079377291   # основной канал — вернуть после проверки
 CHANNEL_ID       = -1003580791059   # ВРЕМЕННО: тестовый канал для проверки расписания
 TEST_CHANNEL_ID  = -1003580791059   # тестовый канал — команда /testpost
-PEXELS_API_KEY   = os.environ.get("PEXELS_API_KEY", "")
+PEXELS_API_KEY   = os.environ.get("PEXELS_API_KEY")
 MOSCOW_TZ        = ZoneInfo("Europe/Moscow")
 
 # Счётчик текущего поста — перебираем по кругу
@@ -2296,7 +2296,7 @@ async def testpost_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     preview   = post_text[:120].replace("*", "").replace("_", "").replace("`", "")
     diag.append(f"\n📝 Пост #{idx + 1} (первые 120 симв.):\n{preview}…")
     diag.append(f"🔑 Keyword: `{keyword}`")
-    diag.append(f"🔑 Pexels API key: {'✅ задан' if PEXELS_API_KEY else '❌ не задан (PEXELS_API_KEY)'}")
+    diag.append(f"🔑 Pexels API key: {'✅ задан' if PEXELS_API_KEY else '❌ не задан — добавь переменную PEXELS_API_KEY на Railway'}")
 
     if PEXELS_API_KEY:
         pex = await _pexels_diagnostic(keyword)
