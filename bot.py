@@ -2153,14 +2153,13 @@ async def _send_post(bot, post: dict, label: str, chat_id: int | None = None) ->
     keyword = post.get("keyword", "travel")
     signed  = text + CHANNEL_SIGNATURE
 
-    # Try to fetch a Pexels photo; fallback to Unsplash if nothing found
-    photo_url = await _fetch_pexels_photo(keyword)
-    if not photo_url:
-        kw_enc    = urllib.parse.quote(keyword)
-        photo_url = f"https://source.unsplash.com/800x600/?{kw_enc}"
-        logger.info(f"{label}: Pexels не дал фото → Unsplash fallback: {photo_url}")
+    # Use static photo_url from post dict (Wikimedia Commons direct link)
+    photo_url = post.get("photo_url")
     if photo_url:
-        logger.info(f"{label}: фото для '{keyword}' → {photo_url}")
+        logger.info(f"{label}: статическое фото → {photo_url}")
+    else:
+        logger.info(f"{label}: photo_url не задан для '{keyword}', отправляем текст")
+    if photo_url:
         # Attempt 1: photo + Markdown caption
         try:
             await bot.send_photo(chat_id=target, photo=photo_url,
