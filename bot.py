@@ -2355,41 +2355,50 @@ async def drone_section_handler(update: Update, context: ContextTypes.DEFAULT_TY
 
 ## ── AUTOPOST ─────────────────────────────────────────────────────────────────
 
-CHANNEL_SIGNATURE = f"\n\n[Как местный]({CHANNEL_URL}) | [Подписаться]({CHANNEL_URL})"
+CHANNEL_SIGNATURE = f"\n\n🎒 [Как местный]({CHANNEL_URL}) | [Подписаться]({CHANNEL_URL})"
 
 
 def _fetch_pexels_photo_sync(keyword: str) -> str | None:
     """Blocking call to Pexels API — run in executor. Returns photo URL or None."""
-    if not PEXELS_API_KEY:
-        logger.warning("Pexels: PEXELS_API_KEY не задан — фото пропускается")
+    key_present = bool(PEXELS_API_KEY)
+    logger.info(f"Pexels: PEXELS_API_KEY {'задан (' + str(len(PEXELS_API_KEY)) + ' симв.)' if key_present else '❌ НЕ ЗАДАН'}")
+    if not key_present:
+        logger.warning("Pexels: пропускаем запрос — ключ отсутствует")
         return None
     try:
         query = urllib.parse.quote(keyword)
         url   = f"https://api.pexels.com/v1/search?query={query}&per_page=1&orientation=landscape"
-        logger.info(f"Pexels: keyword='{keyword}' | URL={url}")
+        logger.info(f"Pexels: keyword='{keyword}' | запрос → {url}")
         req = urllib.request.Request(url, headers={"Authorization": PEXELS_API_KEY})
         with urllib.request.urlopen(req, timeout=10) as resp:
-            raw  = resp.read()
+            status = resp.status
+            raw    = resp.read()
+        logger.info(f"Pexels: HTTP {status} | тело ответа (первые 300 симв.): {raw[:300]}")
         data   = json.loads(raw)
         total  = data.get("total_results", 0)
         photos = data.get("photos", [])
-        logger.info(f"Pexels: ответ total_results={total}, photos={len(photos)}")
+        logger.info(f"Pexels: total_results={total}, photos в ответе={len(photos)}")
         if photos:
             photo_url = photos[0]["src"]["large"]
-            logger.info(f"Pexels: выбрано фото → {photo_url}")
+            logger.info(f"Pexels: ✅ выбрано фото → {photo_url}")
             return photo_url
         # Нет результатов — пробуем /v1/curated как запасной вариант
-        logger.warning(f"Pexels: поиск '{keyword}' вернул 0 фото, пробуем /v1/curated")
+        logger.warning(f"Pexels: поиск '{keyword}' вернул 0 фото → пробуем /v1/curated")
         url2 = "https://api.pexels.com/v1/curated?per_page=1"
+        logger.info(f"Pexels /curated: запрос → {url2}")
         req2 = urllib.request.Request(url2, headers={"Authorization": PEXELS_API_KEY})
         with urllib.request.urlopen(req2, timeout=10) as resp2:
-            data2 = json.loads(resp2.read())
+            status2 = resp2.status
+            raw2    = resp2.read()
+        logger.info(f"Pexels /curated: HTTP {status2} | тело (первые 300 симв.): {raw2[:300]}")
+        data2   = json.loads(raw2)
         photos2 = data2.get("photos", [])
         logger.info(f"Pexels /curated: photos={len(photos2)}")
         if photos2:
             photo_url = photos2[0]["src"]["large"]
-            logger.info(f"Pexels /curated: выбрано фото → {photo_url}")
+            logger.info(f"Pexels /curated: ✅ выбрано фото → {photo_url}")
             return photo_url
+        logger.warning("Pexels /curated: тоже 0 фото — переходим к Unsplash fallback")
     except Exception as e:
         logger.warning(f"Pexels fetch error for '{keyword}': {type(e).__name__}: {e}")
     return None
@@ -2455,10 +2464,14 @@ async def _send_post(bot, post: dict, label: str, chat_id: int | None = None) ->
     keyword = post.get("keyword", "travel")
     signed  = text + CHANNEL_SIGNATURE
 
-    # Try to fetch a Pexels photo
+    # Try to fetch a Pexels photo; fallback to Unsplash if nothing found
     photo_url = await _fetch_pexels_photo(keyword)
+    if not photo_url:
+        kw_enc    = urllib.parse.quote(keyword)
+        photo_url = f"https://source.unsplash.com/800x600/?{kw_enc}"
+        logger.info(f"{label}: Pexels не дал фото → Unsplash fallback: {photo_url}")
     if photo_url:
-        logger.info(f"{label}: фото получено для '{keyword}'")
+        logger.info(f"{label}: фото для '{keyword}' → {photo_url}")
         # Attempt 1: photo + Markdown caption
         try:
             await bot.send_photo(chat_id=target, photo=photo_url,
@@ -2474,8 +2487,6 @@ async def _send_post(bot, post: dict, label: str, chat_id: int | None = None) ->
             return True
         except Exception as e2:
             logger.warning(f"{label}: photo+plain error — {type(e2).__name__}: {e2}")
-    else:
-        logger.info(f"{label}: фото не получено для '{keyword}', отправляем текст")
 
     # Attempt 3: text + Markdown (with signature)
     try:
