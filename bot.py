@@ -18,7 +18,6 @@ TOKEN            = "8701321387:AAHwb_WkmrimPtInwDftv8jb0d03gTkogqA"
 # CHANNEL_ID     = -1002079377291   # основной канал — вернуть после проверки
 CHANNEL_ID       = -1003580791059   # ВРЕМЕННО: тестовый канал для проверки расписания
 TEST_CHANNEL_ID  = -1003580791059   # тестовый канал — команда /testpost
-PEXELS_API_KEY   = os.environ.get("PEXELS_API_KEY")
 MOSCOW_TZ        = ZoneInfo("Europe/Moscow")
 
 # Счётчик текущего поста — перебираем по кругу
@@ -2047,92 +2046,6 @@ async def drone_region_handler(update: Update, context: ContextTypes.DEFAULT_TYP
 CHANNEL_SIGNATURE = f"\n\n🎒 [Как местный]({CHANNEL_URL}) | [Подписаться]({CHANNEL_URL})"
 
 
-def _fetch_pexels_photo_sync(keyword: str) -> str | None:
-    """Blocking call to Pexels API — run in executor. Returns photo URL or None."""
-    key_present = bool(PEXELS_API_KEY)
-    logger.info(f"Pexels: PEXELS_API_KEY {'задан (' + str(len(PEXELS_API_KEY)) + ' симв.)' if key_present else '❌ НЕ ЗАДАН'}")
-    if not key_present:
-        logger.warning("Pexels: пропускаем запрос — ключ отсутствует")
-        return None
-    try:
-        query = urllib.parse.quote(keyword)
-        url   = f"https://api.pexels.com/v1/search?query={query}&per_page=1&orientation=landscape"
-        logger.info(f"Pexels: keyword='{keyword}' | запрос → {url}")
-        req = urllib.request.Request(url, headers={"Authorization": PEXELS_API_KEY})
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            status = resp.status
-            raw    = resp.read()
-        logger.info(f"Pexels: HTTP {status} | тело ответа (первые 300 симв.): {raw[:300]}")
-        data   = json.loads(raw)
-        total  = data.get("total_results", 0)
-        photos = data.get("photos", [])
-        logger.info(f"Pexels: total_results={total}, photos в ответе={len(photos)}")
-        if photos:
-            photo_url = photos[0]["src"]["large"]
-            logger.info(f"Pexels: ✅ выбрано фото → {photo_url}")
-            return photo_url
-        # Нет результатов — пробуем /v1/curated как запасной вариант
-        logger.warning(f"Pexels: поиск '{keyword}' вернул 0 фото → пробуем /v1/curated")
-        url2 = "https://api.pexels.com/v1/curated?per_page=1"
-        logger.info(f"Pexels /curated: запрос → {url2}")
-        req2 = urllib.request.Request(url2, headers={"Authorization": PEXELS_API_KEY})
-        with urllib.request.urlopen(req2, timeout=10) as resp2:
-            status2 = resp2.status
-            raw2    = resp2.read()
-        logger.info(f"Pexels /curated: HTTP {status2} | тело (первые 300 симв.): {raw2[:300]}")
-        data2   = json.loads(raw2)
-        photos2 = data2.get("photos", [])
-        logger.info(f"Pexels /curated: photos={len(photos2)}")
-        if photos2:
-            photo_url = photos2[0]["src"]["large"]
-            logger.info(f"Pexels /curated: ✅ выбрано фото → {photo_url}")
-            return photo_url
-        logger.warning("Pexels /curated: тоже 0 фото — переходим к Unsplash fallback")
-    except Exception as e:
-        logger.warning(f"Pexels fetch error for '{keyword}': {type(e).__name__}: {e}")
-    return None
-
-
-async def _fetch_pexels_photo(keyword: str) -> str | None:
-    """Async wrapper around the blocking Pexels request."""
-    loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(None, _fetch_pexels_photo_sync, keyword)
-
-
-async def _pexels_diagnostic(keyword: str) -> dict:
-    """Run Pexels /v1/search and return a diagnostic dict for /testpost."""
-    def _run():
-        result: dict = {
-            "key_set": bool(PEXELS_API_KEY),
-            "url": None,
-            "http_status": None,
-            "total": None,
-            "photos_count": None,
-            "photo_url": None,
-            "error": None,
-        }
-        if not PEXELS_API_KEY:
-            return result
-        query = urllib.parse.quote(keyword)
-        url   = f"https://api.pexels.com/v1/search?query={query}&per_page=1&orientation=landscape"
-        result["url"] = url
-        try:
-            req = urllib.request.Request(url, headers={"Authorization": PEXELS_API_KEY})
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                result["http_status"] = resp.status
-                data = json.loads(resp.read())
-            result["total"]        = data.get("total_results", 0)
-            photos                 = data.get("photos", [])
-            result["photos_count"] = len(photos)
-            if photos:
-                result["photo_url"] = photos[0]["src"]["large"]
-        except Exception as e:
-            result["error"] = f"{type(e).__name__}: {e}"
-        return result
-    loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(None, _run)
-
-
 def _strip_hashtags(text: str) -> str:
     """Remove all #hashtag tokens from text (including leading whitespace)."""
     return re.sub(r'\s*#\w+', '', text).strip()
@@ -2288,29 +2201,19 @@ async def testpost_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     except Exception as e:
         diag.append(f"🔑 get\\_chat\\_member() ошибка: `{type(e).__name__}: {e}`")
 
-    # 5. Post preview + Pexels diagnostics
+    # 5. Post preview + photo_url info
     idx       = _post_index % len(CHANNEL_POSTS)
     post      = CHANNEL_POSTS[idx]
     post_text = post["text"]
     keyword   = post.get("keyword", "—")
+    photo_url = post.get("photo_url", "")
     preview   = post_text[:120].replace("*", "").replace("_", "").replace("`", "")
     diag.append(f"\n📝 Пост #{idx + 1} (первые 120 симв.):\n{preview}…")
     diag.append(f"🔑 Keyword: `{keyword}`")
-    diag.append(f"🔑 Pexels API key: {'✅ задан' if PEXELS_API_KEY else '❌ не задан — добавь переменную PEXELS_API_KEY на Railway'}")
-
-    if PEXELS_API_KEY:
-        pex = await _pexels_diagnostic(keyword)
-        diag.append(f"🌐 Pexels URL: `{pex['url']}`")
-        if pex["error"]:
-            diag.append(f"❌ Pexels ошибка: `{pex['error']}`")
-        else:
-            diag.append(
-                f"📊 HTTP {pex['http_status']} | total\\_results={pex['total']} | photos={pex['photos_count']}"
-            )
-            if pex["photo_url"]:
-                diag.append(f"🖼 Фото URL: `{pex['photo_url']}`")
-            else:
-                diag.append("⚠️ Поиск вернул 0 фото — при отправке попробуем /v1/curated")
+    if photo_url:
+        diag.append(f"🖼 Фото: ✅ задан\n`{photo_url}`")
+    else:
+        diag.append("🖼 Фото: ❌ photo\\_url не задан — пост отправится без фото")
 
     await update.message.reply_text("\n".join(diag), parse_mode="Markdown")
 
