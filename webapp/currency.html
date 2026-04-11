@@ -262,14 +262,23 @@ const CURRENCIES = [
   { code: 'BYN', flag: '🇧🇾', name: 'Белорусский рубль' },
 ];
 
-/* Frankfurter doesn't have RUB/some exotic — we'll handle gracefully */
 const TABLE_SHOW = ['USD','EUR','THB','AED','GEL','AMD','TRY','CNY','JPY'];
 
-let rates = {};       // rates from API (base = some currency)
-let ratesBase = '';   // which base was fetched
+/* ── API endpoint ──
+   Returns { date: "2025-04-10", usd: { rub: 92.5, eur: 0.93, ... } }
+   All rates are relative to USD (1 USD = X currency).
+   Fallback: https://latest.currency-api.pages.dev/v1/currencies/usd.json
+*/
+const API_PRIMARY  = 'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json';
+const API_FALLBACK = 'https://latest.currency-api.pages.dev/v1/currencies/usd.json';
+const CACHE_KEY    = 'currency_rates_cache_v2';
+const PREFS_KEY    = 'currency_prefs_v1';
+
+/* rates[code] = units of `code` per 1 USD */
+let rates    = {};
 let ratesDate = '';
-let fromCode = 'RUB';
-let toCode   = 'USD';
+let fromCode  = 'RUB';
+let toCode    = 'USD';
 
 /* ── Build selects ── */
 function buildSelects() {
@@ -283,50 +292,79 @@ function buildSelects() {
 }
 
 /* ── Fetch rates ── */
-async function fetchRates(base) {
+async function tryFetch(url) {
+  const resp = await fetch(url, { cache: 'no-cache' });
+  if (!resp.ok) throw new Error('HTTP ' + resp.status);
+  return resp.json();
+}
+
+async function fetchRates() {
   const badge = document.getElementById('rate-badge');
   badge.className = 'spin'; badge.textContent = 'загрузка';
+
+  let data = null;
+
+  /* 1. Try primary CDN */
   try {
-    /* frankfurter doesn't support RUB as base — use USD, convert client-side */
-    const fetchBase = (base === 'RUB' || !isSupported(base)) ? 'USD' : base;
-    const resp = await fetch(`https://api.frankfurter.app/latest?from=${fetchBase}`);
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    const data = await resp.json();
-    rates = data.rates;
-    rates[fetchBase] = 1;           // add self
-    ratesBase = fetchBase;
-    ratesDate = data.date;
-    badge.className = 'ok';
-    badge.textContent = ratesDate;
-    return true;
-  } catch(e) {
-    badge.className = 'err'; badge.textContent = 'нет данных';
-    return false;
+    data = await tryFetch(API_PRIMARY);
+  } catch (_) {
+    /* 2. Try fallback CDN */
+    try {
+      data = await tryFetch(API_FALLBACK);
+    } catch (_) { /* both failed */ }
   }
+
+  if (data && data.usd) {
+    /* Normalise keys to uppercase */
+    const raw = data.usd;
+    rates = {};
+    for (const k in raw) rates[k.toUpperCase()] = raw[k];
+    rates['USD'] = 1; // ensure base present
+    ratesDate = data.date || new Date().toISOString().slice(0, 10);
+
+    /* Cache in localStorage for offline fallback */
+    try {
+      localStorage.setItem(CACHE_KEY, JSON.stringify({ rates, date: ratesDate }));
+    } catch (_) {}
+
+    badge.className = 'ok'; badge.textContent = ratesDate;
+    return true;
+  }
+
+  /* 3. Load from localStorage cache */
+  try {
+    const cached = JSON.parse(localStorage.getItem(CACHE_KEY));
+    if (cached && cached.rates) {
+      rates = cached.rates;
+      ratesDate = cached.date || '—';
+      badge.className = 'ok';
+      badge.textContent = `${ratesDate} (кэш)`;
+      return true;
+    }
+  } catch (_) {}
+
+  badge.className = 'err'; badge.textContent = 'нет данных';
+  return false;
 }
 
-function isSupported(code) {
-  /* frankfurter supports major currencies; RUB and some exotic — not */
-  const unsupported = new Set(['RUB','KHR','LAK','KGS','UZS','CUP','HRK','BYN','MDL','ALL']);
-  return !unsupported.has(code);
-}
-
-/* ── Convert ── */
+/* ── Convert ──
+   All rates = units per 1 USD.
+   rate(from→to) = rates[to] / rates[from]
+   result = amount * rates[to] / rates[from]
+*/
 function getRate(from, to) {
-  /* All rates are relative to ratesBase.
-     rate(A→B) = rates[B] / rates[A]  (if both exist) */
-  const rA = rates[from];
-  const rB = rates[to];
-  if (!rA || !rB) return null;
-  return rB / rA;
+  const rFrom = rates[from];
+  const rTo   = rates[to];
+  if (!rFrom || !rTo) return null;
+  return rTo / rFrom;
 }
 
 function fmtResult(n) {
   if (n === null) return null;
-  if (n >= 1000000) return n.toLocaleString('ru-RU', {maximumFractionDigits: 0});
-  if (n >= 100)     return n.toLocaleString('ru-RU', {maximumFractionDigits: 2});
-  if (n >= 1)       return n.toLocaleString('ru-RU', {maximumFractionDigits: 4});
-  return n.toLocaleString('ru-RU', {maximumFractionDigits: 6});
+  if (n >= 1_000_000) return n.toLocaleString('ru-RU', { maximumFractionDigits: 0 });
+  if (n >= 1_000)     return n.toLocaleString('ru-RU', { maximumFractionDigits: 2 });
+  if (n >= 1)         return n.toLocaleString('ru-RU', { maximumFractionDigits: 4 });
+  return n.toLocaleString('ru-RU', { maximumFractionDigits: 6 });
 }
 
 async function convert() {
@@ -338,13 +376,13 @@ async function convert() {
   fromCode = document.getElementById('from-select').value;
   toCode   = document.getElementById('to-select').value;
 
-  /* need to (re)fetch if base changed or no rates yet */
-  if (!Object.keys(rates).length || !rates[fromCode] || !rates[toCode]) {
+  /* Fetch if we have no rates yet */
+  if (!Object.keys(rates).length) {
     resEl.className = 'loading'; resEl.textContent = '…';
-    const ok = await fetchRates(fromCode);
+    const ok = await fetchRates();
     if (!ok) {
       resEl.className = 'error'; resEl.textContent = 'Ошибка загрузки';
-      rateLn.textContent = 'Проверь подключение к интернету';
+      rateLn.textContent = 'Нет интернета и нет кэша курсов';
       return;
     }
   }
@@ -352,7 +390,7 @@ async function convert() {
   const rate = getRate(fromCode, toCode);
   if (rate === null) {
     resEl.className = 'error'; resEl.textContent = 'Нет данных';
-    rateLn.textContent = `Курс ${fromCode}→${toCode} недоступен`;
+    rateLn.textContent = `Курс ${fromCode}→${toCode} отсутствует в источнике`;
     return;
   }
 
@@ -360,7 +398,8 @@ async function convert() {
   const fromInfo = CURRENCIES.find(c => c.code === fromCode);
   const toInfo   = CURRENCIES.find(c => c.code === toCode);
 
-  resEl.className = ''; resEl.textContent = fmtResult(result) + ' ' + toCode;
+  resEl.className = '';
+  resEl.textContent = fmtResult(result) + ' ' + toCode;
   lblEl.textContent = `${amount.toLocaleString('ru-RU')} ${fromInfo.flag} ${fromCode} = … ${toInfo.flag} ${toCode}`;
   rateLn.textContent = `1 ${fromCode} = ${fmtResult(rate)} ${toCode}  ·  курс от ${ratesDate}`;
 
@@ -368,23 +407,20 @@ async function convert() {
   savePrefs();
 }
 
-/* ── Rate table (popular currencies vs fromCode) ── */
+/* ── Rate table ── */
 function updateRateTable() {
-  const baseLabel = document.getElementById('base-label');
-  baseLabel.textContent = fromCode;
-
-  const tbody = document.getElementById('rate-table-body');
+  document.getElementById('base-label').textContent = fromCode;
+  const tbody   = document.getElementById('rate-table-body');
   const targets = TABLE_SHOW.filter(c => c !== fromCode);
 
   tbody.innerHTML = targets.map(code => {
     const info = CURRENCIES.find(c => c.code === code);
-    const rate = getRate(fromCode, code);
-    const rateStr = rate !== null ? fmtResult(rate) : '—';
+    const r    = getRate(fromCode, code);
     return `<div class="rate-row" onclick="setTo('${code}')">
       <span class="rr-flag">${info ? info.flag : '🏳'}</span>
       <span class="rr-code">${code}</span>
       <span class="rr-name">${info ? info.name : code}</span>
-      <span class="rr-rate">${rateStr}</span>
+      <span class="rr-rate">${r !== null ? fmtResult(r) : '—'}</span>
     </div>`;
   }).join('');
 }
@@ -411,33 +447,35 @@ function setTo(code) {
 }
 
 /* ── Persistence ── */
-const PREFS_KEY = 'currency_prefs_v1';
 function savePrefs() {
-  localStorage.setItem(PREFS_KEY, JSON.stringify({
-    from: document.getElementById('from-select').value,
-    to:   document.getElementById('to-select').value,
-    amt:  document.getElementById('amount-input').value,
-  }));
+  try {
+    localStorage.setItem(PREFS_KEY, JSON.stringify({
+      from: document.getElementById('from-select').value,
+      to:   document.getElementById('to-select').value,
+      amt:  document.getElementById('amount-input').value,
+    }));
+  } catch (_) {}
 }
+
 function loadPrefs() {
   try {
     const p = JSON.parse(localStorage.getItem(PREFS_KEY));
     if (!p) return;
-    if (p.from) { fromCode = p.from; }
-    if (p.to)   { toCode   = p.to; }
-    if (p.amt)  { document.getElementById('amount-input').value = p.amt; }
-  } catch {}
+    if (p.from) fromCode = p.from;
+    if (p.to)   toCode   = p.to;
+    if (p.amt)  document.getElementById('amount-input').value = p.amt;
+  } catch (_) {}
 }
 
 /* ── Event listeners ── */
-document.getElementById('from-select').addEventListener('change', () => { rates = {}; convert(); });
+document.getElementById('from-select').addEventListener('change', convert);
 document.getElementById('to-select').addEventListener('change', convert);
 document.getElementById('amount-input').addEventListener('input', convert);
 
 /* ── Init ── */
 loadPrefs();
 buildSelects();
-fetchRates('USD').then(() => convert());
+fetchRates().then(() => convert());
 </script>
 </body>
 </html>
