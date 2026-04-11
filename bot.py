@@ -1378,17 +1378,22 @@ async def incompatible_topic_handler(update: Update, context: ContextTypes.DEFAU
 
 ## ── AUTOPOST ─────────────────────────────────────────────────────────────────
 
+CHANNEL_SIGNATURE = f"\n\n[Как местный]({CHANNEL_URL}) | [Подписаться]({CHANNEL_URL})"
+
+
 async def _send_post(bot, text: str, label: str) -> bool:
     """Try to send post with Markdown; fallback to plain text. Returns True on success."""
-    # Attempt 1: Markdown
+    signed = text + CHANNEL_SIGNATURE
+
+    # Attempt 1: Markdown (with signature)
     try:
-        await bot.send_message(chat_id=CHANNEL_ID, text=text, parse_mode="Markdown")
+        await bot.send_message(chat_id=CHANNEL_ID, text=signed, parse_mode="Markdown")
         logger.info(f"{label}: отправлен с Markdown ✓")
         return True
     except Exception as e_md:
         logger.warning(f"{label}: Markdown error — {type(e_md).__name__}: {e_md}")
 
-    # Attempt 2: plain text (strips formatting but at least delivers)
+    # Attempt 2: plain text without signature (strips links anyway)
     try:
         await bot.send_message(chat_id=CHANNEL_ID, text=text)
         logger.info(f"{label}: отправлен без Markdown (fallback) ✓")
