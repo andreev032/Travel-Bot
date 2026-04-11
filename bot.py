@@ -1378,23 +1378,80 @@ async def incompatible_topic_handler(update: Update, context: ContextTypes.DEFAU
 
 ## ── AUTOPOST ─────────────────────────────────────────────────────────────────
 
+def _extract_keyword(text: str) -> str:
+    """Return first meaningful word from post title (between first *…*) for Unsplash."""
+    import re
+    m = re.search(r'\*([^*]+)\*', text)
+    if m:
+        for word in m.group(1).split():
+            clean = re.sub(r'[^\w]', '', word, flags=re.UNICODE)
+            if len(clean) >= 3:
+                return clean
+    return 'travel'
+
+
+async def _resolve_unsplash(keyword: str) -> str:
+    """Resolve source.unsplash.com redirect → actual CDN image URL (blocking call in executor)."""
+    redirect_url = f"https://source.unsplash.com/800x600/?{urllib.parse.quote(keyword)}"
+    loop = asyncio.get_event_loop()
+
+    def _fetch() -> str:
+        req = urllib.request.Request(
+            redirect_url,
+            headers={"User-Agent": "TravelBot/1.0"},
+        )
+        with urllib.request.urlopen(req, timeout=8) as r:
+            return r.url  # final URL after redirect
+
+    try:
+        resolved = await loop.run_in_executor(None, _fetch)
+        logger.info(f"Unsplash '{keyword}' → {resolved[:70]}")
+        return resolved
+    except Exception as e:
+        logger.warning(f"Unsplash resolve failed for '{keyword}': {e} — using redirect URL")
+        return redirect_url
+
+
 async def _send_post(bot, text: str, label: str) -> bool:
-    """Try to send post with Markdown; fallback to plain text. Returns True on success."""
-    # Attempt 1: Markdown
+    """Send post with Unsplash photo as caption. 4-level fallback chain."""
+    keyword   = _extract_keyword(text)
+    photo_url = await _resolve_unsplash(keyword)
+    caption   = text[:1024]  # Telegram caption limit
+
+    # 1. send_photo + Markdown caption
+    try:
+        await bot.send_photo(
+            chat_id=CHANNEL_ID, photo=photo_url,
+            caption=caption, parse_mode="Markdown",
+        )
+        logger.info(f"{label}: фото+Markdown ✓  (keyword='{keyword}')")
+        return True
+    except Exception as e:
+        logger.warning(f"{label}: send_photo+Markdown — {type(e).__name__}: {e}")
+
+    # 2. send_photo, plain caption (handles Markdown parse errors)
+    try:
+        await bot.send_photo(chat_id=CHANNEL_ID, photo=photo_url, caption=caption)
+        logger.info(f"{label}: фото+plain ✓")
+        return True
+    except Exception as e:
+        logger.warning(f"{label}: send_photo+plain — {type(e).__name__}: {e}")
+
+    # 3. text only + Markdown (photo URL unreachable)
     try:
         await bot.send_message(chat_id=CHANNEL_ID, text=text, parse_mode="Markdown")
-        logger.info(f"{label}: отправлен с Markdown ✓")
+        logger.info(f"{label}: текст+Markdown ✓  (фото недоступно)")
         return True
-    except Exception as e_md:
-        logger.warning(f"{label}: Markdown error — {type(e_md).__name__}: {e_md}")
+    except Exception as e:
+        logger.warning(f"{label}: send_message+Markdown — {type(e).__name__}: {e}")
 
-    # Attempt 2: plain text (strips formatting but at least delivers)
+    # 4. plain text (last resort)
     try:
         await bot.send_message(chat_id=CHANNEL_ID, text=text)
-        logger.info(f"{label}: отправлен без Markdown (fallback) ✓")
+        logger.info(f"{label}: plain text ✓")
         return True
-    except Exception as e_plain:
-        logger.error(f"{label}: plain error — {type(e_plain).__name__}: {e_plain}")
+    except Exception as e:
+        logger.error(f"{label}: все попытки провалились — {type(e).__name__}: {e}")
         return False
 
 
@@ -1489,42 +1546,29 @@ async def testpost_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     except Exception as e:
         diag.append(f"🔑 get\\_chat\\_member() ошибка: `{type(e).__name__}: {e}`")
 
-    # 5. Post preview
+    # 5. Post preview + Unsplash keyword
     idx       = _post_index % len(CHANNEL_POSTS)
     post_text = CHANNEL_POSTS[idx]
     preview   = post_text[:120].replace("*", "").replace("_", "").replace("`", "")
+    keyword   = _extract_keyword(post_text)
     diag.append(f"\n📝 Пост #{idx + 1} (первые 120 симв.):\n{preview}…")
+    diag.append(f"🖼 Ключевое слово для фото: `{keyword}`")
+    diag.append(f"🔗 Unsplash URL: `https://source.unsplash.com/800x600/?{urllib.parse.quote(keyword)}`")
 
     await update.message.reply_text("\n".join(diag), parse_mode="Markdown")
 
-    # 6. Attempt send
+    # 6. Attempt send (photo + 4-level fallback)
     _post_index += 1
     label = f"/testpost #{_post_index}"
-    logger.info(f"{label}: попытка отправить пост {idx+1} в канал {CHANNEL_ID}")
+    logger.info(f"{label}: отправка поста {idx+1} с фото (keyword='{keyword}') в {CHANNEL_ID}")
 
-    # Try Markdown
-    try:
-        await context.bot.send_message(chat_id=CHANNEL_ID, text=post_text, parse_mode="Markdown")
-        await update.message.reply_text(f"✅ Пост #{_post_index} отправлен с Markdown")
-        return
-    except Exception as e_md:
-        logger.warning(f"{label} Markdown error: {type(e_md).__name__}: {e_md}")
-        md_err = f"`{type(e_md).__name__}: {e_md}`"
-
-    # Fallback: plain text
-    try:
-        await context.bot.send_message(chat_id=CHANNEL_ID, text=post_text)
+    ok = await _send_post(context.bot, post_text, label)
+    if ok:
+        await update.message.reply_text(f"✅ Пост #{_post_index} доставлен — смотри лог для деталей")
+    else:
         await update.message.reply_text(
-            f"⚠️ Markdown не сработал: {md_err}\n"
-            f"✅ Пост #{_post_index} отправлен без форматирования"
-        )
-    except Exception as e_plain:
-        logger.error(f"{label} plain error: {type(e_plain).__name__}: {e_plain}")
-        await update.message.reply_text(
-            f"❌ Markdown: {md_err}\n"
-            f"❌ Plain: `{type(e_plain).__name__}: {e_plain}`\n\n"
+            f"❌ Пост #{_post_index} не отправлен ни одним способом.\n"
             f"Убедись что бот — администратор канала с правом публикации сообщений.",
-            parse_mode="Markdown",
         )
 
 
