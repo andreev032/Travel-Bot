@@ -1378,47 +1378,170 @@ async def incompatible_topic_handler(update: Update, context: ContextTypes.DEFAU
 
 ## ── AUTOPOST ─────────────────────────────────────────────────────────────────
 
+async def _send_post(bot, text: str, label: str) -> bool:
+    """Try to send post with Markdown; fallback to plain text. Returns True on success."""
+    # Attempt 1: Markdown
+    try:
+        await bot.send_message(chat_id=CHANNEL_ID, text=text, parse_mode="Markdown")
+        logger.info(f"{label}: отправлен с Markdown ✓")
+        return True
+    except Exception as e_md:
+        logger.warning(f"{label}: Markdown error — {type(e_md).__name__}: {e_md}")
+
+    # Attempt 2: plain text (strips formatting but at least delivers)
+    try:
+        await bot.send_message(chat_id=CHANNEL_ID, text=text)
+        logger.info(f"{label}: отправлен без Markdown (fallback) ✓")
+        return True
+    except Exception as e_plain:
+        logger.error(f"{label}: plain error — {type(e_plain).__name__}: {e_plain}")
+        return False
+
+
 async def scheduler(bot) -> None:
     """Infinite loop: sends next post at 10:00 and 16:00 MSK."""
     global _post_index
     sent_keys: set[str] = set()
-    logger.info("Планировщик автопостинга запущен (10:00 и 16:00 МСК)")
+    tick = 0
+    logger.info(f"Планировщик запущен (10:00 и 16:00 МСК) | CHANNEL_ID={CHANNEL_ID} | постов={len(CHANNEL_POSTS)}")
     while True:
-        now = datetime.now(MOSCOW_TZ)
-        hhmm = now.strftime("%H:%M")
-        day  = now.strftime("%Y-%m-%d")
-        key  = f"{day}-{hhmm}"
-        if hhmm in ("10:00", "16:00") and key not in sent_keys:
-            sent_keys.add(key)
-            text = CHANNEL_POSTS[_post_index % len(CHANNEL_POSTS)]
-            _post_index += 1
-            logger.info(f"Автопост #{_post_index}: отправка в канал")
-            try:
-                await bot.send_message(chat_id=CHANNEL_ID, text=text, parse_mode="Markdown")
-                logger.info("Автопост отправлен успешно")
-            except Exception as e:
-                logger.error(f"Ошибка автопоста: {e}")
+        try:
+            now  = datetime.now(MOSCOW_TZ)
+            hhmm = now.strftime("%H:%M")
+            day  = now.strftime("%Y-%m-%d")
+            key  = f"{day}-{hhmm}"
+
+            # Heartbeat every ~2 hours to confirm task is alive
+            if tick % 240 == 0:
+                logger.info(f"Scheduler heartbeat: {now.strftime('%Y-%m-%d %H:%M')} МСК | индекс={_post_index}")
+            tick += 1
+
+            if hhmm in ("10:00", "16:00") and key not in sent_keys:
+                sent_keys.add(key)
+                idx  = _post_index % len(CHANNEL_POSTS)
+                text = CHANNEL_POSTS[idx]
+                _post_index += 1
+                logger.info(f"Автопост #{_post_index} (пост {idx+1}/{len(CHANNEL_POSTS)}): отправка в {CHANNEL_ID}")
+                await _send_post(bot, text, f"Автопост #{_post_index}")
+
+        except asyncio.CancelledError:
+            logger.info("Планировщик остановлен (CancelledError)")
+            raise
+        except Exception as e:
+            logger.error(f"Необработанная ошибка в планировщике: {type(e).__name__}: {e}")
+
         await asyncio.sleep(30)
 
 
+def _scheduler_done_cb(task: asyncio.Task) -> None:
+    """Called when scheduler task ends — logs any crash so it's not silent."""
+    if task.cancelled():
+        logger.info("Задача планировщика отменена (штатно при выключении бота)")
+    elif task.exception() is not None:
+        logger.error(f"Задача планировщика завершилась с ошибкой: {task.exception()!r}")
+    else:
+        logger.warning("Задача планировщика завершилась без ошибки (неожиданно)")
+
+
 async def testpost_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Send the next post to the channel immediately (manual test)."""
+    """Detailed diagnostic: check channel access, admin rights, then send next post."""
     global _post_index
-    text = CHANNEL_POSTS[_post_index % len(CHANNEL_POSTS)]
-    _post_index += 1
+
+    diag: list[str] = ["🔍 *Диагностика автопостинга*\n"]
+
+    # 1. posts.py import check
+    diag.append(f"📦 `posts.py`: {len(CHANNEL_POSTS)} постов загружено")
+    diag.append(f"📍 Индекс: {_post_index} → следующий пост #{_post_index % len(CHANNEL_POSTS) + 1}")
+
+    # 2. Bot identity
     try:
-        await context.bot.send_message(chat_id=CHANNEL_ID, text=text, parse_mode="Markdown")
-        await update.message.reply_text(
-            f"✅ Тестовый пост #{_post_index} отправлен в канал.\n"
-            f"Следующий: #{(_post_index % len(CHANNEL_POSTS)) + 1} из {len(CHANNEL_POSTS)}"
-        )
+        me = await context.bot.get_me()
+        diag.append(f"🤖 Бот: @{me.username} (id=`{me.id}`)")
     except Exception as e:
-        await update.message.reply_text(f"❌ Ошибка: {e}")
+        diag.append(f"🤖 get\\_me() ошибка: `{type(e).__name__}: {e}`")
+
+    # 3. Channel access
+    diag.append(f"📢 CHANNEL\\_ID: `{CHANNEL_ID}`")
+    channel_ok = False
+    try:
+        chat = await context.bot.get_chat(CHANNEL_ID)
+        title = chat.title or "—"
+        uname = f"@{chat.username}" if chat.username else "(нет username)"
+        diag.append(f"📢 Канал: *{title}* {uname}")
+        channel_ok = True
+    except Exception as e:
+        diag.append(f"📢 get\\_chat() ошибка: `{type(e).__name__}: {e}`")
+        diag.append("⛔ Дальнейшая проверка невозможна — канал недоступен")
+        await update.message.reply_text("\n".join(diag), parse_mode="Markdown")
+        return
+
+    # 4. Admin rights
+    try:
+        me = await context.bot.get_me()
+        member = await context.bot.get_chat_member(CHANNEL_ID, me.id)
+        status = member.status
+        can_post = getattr(member, "can_post_messages", None)
+        diag.append(f"🔑 Статус в канале: `{status}`")
+        if can_post is not None:
+            diag.append(f"🔑 can\\_post\\_messages: `{can_post}`")
+        if status not in ("administrator", "creator"):
+            diag.append("⚠️ Бот не является администратором канала — отправка невозможна!")
+    except Exception as e:
+        diag.append(f"🔑 get\\_chat\\_member() ошибка: `{type(e).__name__}: {e}`")
+
+    # 5. Post preview
+    idx       = _post_index % len(CHANNEL_POSTS)
+    post_text = CHANNEL_POSTS[idx]
+    preview   = post_text[:120].replace("*", "").replace("_", "").replace("`", "")
+    diag.append(f"\n📝 Пост #{idx + 1} (первые 120 симв.):\n{preview}…")
+
+    await update.message.reply_text("\n".join(diag), parse_mode="Markdown")
+
+    # 6. Attempt send
+    _post_index += 1
+    label = f"/testpost #{_post_index}"
+    logger.info(f"{label}: попытка отправить пост {idx+1} в канал {CHANNEL_ID}")
+
+    # Try Markdown
+    try:
+        await context.bot.send_message(chat_id=CHANNEL_ID, text=post_text, parse_mode="Markdown")
+        await update.message.reply_text(f"✅ Пост #{_post_index} отправлен с Markdown")
+        return
+    except Exception as e_md:
+        logger.warning(f"{label} Markdown error: {type(e_md).__name__}: {e_md}")
+        md_err = f"`{type(e_md).__name__}: {e_md}`"
+
+    # Fallback: plain text
+    try:
+        await context.bot.send_message(chat_id=CHANNEL_ID, text=post_text)
+        await update.message.reply_text(
+            f"⚠️ Markdown не сработал: {md_err}\n"
+            f"✅ Пост #{_post_index} отправлен без форматирования"
+        )
+    except Exception as e_plain:
+        logger.error(f"{label} plain error: {type(e_plain).__name__}: {e_plain}")
+        await update.message.reply_text(
+            f"❌ Markdown: {md_err}\n"
+            f"❌ Plain: `{type(e_plain).__name__}: {e_plain}`\n\n"
+            f"Убедись что бот — администратор канала с правом публикации сообщений.",
+            parse_mode="Markdown",
+        )
 
 
 async def post_init(app: Application) -> None:
-    """Called by PTB after init — launch scheduler as a background task."""
-    asyncio.create_task(scheduler(app.bot))
+    """Called by PTB after initialize() — verify channel access, then launch scheduler."""
+    # Startup channel check
+    try:
+        me   = await app.bot.get_me()
+        chat = await app.bot.get_chat(CHANNEL_ID)
+        logger.info(f"Бот: @{me.username} | Канал: {chat.title} (id={CHANNEL_ID}) — доступен ✓")
+    except Exception as e:
+        logger.error(f"Стартовая проверка канала: {type(e).__name__}: {e}")
+
+    # Launch scheduler task with done-callback so crashes are visible
+    task = asyncio.create_task(scheduler(app.bot))
+    task.add_done_callback(_scheduler_done_cb)
+    logger.info("Задача планировщика создана и запущена")
 
 
 def main():
