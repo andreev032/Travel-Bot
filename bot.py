@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import logging
 import asyncio
@@ -17,6 +18,7 @@ TOKEN            = "8701321387:AAHwb_WkmrimPtInwDftv8jb0d03gTkogqA"
 # CHANNEL_ID     = -1002079377291   # основной канал — вернуть после проверки
 CHANNEL_ID       = -1003580791059   # ВРЕМЕННО: тестовый канал для проверки расписания
 TEST_CHANNEL_ID  = -1003580791059   # тестовый канал — команда /testpost
+PEXELS_API_KEY   = os.environ.get("PEXELS_API_KEY", "")
 MOSCOW_TZ        = ZoneInfo("Europe/Moscow")
 
 # Счётчик текущего поста — перебираем по кругу
@@ -1383,25 +1385,142 @@ async def incompatible_topic_handler(update: Update, context: ContextTypes.DEFAU
 CHANNEL_SIGNATURE = f"\n\n[Как местный]({CHANNEL_URL}) | [Подписаться]({CHANNEL_URL})"
 
 
-async def _send_post(bot, text: str, label: str) -> bool:
-    """Try to send post with Markdown; fallback to plain text. Returns True on success."""
-    signed = text + CHANNEL_SIGNATURE
-
-    # Attempt 1: Markdown (with signature)
+def _fetch_pexels_photo_sync(keyword: str) -> str | None:
+    """Blocking call to Pexels API — run in executor. Returns photo URL or None."""
+    if not PEXELS_API_KEY:
+        logger.warning("Pexels: PEXELS_API_KEY не задан — фото пропускается")
+        return None
     try:
-        await bot.send_message(chat_id=CHANNEL_ID, text=signed, parse_mode="Markdown")
-        logger.info(f"{label}: отправлен с Markdown ✓")
-        return True
-    except Exception as e_md:
-        logger.warning(f"{label}: Markdown error — {type(e_md).__name__}: {e_md}")
+        query = urllib.parse.quote(keyword)
+        url   = f"https://api.pexels.com/v1/search?query={query}&per_page=1&orientation=landscape"
+        logger.info(f"Pexels: keyword='{keyword}' | URL={url}")
+        req = urllib.request.Request(url, headers={"Authorization": PEXELS_API_KEY})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            raw  = resp.read()
+        data   = json.loads(raw)
+        total  = data.get("total_results", 0)
+        photos = data.get("photos", [])
+        logger.info(f"Pexels: ответ total_results={total}, photos={len(photos)}")
+        if photos:
+            photo_url = photos[0]["src"]["large"]
+            logger.info(f"Pexels: выбрано фото → {photo_url}")
+            return photo_url
+        # Нет результатов — пробуем /v1/curated как запасной вариант
+        logger.warning(f"Pexels: поиск '{keyword}' вернул 0 фото, пробуем /v1/curated")
+        url2 = "https://api.pexels.com/v1/curated?per_page=1"
+        req2 = urllib.request.Request(url2, headers={"Authorization": PEXELS_API_KEY})
+        with urllib.request.urlopen(req2, timeout=10) as resp2:
+            data2 = json.loads(resp2.read())
+        photos2 = data2.get("photos", [])
+        logger.info(f"Pexels /curated: photos={len(photos2)}")
+        if photos2:
+            photo_url = photos2[0]["src"]["large"]
+            logger.info(f"Pexels /curated: выбрано фото → {photo_url}")
+            return photo_url
+    except Exception as e:
+        logger.warning(f"Pexels fetch error for '{keyword}': {type(e).__name__}: {e}")
+    return None
 
-    # Attempt 2: plain text without signature (strips links anyway)
+
+async def _fetch_pexels_photo(keyword: str) -> str | None:
+    """Async wrapper around the blocking Pexels request."""
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, _fetch_pexels_photo_sync, keyword)
+
+
+async def _pexels_diagnostic(keyword: str) -> dict:
+    """Run Pexels /v1/search and return a diagnostic dict for /testpost."""
+    def _run():
+        result: dict = {
+            "key_set": bool(PEXELS_API_KEY),
+            "url": None,
+            "http_status": None,
+            "total": None,
+            "photos_count": None,
+            "photo_url": None,
+            "error": None,
+        }
+        if not PEXELS_API_KEY:
+            return result
+        query = urllib.parse.quote(keyword)
+        url   = f"https://api.pexels.com/v1/search?query={query}&per_page=1&orientation=landscape"
+        result["url"] = url
+        try:
+            req = urllib.request.Request(url, headers={"Authorization": PEXELS_API_KEY})
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                result["http_status"] = resp.status
+                data = json.loads(resp.read())
+            result["total"]        = data.get("total_results", 0)
+            photos                 = data.get("photos", [])
+            result["photos_count"] = len(photos)
+            if photos:
+                result["photo_url"] = photos[0]["src"]["large"]
+        except Exception as e:
+            result["error"] = f"{type(e).__name__}: {e}"
+        return result
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, _run)
+
+
+def _strip_hashtags(text: str) -> str:
+    """Remove all #hashtag tokens from text (including leading whitespace)."""
+    return re.sub(r'\s*#\w+', '', text).strip()
+
+
+async def _send_post(bot, post: dict, label: str, chat_id: int | None = None) -> bool:
+    """Send a post dict {"keyword": ..., "text": ...} with photo + signature.
+
+    Fallback chain:
+      1. send_photo + Markdown caption (with signature)
+      2. send_photo + plain caption
+      3. send_message + Markdown (with signature)
+      4. send_message + plain text
+    Returns True on success.
+    """
+    target  = chat_id if chat_id is not None else CHANNEL_ID
+    text    = _strip_hashtags(post["text"])
+    keyword = post.get("keyword", "travel")
+    signed  = text + CHANNEL_SIGNATURE
+
+    # Try to fetch a Pexels photo
+    photo_url = await _fetch_pexels_photo(keyword)
+    if photo_url:
+        logger.info(f"{label}: фото получено для '{keyword}'")
+        # Attempt 1: photo + Markdown caption
+        try:
+            await bot.send_photo(chat_id=target, photo=photo_url,
+                                 caption=signed, parse_mode="Markdown")
+            logger.info(f"{label}: отправлен с фото + Markdown ✓")
+            return True
+        except Exception as e1:
+            logger.warning(f"{label}: photo+Markdown error — {type(e1).__name__}: {e1}")
+        # Attempt 2: photo + plain caption
+        try:
+            await bot.send_photo(chat_id=target, photo=photo_url, caption=text)
+            logger.info(f"{label}: отправлен с фото + plain ✓")
+            return True
+        except Exception as e2:
+            logger.warning(f"{label}: photo+plain error — {type(e2).__name__}: {e2}")
+    else:
+        logger.info(f"{label}: фото не получено для '{keyword}', отправляем текст")
+
+    # Attempt 3: text + Markdown (with signature)
     try:
-        await bot.send_message(chat_id=CHANNEL_ID, text=text)
-        logger.info(f"{label}: отправлен без Markdown (fallback) ✓")
+        await bot.send_message(chat_id=target, text=signed, parse_mode="Markdown",
+                               disable_web_page_preview=True)
+        logger.info(f"{label}: отправлен текст + Markdown ✓")
         return True
-    except Exception as e_plain:
-        logger.error(f"{label}: plain error — {type(e_plain).__name__}: {e_plain}")
+    except Exception as e3:
+        logger.warning(f"{label}: text+Markdown error — {type(e3).__name__}: {e3}")
+
+    # Attempt 4: plain text
+    try:
+        await bot.send_message(chat_id=target, text=text,
+                               disable_web_page_preview=True)
+        logger.info(f"{label}: отправлен plain text ✓")
+        return True
+    except Exception as e4:
+        logger.error(f"{label}: plain error — {type(e4).__name__}: {e4}")
         return False
 
 
@@ -1426,10 +1545,13 @@ async def scheduler(bot) -> None:
             if hhmm in ("10:00", "16:00") and key not in sent_keys:
                 sent_keys.add(key)
                 idx  = _post_index % len(CHANNEL_POSTS)
-                text = CHANNEL_POSTS[idx]
+                post = CHANNEL_POSTS[idx]
                 _post_index += 1
-                logger.info(f"Автопост #{_post_index} (пост {idx+1}/{len(CHANNEL_POSTS)}): отправка в {CHANNEL_ID}")
-                await _send_post(bot, text, f"Автопост #{_post_index}")
+                logger.info(
+                    f"Автопост #{_post_index} (пост {idx+1}/{len(CHANNEL_POSTS)})"
+                    f" keyword='{post.get('keyword')}': отправка в {CHANNEL_ID}"
+                )
+                await _send_post(bot, post, f"Автопост #{_post_index}")
 
         except asyncio.CancelledError:
             logger.info("Планировщик остановлен (CancelledError)")
@@ -1494,40 +1616,43 @@ async def testpost_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     except Exception as e:
         diag.append(f"🔑 get\\_chat\\_member() ошибка: `{type(e).__name__}: {e}`")
 
-    # 5. Post preview
+    # 5. Post preview + Pexels diagnostics
     idx       = _post_index % len(CHANNEL_POSTS)
-    post_text = CHANNEL_POSTS[idx]
+    post      = CHANNEL_POSTS[idx]
+    post_text = post["text"]
+    keyword   = post.get("keyword", "—")
     preview   = post_text[:120].replace("*", "").replace("_", "").replace("`", "")
     diag.append(f"\n📝 Пост #{idx + 1} (первые 120 симв.):\n{preview}…")
+    diag.append(f"🔑 Keyword: `{keyword}`")
+    diag.append(f"🔑 Pexels API key: {'✅ задан' if PEXELS_API_KEY else '❌ не задан (PEXELS_API_KEY)'}")
+
+    if PEXELS_API_KEY:
+        pex = await _pexels_diagnostic(keyword)
+        diag.append(f"🌐 Pexels URL: `{pex['url']}`")
+        if pex["error"]:
+            diag.append(f"❌ Pexels ошибка: `{pex['error']}`")
+        else:
+            diag.append(
+                f"📊 HTTP {pex['http_status']} | total\\_results={pex['total']} | photos={pex['photos_count']}"
+            )
+            if pex["photo_url"]:
+                diag.append(f"🖼 Фото URL: `{pex['photo_url']}`")
+            else:
+                diag.append("⚠️ Поиск вернул 0 фото — при отправке попробуем /v1/curated")
 
     await update.message.reply_text("\n".join(diag), parse_mode="Markdown")
 
     # 6. Attempt send → TEST_CHANNEL_ID only
     _post_index += 1
     label = f"/testpost #{_post_index}"
-    logger.info(f"{label}: отправка поста {idx+1} в тестовый канал {TEST_CHANNEL_ID}")
+    logger.info(f"{label}: отправка поста {idx+1} (keyword='{keyword}') в тестовый канал {TEST_CHANNEL_ID}")
 
-    # Try Markdown
-    try:
-        await context.bot.send_message(chat_id=TEST_CHANNEL_ID, text=post_text, parse_mode="Markdown")
-        await update.message.reply_text(f"✅ Пост #{_post_index} отправлен в тестовый канал (Markdown)")
-        return
-    except Exception as e_md:
-        logger.warning(f"{label} Markdown error: {type(e_md).__name__}: {e_md}")
-        md_err = f"`{type(e_md).__name__}: {e_md}`"
-
-    # Fallback: plain text
-    try:
-        await context.bot.send_message(chat_id=TEST_CHANNEL_ID, text=post_text)
+    success = await _send_post(context.bot, post, label, chat_id=TEST_CHANNEL_ID)
+    if success:
+        await update.message.reply_text(f"✅ Пост #{_post_index} отправлен в тестовый канал")
+    else:
         await update.message.reply_text(
-            f"⚠️ Markdown не сработал: {md_err}\n"
-            f"✅ Пост #{_post_index} отправлен в тестовый канал (plain)"
-        )
-    except Exception as e_plain:
-        logger.error(f"{label} plain error: {type(e_plain).__name__}: {e_plain}")
-        await update.message.reply_text(
-            f"❌ Markdown: {md_err}\n"
-            f"❌ Plain: `{type(e_plain).__name__}: {e_plain}`\n\n"
+            f"❌ Пост #{_post_index} не отправлен — проверь логи бота.\n"
             f"Убедись что бот — администратор тестового канала с правом публикации.",
             parse_mode="Markdown",
         )
