@@ -14,7 +14,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 TOKEN            = "8701321387:AAHwb_WkmrimPtInwDftv8jb0d03gTkogqA"
-CHANNEL_ID       = -1002079377291   # основной канал — только автопосты по расписанию
+# CHANNEL_ID     = -1002079377291   # основной канал — вернуть после проверки
+CHANNEL_ID       = -1003580791059   # ВРЕМЕННО: тестовый канал для проверки расписания
 TEST_CHANNEL_ID  = -1003580791059   # тестовый канал — команда /testpost
 MOSCOW_TZ        = ZoneInfo("Europe/Moscow")
 
