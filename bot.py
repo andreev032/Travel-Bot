@@ -5,6 +5,7 @@ import logging
 import asyncio
 import urllib.request
 import urllib.parse
+import requests
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton, WebAppInfo, InlineKeyboardMarkup, InlineKeyboardButton
@@ -2336,12 +2337,25 @@ def _strip_hashtags(text: str) -> str:
     return re.sub(r'\s*#\w+', '', text).strip()
 
 
+def _download_photo_sync(photo_url: str) -> bytes | None:
+    """Blocking download of photo bytes via requests. Run in executor."""
+    try:
+        resp = requests.get(photo_url, timeout=10)
+        logger.info(f"download: HTTP {resp.status_code} | {len(resp.content)} байт | URL={photo_url}")
+        if resp.status_code == 200:
+            return resp.content
+        logger.warning(f"download: статус {resp.status_code} — фото не получено")
+    except Exception as e:
+        logger.warning(f"download: ошибка — {type(e).__name__}: {e}")
+    return None
+
+
 async def _send_post(bot, post: dict, label: str, chat_id: int | None = None) -> tuple[bool, str]:
     """Send a post dict {"keyword": ..., "text": ...} with photo + signature.
 
     Fallback chain:
-      1. send_photo + Markdown caption (with signature)
-      2. send_photo + plain caption
+      1. download photo bytes → send_photo(bytes) + Markdown caption
+      2. download photo bytes → send_photo(bytes) + plain caption
       3. send_message + Markdown (with signature)
       4. send_message + plain text
     Returns (success: bool, detail: str) — detail describes what was sent or the error.
@@ -2351,7 +2365,6 @@ async def _send_post(bot, post: dict, label: str, chat_id: int | None = None) ->
     keyword = post.get("keyword", "travel")
     signed  = text + CHANNEL_SIGNATURE
 
-    # Use static photo_url from post dict (Wikimedia Commons direct link)
     photo_url = post.get("photo_url")
     if photo_url:
         logger.info(f"{label}: photo_url → {photo_url}")
@@ -2359,30 +2372,41 @@ async def _send_post(bot, post: dict, label: str, chat_id: int | None = None) ->
         logger.info(f"{label}: photo_url не задан для '{keyword}' — только текст")
 
     errors: list[str] = []
+    photo_bytes: bytes | None = None
 
     if photo_url:
-        # Attempt 1: photo + Markdown caption
-        logger.info(f"{label}: попытка 1 — send_photo + Markdown | URL={photo_url}")
-        try:
-            await bot.send_photo(chat_id=target, photo=photo_url,
-                                 caption=signed, parse_mode="Markdown")
-            logger.info(f"{label}: ✅ отправлен фото + Markdown")
-            return True, "✅ фото + Markdown caption"
-        except Exception as e1:
-            err = f"{type(e1).__name__}: {e1}"
-            logger.warning(f"{label}: ❌ попытка 1 (фото+Markdown) — {err}")
-            errors.append(f"фото+Markdown: {err}")
+        # Download photo as bytes in executor (blocking I/O)
+        logger.info(f"{label}: скачиваем фото через requests...")
+        loop = asyncio.get_event_loop()
+        photo_bytes = await loop.run_in_executor(None, _download_photo_sync, photo_url)
 
-        # Attempt 2: photo + plain caption
-        logger.info(f"{label}: попытка 2 — send_photo + plain | URL={photo_url}")
-        try:
-            await bot.send_photo(chat_id=target, photo=photo_url, caption=text)
-            logger.info(f"{label}: ✅ отправлен фото + plain")
-            return True, "✅ фото + plain caption"
-        except Exception as e2:
-            err = f"{type(e2).__name__}: {e2}"
-            logger.warning(f"{label}: ❌ попытка 2 (фото+plain) — {err}")
-            errors.append(f"фото+plain: {err}")
+        if photo_bytes:
+            # Attempt 1: photo bytes + Markdown caption
+            logger.info(f"{label}: попытка 1 — send_photo(bytes) + Markdown | {len(photo_bytes)} байт")
+            try:
+                await bot.send_photo(chat_id=target, photo=photo_bytes,
+                                     caption=signed, parse_mode="Markdown")
+                logger.info(f"{label}: ✅ отправлен фото(bytes) + Markdown")
+                return True, "✅ фото(bytes) + Markdown caption"
+            except Exception as e1:
+                err = f"{type(e1).__name__}: {e1}"
+                logger.warning(f"{label}: ❌ попытка 1 (bytes+Markdown) — {err}")
+                errors.append(f"bytes+Markdown: {err}")
+
+            # Attempt 2: photo bytes + plain caption
+            logger.info(f"{label}: попытка 2 — send_photo(bytes) + plain")
+            try:
+                await bot.send_photo(chat_id=target, photo=photo_bytes, caption=text)
+                logger.info(f"{label}: ✅ отправлен фото(bytes) + plain")
+                return True, "✅ фото(bytes) + plain caption"
+            except Exception as e2:
+                err = f"{type(e2).__name__}: {e2}"
+                logger.warning(f"{label}: ❌ попытка 2 (bytes+plain) — {err}")
+                errors.append(f"bytes+plain: {err}")
+        else:
+            err = f"download failed (HTTP non-200 или timeout) | URL={photo_url}"
+            logger.warning(f"{label}: ❌ скачивание не удалось — {err}")
+            errors.append(f"download: {err}")
 
     # Attempt 3: text + Markdown (with signature)
     logger.info(f"{label}: попытка 3 — send_message + Markdown")
