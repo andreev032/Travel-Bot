@@ -7,17 +7,17 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root {
-      --bg:      #0d1117;
-      --surface: #161b22;
-      --card:    #1c2230;
-      --border:  #30363d;
+      --bg:      #1a1a2e;
+      --surface: #16213e;
+      --card:    #0f3460;
       --accent:  #58a6ff;
       --green:   #3fb950;
       --warn:    #d29922;
       --danger:  #f85149;
       --text:    #e6edf3;
       --sub:     #7d8590;
-      --radius:  12px;
+      --border:  #2a3a5c;
+      --radius:  14px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -41,69 +41,104 @@
 
     main { padding: 14px; }
 
-    /* ── CITY PICKER ── */
-    .picker-block {
+    /* ── TIME ROW ── */
+    .time-row {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 8px;
+      margin-bottom: 14px;
+      align-items: stretch;
+    }
+
+    .time-card {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 12px;
-      margin-bottom: 10px;
+      padding: 14px 10px;
+      text-align: center;
+      min-height: 110px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
     }
-    .picker-label {
-      font-size: 11px;
+
+    .tc-label {
+      font-size: 10px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: .6px;
-      margin-bottom: 8px;
+      margin-bottom: 2px;
     }
-    .picker-label.from { color: var(--accent); }
-    .picker-label.to   { color: var(--green); }
+    .time-card.from .tc-label { color: var(--accent); }
+    .time-card.to   .tc-label { color: var(--green); }
 
-    .filter-input {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--text);
-      font-size: 14px;
-      padding: 8px 10px 8px 32px;
-      width: 100%;
-      outline: none;
-      margin-bottom: 6px;
-      transition: border-color .15s;
+    .tc-city {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--sub);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
     }
-    .filter-input:focus { border-color: var(--accent); }
-    .filter-wrap { position: relative; }
-    .filter-wrap::before {
-      content: '🔍';
-      position: absolute;
-      left: 9px; top: 50%;
-      transform: translateY(-55%);
-      font-size: 14px;
-      pointer-events: none;
-    }
+    .time-card.from .tc-city { color: var(--accent); }
+    .time-card.to   .tc-city { color: var(--green); }
 
-    select {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--text);
-      font-size: 14px;
-      padding: 6px 8px;
-      width: 100%;
-      outline: none;
-      height: 160px;
-      cursor: pointer;
-      transition: border-color .15s;
+    .tc-clock {
+      font-size: 30px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
     }
-    select:focus { border-color: var(--accent); }
-    select option { padding: 4px; background: var(--card); }
-    select option:checked { background: #1f3a5f; }
+    .time-card.from .tc-clock { color: var(--accent); }
+    .time-card.to   .tc-clock { color: var(--green); }
 
-    /* ── SWAP ── */
+    .tc-date { font-size: 11px; color: var(--sub); }
+    .tc-utc  { font-size: 10px; color: var(--sub); }
+
+    .tc-badge {
+      display: inline-block;
+      margin-top: 4px;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 10px;
+      font-weight: 600;
+    }
+    .tc-badge.work    { background: rgba(63,185,80,.15);  color: var(--green);  border: 1px solid var(--green); }
+    .tc-badge.evening { background: rgba(210,153,34,.15); color: var(--warn);   border: 1px solid var(--warn); }
+    .tc-badge.night   { background: rgba(248,81,73,.15);  color: var(--danger); border: 1px solid var(--danger); }
+
+    .tc-empty { font-size: 13px; color: var(--sub); }
+
+    /* diff column */
+    .diff-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-width: 52px;
+    }
+    .diff-val {
+      font-size: 20px;
+      font-weight: 800;
+      line-height: 1.1;
+      text-align: center;
+      white-space: pre;
+    }
+    .diff-val.pos  { color: var(--green); }
+    .diff-val.neg  { color: var(--accent); }
+    .diff-val.zero { color: var(--sub); }
+    .diff-unit { font-size: 10px; color: var(--sub); margin-top: 2px; }
+    .diff-arrow { font-size: 22px; color: var(--sub); }
+
+    /* SWAP */
     .swap-row {
       display: flex;
       justify-content: center;
-      margin: -2px 0 8px;
+      margin-bottom: 14px;
     }
     .swap-btn {
       background: var(--card);
@@ -113,437 +148,543 @@
       font-size: 18px;
       cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      transition: background .15s;
     }
-    .swap-btn:active { background: var(--surface); }
+    .swap-btn:active { opacity: .7; }
 
-    /* ── TIME DISPLAY ── */
-    .time-row {
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
-      gap: 8px;
-      margin-bottom: 10px;
-      align-items: stretch;
-    }
-
-    .time-card {
+    /* ── SEARCH BLOCK ── */
+    .search-block {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 12px 10px;
-      text-align: center;
+      padding: 12px;
+      margin-bottom: 10px;
+      position: relative;   /* stacking context for dropdown */
     }
-    .time-card .city-name {
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--sub);
-      margin-bottom: 4px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .time-card.from .city-name { color: var(--accent); }
-    .time-card.to   .city-name { color: var(--green); }
 
-    .time-card .clock {
-      font-size: 28px;
-      font-weight: 800;
-      letter-spacing: -1px;
-      line-height: 1;
-      font-variant-numeric: tabular-nums;
-    }
-    .time-card.from .clock { color: var(--accent); }
-    .time-card.to   .clock { color: var(--green); }
-
-    .time-card .date-str {
-      font-size: 11px;
-      color: var(--sub);
-      margin-top: 3px;
-    }
-    .time-card .utc-str {
-      font-size: 11px;
-      color: var(--sub);
-      margin-top: 1px;
-    }
-    .time-card .work-badge {
-      display: inline-block;
-      margin-top: 5px;
-      padding: 2px 8px;
-      border-radius: 20px;
-      font-size: 10px;
-      font-weight: 600;
-    }
-    .work-badge.work    { background: rgba(63,185,80,.15);  color: var(--green);  border: 1px solid var(--green); }
-    .work-badge.evening { background: rgba(210,153,34,.15); color: var(--warn);   border: 1px solid var(--warn); }
-    .work-badge.night   { background: rgba(248,81,73,.15);  color: var(--danger); border: 1px solid var(--danger); }
-
-    /* diff centre column */
-    .diff-col {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-width: 54px;
-    }
-    .diff-arrow { font-size: 20px; color: var(--sub); }
-    .diff-val {
-      font-size: 18px;
-      font-weight: 800;
-      line-height: 1.2;
-    }
-    .diff-val.pos  { color: var(--green); }
-    .diff-val.neg  { color: var(--accent); }
-    .diff-val.zero { color: var(--sub); }
-    .diff-unit { font-size: 10px; color: var(--sub); }
-
-    /* ── POPULAR ── */
-    .section-title {
+    .sb-label {
       font-size: 11px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: .6px;
-      color: var(--sub);
       margin-bottom: 8px;
     }
-    .pop-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 6px;
-      margin-bottom: 14px;
-    }
-    .pop-btn {
-      background: var(--surface);
+    .sb-label.from { color: var(--accent); }
+    .sb-label.to   { color: var(--green); }
+
+    .sb-wrap { position: relative; }
+
+    .sb-input {
+      width: 100%;
+      background: var(--card);
       border: 1px solid var(--border);
       border-radius: 9px;
       color: var(--text);
-      cursor: pointer;
-      font-size: 11px;
-      padding: 7px 4px;
-      text-align: center;
-      transition: all .12s;
-      line-height: 1.3;
+      font-size: 15px;
+      padding: 10px 12px 10px 36px;
+      outline: none;
+      transition: border-color .15s;
+      /* prevent zoom on iOS */
+      font-size: 16px;
     }
-    .pop-btn .pf { font-size: 17px; display: block; margin-bottom: 2px; }
-    .pop-btn:active { opacity: .75; }
-    .pop-btn.af { border-color: var(--accent); background: rgba(88,166,255,.1); color: var(--accent); }
-    .pop-btn.at { border-color: var(--green);  background: rgba(63,185,80,.1);  color: var(--green); }
+    .sb-input:focus { border-color: var(--accent); }
 
-    .placeholder-text {
-      font-size: 13px;
-      color: var(--sub);
-      text-align: center;
-      padding: 8px 0 4px;
+    .sb-icon {
+      position: absolute;
+      left: 11px; top: 50%;
+      transform: translateY(-50%);
+      font-size: 15px;
+      pointer-events: none;
+      user-select: none;
     }
+
+    .sb-clear {
+      position: absolute;
+      right: 10px; top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--sub);
+      font-size: 18px;
+      cursor: pointer;
+      line-height: 1;
+      padding: 2px 4px;
+      display: none;
+    }
+
+    /* DROPDOWN — sits inside .search-block, full width */
+    .sb-dropdown {
+      position: absolute;
+      left: 12px; right: 12px;
+      top: calc(100% - 10px);   /* flush below input inside the card */
+      background: #1c2a42;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      z-index: 100;
+      display: none;
+      box-shadow: 0 8px 24px rgba(0,0,0,.5);
+    }
+    .sb-dropdown.open { display: block; }
+
+    .dd-item {
+      padding: 11px 14px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      /* IMPORTANT: use mousedown not click — fires before input blur */
+    }
+    .dd-item:last-child { border-bottom: none; }
+    .dd-item:hover, .dd-item:active { background: var(--card); }
+
+    .dd-flag { font-size: 20px; flex-shrink: 0; }
+    .dd-name { font-weight: 600; font-size: 14px; }
+    .dd-meta { font-size: 11px; color: var(--sub); }
+    .dd-none { padding: 12px 14px; color: var(--sub); font-size: 13px; }
   </style>
 </head>
 <body>
 
 <header>
   <h1>🕐 Разница во времени</h1>
-  <p>Выбери города — покажу текущее время и разницу</p>
+  <p>Введи города — покажу текущее время и разницу</p>
 </header>
 
 <main>
 
-  <!-- TIME DISPLAY ROW -->
+  <!-- TIME DISPLAY -->
   <div class="time-row">
     <div class="time-card from" id="card-from">
-      <div class="city-name">—</div>
-      <div class="placeholder-text">выбери<br>город</div>
+      <div class="tc-label">Откуда</div>
+      <div class="tc-empty">выбери город</div>
     </div>
     <div class="diff-col" id="diff-col">
       <div class="diff-arrow">⇄</div>
     </div>
     <div class="time-card to" id="card-to">
-      <div class="city-name">—</div>
-      <div class="placeholder-text">выбери<br>город</div>
+      <div class="tc-label">Куда</div>
+      <div class="tc-empty">выбери город</div>
     </div>
   </div>
 
-  <!-- FROM PICKER -->
-  <div class="picker-block">
-    <div class="picker-label from">📍 Откуда</div>
-    <div class="filter-wrap">
-      <input class="filter-input" id="filter-from" type="text" placeholder="Фильтр городов…" autocomplete="off" />
+  <!-- SEARCH FROM -->
+  <div class="search-block" id="sb-from">
+    <div class="sb-label from">📍 Откуда</div>
+    <div class="sb-wrap">
+      <span class="sb-icon">🔍</span>
+      <input class="sb-input" id="inp-from" type="text"
+             placeholder="Город или страна…"
+             autocomplete="off" autocorrect="off" spellcheck="false" />
+      <button class="sb-clear" id="clr-from" tabindex="-1" aria-label="Очистить">×</button>
     </div>
-    <select id="select-from" size="6" onchange="onSelectChange('from')">
-    </select>
+    <div class="sb-dropdown" id="dd-from"></div>
   </div>
 
   <!-- SWAP -->
   <div class="swap-row">
-    <button class="swap-btn" onclick="swapCities()" title="Поменять местами">⇅</button>
+    <button class="swap-btn" onclick="swapCities()">⇅</button>
   </div>
 
-  <!-- TO PICKER -->
-  <div class="picker-block">
-    <div class="picker-label to">🏁 Куда</div>
-    <div class="filter-wrap">
-      <input class="filter-input" id="filter-to" type="text" placeholder="Фильтр городов…" autocomplete="off" />
+  <!-- SEARCH TO -->
+  <div class="search-block" id="sb-to">
+    <div class="sb-label to">🏁 Куда</div>
+    <div class="sb-wrap">
+      <span class="sb-icon">🔍</span>
+      <input class="sb-input" id="inp-to" type="text"
+             placeholder="Город или страна…"
+             autocomplete="off" autocorrect="off" spellcheck="false" />
+      <button class="sb-clear" id="clr-to" tabindex="-1" aria-label="Очистить">×</button>
     </div>
-    <select id="select-to" size="6" onchange="onSelectChange('to')">
-    </select>
+    <div class="sb-dropdown" id="dd-to"></div>
   </div>
-
-  <!-- POPULAR -->
-  <div class="section-title">⚡ Быстрый выбор</div>
-  <div class="pop-grid" id="pop-grid"></div>
 
 </main>
 
 <script>
-// ════════════════════════════════════════════════
-// CITY DATABASE  (tz, label shown in select)
-// ════════════════════════════════════════════════
-const CITIES = [
-  // 🇷🇺 Россия
-  { tz:'Europe/Kaliningrad',       label:'🇷🇺 Калининград (UTC+2)' },
-  { tz:'Europe/Moscow',            label:'🇷🇺 Москва, Питер (UTC+3)' },
-  { tz:'Europe/Samara',            label:'🇷🇺 Самара (UTC+4)' },
-  { tz:'Asia/Yekaterinburg',       label:'🇷🇺 Екатеринбург (UTC+5)' },
-  { tz:'Asia/Omsk',                label:'🇷🇺 Омск (UTC+6)' },
-  { tz:'Asia/Novosibirsk',         label:'🇷🇺 Новосибирск (UTC+7)' },
-  { tz:'Asia/Irkutsk',             label:'🇷🇺 Иркутск (UTC+8)' },
-  { tz:'Asia/Yakutsk',             label:'🇷🇺 Якутск (UTC+9)' },
-  { tz:'Asia/Vladivostok',         label:'🇷🇺 Владивосток (UTC+10)' },
-  { tz:'Asia/Magadan',             label:'🇷🇺 Магадан (UTC+11)' },
-  { tz:'Asia/Kamchatka',           label:'🇷🇺 Камчатка (UTC+12)' },
-  // 🇪🇺 Европа
-  { tz:'Europe/London',            label:'🇬🇧 Лондон (UTC+0/+1)' },
-  { tz:'Europe/Dublin',            label:'🇮🇪 Дублин (UTC+0/+1)' },
-  { tz:'Europe/Lisbon',            label:'🇵🇹 Лиссабон (UTC+0/+1)' },
-  { tz:'Europe/Paris',             label:'🇫🇷 Париж (UTC+1/+2)' },
-  { tz:'Europe/Berlin',            label:'🇩🇪 Берлин (UTC+1/+2)' },
-  { tz:'Europe/Amsterdam',         label:'🇳🇱 Амстердам (UTC+1/+2)' },
-  { tz:'Europe/Madrid',            label:'🇪🇸 Мадрид, Барселона (UTC+1/+2)' },
-  { tz:'Europe/Rome',              label:'🇮🇹 Рим, Милан (UTC+1/+2)' },
-  { tz:'Europe/Vienna',            label:'🇦🇹 Вена (UTC+1/+2)' },
-  { tz:'Europe/Prague',            label:'🇨🇿 Прага (UTC+1/+2)' },
-  { tz:'Europe/Warsaw',            label:'🇵🇱 Варшава (UTC+1/+2)' },
-  { tz:'Europe/Budapest',          label:'🇭🇺 Будапешт (UTC+1/+2)' },
-  { tz:'Europe/Brussels',          label:'🇧🇪 Брюссель (UTC+1/+2)' },
-  { tz:'Europe/Zurich',            label:'🇨🇭 Цюрих, Женева (UTC+1/+2)' },
-  { tz:'Europe/Stockholm',         label:'🇸🇪 Стокгольм (UTC+1/+2)' },
-  { tz:'Europe/Oslo',              label:'🇳🇴 Осло (UTC+1/+2)' },
-  { tz:'Europe/Copenhagen',        label:'🇩🇰 Копенгаген (UTC+1/+2)' },
-  { tz:'Europe/Helsinki',          label:'🇫🇮 Хельсинки (UTC+2/+3)' },
-  { tz:'Europe/Athens',            label:'🇬🇷 Афины (UTC+2/+3)' },
-  { tz:'Europe/Bucharest',         label:'🇷🇴 Бухарест (UTC+2/+3)' },
-  { tz:'Europe/Sofia',             label:'🇧🇬 София, Варна (UTC+2/+3)' },
-  { tz:'Europe/Kiev',              label:'🇺🇦 Киев (UTC+2/+3)' },
-  { tz:'Europe/Minsk',             label:'🇧🇾 Минск (UTC+3)' },
-  { tz:'Europe/Istanbul',          label:'🇹🇷 Стамбул, Анкара (UTC+3)' },
-  { tz:'Europe/Zagreb',            label:'🇭🇷 Загреб, Дубровник (UTC+1/+2)' },
-  { tz:'Europe/Podgorica',         label:'🇲🇪 Подгорица (UTC+1/+2)' },
-  // 🌍 СНГ и Кавказ
-  { tz:'Asia/Tbilisi',             label:'🇬🇪 Тбилиси (UTC+4)' },
-  { tz:'Asia/Yerevan',             label:'🇦🇲 Ереван (UTC+4)' },
-  { tz:'Asia/Baku',                label:'🇦🇿 Баку (UTC+4)' },
-  { tz:'Asia/Tashkent',            label:'🇺🇿 Ташкент (UTC+5)' },
-  { tz:'Asia/Almaty',              label:'🇰🇿 Алматы (UTC+6)' },
-  { tz:'Asia/Bishkek',             label:'🇰🇬 Бишкек (UTC+6)' },
-  { tz:'Asia/Dushanbe',            label:'🇹🇯 Душанбе (UTC+5)' },
-  { tz:'Asia/Ashgabat',            label:'🇹🇲 Ашхабад (UTC+5)' },
-  // 🌍 Ближний Восток и Африка
-  { tz:'Asia/Dubai',               label:'🇦🇪 Дубай, Абу-Даби (UTC+4)' },
-  { tz:'Asia/Riyadh',              label:'🇸🇦 Эр-Рияд (UTC+3)' },
-  { tz:'Asia/Qatar',               label:'🇶🇦 Доха (UTC+3)' },
-  { tz:'Asia/Kuwait',              label:'🇰🇼 Кувейт (UTC+3)' },
-  { tz:'Asia/Bahrain',             label:'🇧🇭 Манама (UTC+3)' },
-  { tz:'Asia/Muscat',              label:'🇴🇲 Маскат (UTC+4)' },
-  { tz:'Asia/Amman',               label:'🇯🇴 Амман (UTC+3)' },
-  { tz:'Asia/Beirut',              label:'🇱🇧 Бейрут (UTC+2/+3)' },
-  { tz:'Asia/Jerusalem',           label:'🇮🇱 Тель-Авив (UTC+2/+3)' },
-  { tz:'Africa/Cairo',             label:'🇪🇬 Каир (UTC+2)' },
-  { tz:'Africa/Casablanca',        label:'🇲🇦 Касабланка, Марракеш (UTC+1)' },
-  { tz:'Africa/Tunis',             label:'🇹🇳 Тунис (UTC+1)' },
-  { tz:'Africa/Nairobi',           label:'🇰🇪 Найроби (UTC+3)' },
-  { tz:'Africa/Dar_es_Salaam',     label:'🇹🇿 Занзибар (UTC+3)' },
-  { tz:'Africa/Johannesburg',      label:'🇿🇦 Йоханнесбург (UTC+2)' },
-  // 🌏 Азия
-  { tz:'Asia/Kolkata',             label:'🇮🇳 Дели, Мумбай, Гоа (UTC+5:30)' },
-  { tz:'Asia/Kathmandu',           label:'🇳🇵 Катманду (UTC+5:45)' },
-  { tz:'Asia/Colombo',             label:'🇱🇰 Коломбо (UTC+5:30)' },
-  { tz:'Indian/Maldives',          label:'🇲🇻 Мале (UTC+5)' },
-  { tz:'Asia/Dhaka',               label:'🇧🇩 Дакка (UTC+6)' },
-  { tz:'Asia/Rangoon',             label:'🇲🇲 Янгон (UTC+6:30)' },
-  { tz:'Asia/Bangkok',             label:'🇹🇭 Бангкок, Паттайя (UTC+7)' },
-  { tz:'Asia/Vientiane',           label:'🇱🇦 Вьентьян (UTC+7)' },
-  { tz:'Asia/Phnom_Penh',          label:'🇰🇭 Пномпень (UTC+7)' },
-  { tz:'Asia/Ho_Chi_Minh',         label:'🇻🇳 Хошимин, Ханой (UTC+7)' },
-  { tz:'Asia/Kuala_Lumpur',        label:'🇲🇾 Куала-Лумпур (UTC+8)' },
-  { tz:'Asia/Singapore',           label:'🇸🇬 Сингапур (UTC+8)' },
-  { tz:'Asia/Shanghai',            label:'🇨🇳 Пекин, Шанхай (UTC+8)' },
-  { tz:'Asia/Hong_Kong',           label:'🇭🇰 Гонконг (UTC+8)' },
-  { tz:'Asia/Taipei',              label:'🇹🇼 Тайпей (UTC+8)' },
-  { tz:'Asia/Manila',              label:'🇵🇭 Манила (UTC+8)' },
-  { tz:'Asia/Makassar',            label:'🇮🇩 Бали (UTC+8)' },
-  { tz:'Asia/Jakarta',             label:'🇮🇩 Джакарта (UTC+7)' },
-  { tz:'Asia/Seoul',               label:'🇰🇷 Сеул (UTC+9)' },
-  { tz:'Asia/Tokyo',               label:'🇯🇵 Токио, Осака (UTC+9)' },
-  // 🌏 Океания
-  { tz:'Australia/Perth',          label:'🇦🇺 Перт (UTC+8)' },
-  { tz:'Australia/Darwin',         label:'🇦🇺 Дарвин (UTC+9:30)' },
-  { tz:'Australia/Brisbane',       label:'🇦🇺 Брисбен (UTC+10)' },
-  { tz:'Australia/Sydney',         label:'🇦🇺 Сидней, Мельбурн (UTC+10/+11)' },
-  { tz:'Pacific/Auckland',         label:'🇳🇿 Окленд (UTC+12/+13)' },
-  { tz:'Pacific/Fiji',             label:'🇫🇯 Фиджи (UTC+12)' },
-  // 🌎 Америка
-  { tz:'America/Anchorage',        label:'🇺🇸 Анкоридж (UTC-9/-8)' },
-  { tz:'America/Los_Angeles',      label:'🇺🇸 Лос-Анджелес (UTC-8/-7)' },
-  { tz:'America/Denver',           label:'🇺🇸 Денвер (UTC-7/-6)' },
-  { tz:'America/Chicago',          label:'🇺🇸 Чикаго (UTC-6/-5)' },
-  { tz:'America/New_York',         label:'🇺🇸 Нью-Йорк (UTC-5/-4)' },
-  { tz:'America/Toronto',          label:'🇨🇦 Торонто (UTC-5/-4)' },
-  { tz:'America/Vancouver',        label:'🇨🇦 Ванкувер (UTC-8/-7)' },
-  { tz:'America/Mexico_City',      label:'🇲🇽 Мехико (UTC-6/-5)' },
-  { tz:'America/Cancun',           label:'🇲🇽 Канкун (UTC-5)' },
-  { tz:'America/Havana',           label:'🇨🇺 Гавана (UTC-5/-4)' },
-  { tz:'America/Santo_Domingo',    label:'🇩🇴 Пунта-Кана (UTC-4)' },
-  { tz:'America/Bogota',           label:'🇨🇴 Богота (UTC-5)' },
-  { tz:'America/Lima',             label:'🇵🇪 Лима (UTC-5)' },
-  { tz:'America/Sao_Paulo',        label:'🇧🇷 Сан-Паулу, Рио (UTC-3)' },
-  { tz:'America/Argentina/Buenos_Aires', label:'🇦🇷 Буэнос-Айрес (UTC-3)' },
-  { tz:'America/Santiago',         label:'🇨🇱 Сантьяго (UTC-4/-3)' },
+/* ═══════════════════════════════════════════════════════
+   CITIES DATABASE  — 200+ entries
+   Each: { name, country, tz, flag, aliases[] }
+═══════════════════════════════════════════════════════ */
+const DB = [
+  // ── РОССИЯ
+  {name:'Калининград',  country:'Россия',      flag:'🇷🇺', tz:'Europe/Kaliningrad',       a:['kaliningrad']},
+  {name:'Москва',       country:'Россия',      flag:'🇷🇺', tz:'Europe/Moscow',            a:['moscow','moskva']},
+  {name:'Санкт-Петербург',country:'Россия',   flag:'🇷🇺', tz:'Europe/Moscow',            a:['saint petersburg','spb','питер','peter']},
+  {name:'Сочи',         country:'Россия',      flag:'🇷🇺', tz:'Europe/Moscow',            a:['sochi']},
+  {name:'Казань',       country:'Россия',      flag:'🇷🇺', tz:'Europe/Moscow',            a:['kazan']},
+  {name:'Самара',       country:'Россия',      flag:'🇷🇺', tz:'Europe/Samara',            a:['samara']},
+  {name:'Екатеринбург', country:'Россия',      flag:'🇷🇺', tz:'Asia/Yekaterinburg',       a:['yekaterinburg','ekaterinburg']},
+  {name:'Челябинск',    country:'Россия',      flag:'🇷🇺', tz:'Asia/Yekaterinburg',       a:['chelyabinsk']},
+  {name:'Омск',         country:'Россия',      flag:'🇷🇺', tz:'Asia/Omsk',                a:['omsk']},
+  {name:'Новосибирск',  country:'Россия',      flag:'🇷🇺', tz:'Asia/Novosibirsk',         a:['novosibirsk']},
+  {name:'Красноярск',   country:'Россия',      flag:'🇷🇺', tz:'Asia/Krasnoyarsk',         a:['krasnoyarsk']},
+  {name:'Иркутск',      country:'Россия',      flag:'🇷🇺', tz:'Asia/Irkutsk',             a:['irkutsk']},
+  {name:'Якутск',       country:'Россия',      flag:'🇷🇺', tz:'Asia/Yakutsk',             a:['yakutsk']},
+  {name:'Владивосток',  country:'Россия',      flag:'🇷🇺', tz:'Asia/Vladivostok',         a:['vladivostok']},
+  {name:'Магадан',      country:'Россия',      flag:'🇷🇺', tz:'Asia/Magadan',             a:['magadan']},
+  {name:'Камчатка',     country:'Россия',      flag:'🇷🇺', tz:'Asia/Kamchatka',           a:['kamchatka','petropavlovsk']},
+  // ── СНГ
+  {name:'Минск',        country:'Беларусь',    flag:'🇧🇾', tz:'Europe/Minsk',             a:['minsk','belarus']},
+  {name:'Киев',         country:'Украина',     flag:'🇺🇦', tz:'Europe/Kiev',              a:['kyiv','kiev','ukraine']},
+  {name:'Одесса',       country:'Украина',     flag:'🇺🇦', tz:'Europe/Kiev',              a:['odessa','odesa']},
+  {name:'Тбилиси',      country:'Грузия',      flag:'🇬🇪', tz:'Asia/Tbilisi',             a:['tbilisi','georgia']},
+  {name:'Батуми',       country:'Грузия',      flag:'🇬🇪', tz:'Asia/Tbilisi',             a:['batumi']},
+  {name:'Ереван',       country:'Армения',     flag:'🇦🇲', tz:'Asia/Yerevan',             a:['yerevan','armenia']},
+  {name:'Баку',         country:'Азербайджан', flag:'🇦🇿', tz:'Asia/Baku',               a:['baku','azerbaijan']},
+  {name:'Ташкент',      country:'Узбекистан',  flag:'🇺🇿', tz:'Asia/Tashkent',            a:['tashkent','uzbekistan']},
+  {name:'Самарканд',    country:'Узбекистан',  flag:'🇺🇿', tz:'Asia/Tashkent',            a:['samarkand']},
+  {name:'Алматы',       country:'Казахстан',   flag:'🇰🇿', tz:'Asia/Almaty',              a:['almaty','kazakhstan']},
+  {name:'Астана',       country:'Казахстан',   flag:'🇰🇿', tz:'Asia/Almaty',              a:['astana','nursultan']},
+  {name:'Бишкек',       country:'Кыргызстан',  flag:'🇰🇬', tz:'Asia/Bishkek',             a:['bishkek','kyrgyzstan']},
+  {name:'Душанбе',      country:'Таджикистан', flag:'🇹🇯', tz:'Asia/Dushanbe',            a:['dushanbe','tajikistan']},
+  {name:'Ашхабад',      country:'Туркменистан',flag:'🇹🇲', tz:'Asia/Ashgabat',            a:['ashgabat','turkmenistan']},
+  // ── ЕВРОПА ЗАПАДНАЯ
+  {name:'Лондон',       country:'Великобритания',flag:'🇬🇧',tz:'Europe/London',           a:['london','uk','england']},
+  {name:'Эдинбург',     country:'Великобритания',flag:'🇬🇧',tz:'Europe/London',           a:['edinburgh','scotland']},
+  {name:'Манчестер',    country:'Великобритания',flag:'🇬🇧',tz:'Europe/London',           a:['manchester']},
+  {name:'Дублин',       country:'Ирландия',    flag:'🇮🇪', tz:'Europe/Dublin',            a:['dublin','ireland']},
+  {name:'Лиссабон',     country:'Португалия',  flag:'🇵🇹', tz:'Europe/Lisbon',            a:['lisbon','portugal']},
+  {name:'Мадрид',       country:'Испания',     flag:'🇪🇸', tz:'Europe/Madrid',            a:['madrid','spain']},
+  {name:'Барселона',    country:'Испания',     flag:'🇪🇸', tz:'Europe/Madrid',            a:['barcelona']},
+  {name:'Валенсия',     country:'Испания',     flag:'🇪🇸', tz:'Europe/Madrid',            a:['valencia']},
+  {name:'Париж',        country:'Франция',     flag:'🇫🇷', tz:'Europe/Paris',             a:['paris','france']},
+  {name:'Марсель',      country:'Франция',     flag:'🇫🇷', tz:'Europe/Paris',             a:['marseille','marseilles']},
+  {name:'Ницца',        country:'Франция',     flag:'🇫🇷', tz:'Europe/Paris',             a:['nice']},
+  {name:'Берлин',       country:'Германия',    flag:'🇩🇪', tz:'Europe/Berlin',            a:['berlin','germany']},
+  {name:'Мюнхен',       country:'Германия',    flag:'🇩🇪', tz:'Europe/Berlin',            a:['munich','münchen']},
+  {name:'Франкфурт',    country:'Германия',    flag:'🇩🇪', tz:'Europe/Berlin',            a:['frankfurt']},
+  {name:'Гамбург',      country:'Германия',    flag:'🇩🇪', tz:'Europe/Berlin',            a:['hamburg']},
+  {name:'Амстердам',    country:'Нидерланды',  flag:'🇳🇱', tz:'Europe/Amsterdam',         a:['amsterdam','netherlands','holland']},
+  {name:'Брюссель',     country:'Бельгия',     flag:'🇧🇪', tz:'Europe/Brussels',          a:['brussels','belgium']},
+  {name:'Цюрих',        country:'Швейцария',   flag:'🇨🇭', tz:'Europe/Zurich',            a:['zurich','switzerland']},
+  {name:'Женева',       country:'Швейцария',   flag:'🇨🇭', tz:'Europe/Zurich',            a:['geneva']},
+  {name:'Вена',         country:'Австрия',     flag:'🇦🇹', tz:'Europe/Vienna',            a:['vienna','austria']},
+  {name:'Рим',          country:'Италия',      flag:'🇮🇹', tz:'Europe/Rome',              a:['rome','italy']},
+  {name:'Милан',        country:'Италия',      flag:'🇮🇹', tz:'Europe/Rome',              a:['milan']},
+  {name:'Венеция',      country:'Италия',      flag:'🇮🇹', tz:'Europe/Rome',              a:['venice']},
+  {name:'Флоренция',    country:'Италия',      flag:'🇮🇹', tz:'Europe/Rome',              a:['florence']},
+  {name:'Неаполь',      country:'Италия',      flag:'🇮🇹', tz:'Europe/Rome',              a:['naples','napoli']},
+  {name:'Прага',        country:'Чехия',       flag:'🇨🇿', tz:'Europe/Prague',            a:['prague','czech']},
+  {name:'Варшава',      country:'Польша',      flag:'🇵🇱', tz:'Europe/Warsaw',            a:['warsaw','poland']},
+  {name:'Краков',       country:'Польша',      flag:'🇵🇱', tz:'Europe/Warsaw',            a:['krakow','cracow']},
+  {name:'Будапешт',     country:'Венгрия',     flag:'🇭🇺', tz:'Europe/Budapest',          a:['budapest','hungary']},
+  {name:'Братислава',   country:'Словакия',    flag:'🇸🇰', tz:'Europe/Bratislava',        a:['bratislava','slovakia']},
+  {name:'Загреб',       country:'Хорватия',    flag:'🇭🇷', tz:'Europe/Zagreb',            a:['zagreb','croatia']},
+  {name:'Дубровник',    country:'Хорватия',    flag:'🇭🇷', tz:'Europe/Zagreb',            a:['dubrovnik']},
+  {name:'Подгорица',    country:'Черногория',  flag:'🇲🇪', tz:'Europe/Podgorica',         a:['podgorica','montenegro']},
+  {name:'Белград',      country:'Сербия',      flag:'🇷🇸', tz:'Europe/Belgrade',          a:['belgrade','serbia']},
+  {name:'Сараево',      country:'Босния',      flag:'🇧🇦', tz:'Europe/Sarajevo',          a:['sarajevo','bosnia']},
+  {name:'Тирана',       country:'Албания',     flag:'🇦🇱', tz:'Europe/Tirane',            a:['tirana','albania']},
+  {name:'Скопье',       country:'Македония',   flag:'🇲🇰', tz:'Europe/Skopje',            a:['skopje','macedonia']},
+  {name:'Люблиана',     country:'Словения',    flag:'🇸🇮', tz:'Europe/Ljubljana',         a:['ljubljana','slovenia']},
+  // ── ЕВРОПА СЕВЕРНАЯ
+  {name:'Стокгольм',    country:'Швеция',      flag:'🇸🇪', tz:'Europe/Stockholm',         a:['stockholm','sweden']},
+  {name:'Гётеборг',     country:'Швеция',      flag:'🇸🇪', tz:'Europe/Stockholm',         a:['gothenburg','göteborg']},
+  {name:'Осло',         country:'Норвегия',    flag:'🇳🇴', tz:'Europe/Oslo',              a:['oslo','norway']},
+  {name:'Копенгаген',   country:'Дания',       flag:'🇩🇰', tz:'Europe/Copenhagen',        a:['copenhagen','denmark']},
+  {name:'Хельсинки',    country:'Финляндия',   flag:'🇫🇮', tz:'Europe/Helsinki',          a:['helsinki','finland']},
+  {name:'Рейкьявик',    country:'Исландия',    flag:'🇮🇸', tz:'Atlantic/Reykjavik',       a:['reykjavik','iceland']},
+  {name:'Таллин',       country:'Эстония',     flag:'🇪🇪', tz:'Europe/Tallinn',           a:['tallinn','estonia']},
+  {name:'Рига',         country:'Латвия',      flag:'🇱🇻', tz:'Europe/Riga',              a:['riga','latvia']},
+  {name:'Вильнюс',      country:'Литва',       flag:'🇱🇹', tz:'Europe/Vilnius',           a:['vilnius','lithuania']},
+  // ── ЕВРОПА ЮЖНАЯ
+  {name:'Афины',        country:'Греция',      flag:'🇬🇷', tz:'Europe/Athens',            a:['athens','greece']},
+  {name:'Салоники',     country:'Греция',      flag:'🇬🇷', tz:'Europe/Athens',            a:['thessaloniki']},
+  {name:'Санторини',    country:'Греция',      flag:'🇬🇷', tz:'Europe/Athens',            a:['santorini']},
+  {name:'Никосия',      country:'Кипр',        flag:'🇨🇾', tz:'Asia/Nicosia',             a:['nicosia','cyprus']},
+  {name:'Валлетта',     country:'Мальта',      flag:'🇲🇹', tz:'Europe/Malta',             a:['valletta','malta']},
+  {name:'Стамбул',      country:'Турция',      flag:'🇹🇷', tz:'Europe/Istanbul',          a:['istanbul','turkey']},
+  {name:'Анкара',       country:'Турция',      flag:'🇹🇷', tz:'Europe/Istanbul',          a:['ankara']},
+  {name:'Анталья',      country:'Турция',      flag:'🇹🇷', tz:'Europe/Istanbul',          a:['antalya']},
+  {name:'Бодрум',       country:'Турция',      flag:'🇹🇷', tz:'Europe/Istanbul',          a:['bodrum']},
+  {name:'София',        country:'Болгария',    flag:'🇧🇬', tz:'Europe/Sofia',             a:['sofia','bulgaria']},
+  {name:'Варна',        country:'Болгария',    flag:'🇧🇬', tz:'Europe/Sofia',             a:['varna']},
+  {name:'Бухарест',     country:'Румыния',     flag:'🇷🇴', tz:'Europe/Bucharest',         a:['bucharest','romania']},
+  {name:'Лиссабон',     country:'Португалия',  flag:'🇵🇹', tz:'Europe/Lisbon',            a:['lisbon']},
+  // ── БЛИЖНИЙ ВОСТОК
+  {name:'Дубай',        country:'ОАЭ',         flag:'🇦🇪', tz:'Asia/Dubai',               a:['dubai','uae']},
+  {name:'Абу-Даби',     country:'ОАЭ',         flag:'🇦🇪', tz:'Asia/Dubai',               a:['abu dhabi']},
+  {name:'Эр-Рияд',      country:'Саудовская Аравия',flag:'🇸🇦',tz:'Asia/Riyadh',          a:['riyadh','saudi']},
+  {name:'Джидда',       country:'Саудовская Аравия',flag:'🇸🇦',tz:'Asia/Riyadh',          a:['jeddah']},
+  {name:'Доха',         country:'Катар',       flag:'🇶🇦', tz:'Asia/Qatar',               a:['doha','qatar']},
+  {name:'Кувейт',       country:'Кувейт',      flag:'🇰🇼', tz:'Asia/Kuwait',              a:['kuwait']},
+  {name:'Манама',       country:'Бахрейн',     flag:'🇧🇭', tz:'Asia/Bahrain',             a:['manama','bahrain']},
+  {name:'Маскат',       country:'Оман',        flag:'🇴🇲', tz:'Asia/Muscat',              a:['muscat','oman']},
+  {name:'Амман',        country:'Иордания',    flag:'🇯🇴', tz:'Asia/Amman',               a:['amman','jordan']},
+  {name:'Петра',        country:'Иордания',    flag:'🇯🇴', tz:'Asia/Amman',               a:['petra']},
+  {name:'Бейрут',       country:'Ливан',       flag:'🇱🇧', tz:'Asia/Beirut',              a:['beirut','lebanon']},
+  {name:'Тель-Авив',    country:'Израиль',     flag:'🇮🇱', tz:'Asia/Jerusalem',           a:['tel aviv','israel','jerusalem','иерусалим']},
+  {name:'Тегеран',      country:'Иран',        flag:'🇮🇷', tz:'Asia/Tehran',              a:['tehran','iran']},
+  {name:'Багдад',       country:'Ирак',        flag:'🇮🇶', tz:'Asia/Baghdad',             a:['baghdad','iraq']},
+  // ── АФРИКА
+  {name:'Каир',         country:'Египет',      flag:'🇪🇬', tz:'Africa/Cairo',             a:['cairo','egypt']},
+  {name:'Хургада',      country:'Египет',      flag:'🇪🇬', tz:'Africa/Cairo',             a:['hurghada']},
+  {name:'Шарм-эль-Шейх',country:'Египет',     flag:'🇪🇬', tz:'Africa/Cairo',             a:['sharm','sharm el sheikh']},
+  {name:'Касабланка',   country:'Марокко',     flag:'🇲🇦', tz:'Africa/Casablanca',        a:['casablanca','morocco']},
+  {name:'Марракеш',     country:'Марокко',     flag:'🇲🇦', tz:'Africa/Casablanca',        a:['marrakesh','marrakech']},
+  {name:'Тунис',        country:'Тунис',       flag:'🇹🇳', tz:'Africa/Tunis',             a:['tunis','tunisia']},
+  {name:'Найроби',      country:'Кения',       flag:'🇰🇪', tz:'Africa/Nairobi',           a:['nairobi','kenya']},
+  {name:'Занзибар',     country:'Танзания',    flag:'🇹🇿', tz:'Africa/Dar_es_Salaam',     a:['zanzibar','tanzania']},
+  {name:'Йоханнесбург', country:'ЮАР',         flag:'🇿🇦', tz:'Africa/Johannesburg',      a:['johannesburg','south africa','юар']},
+  {name:'Кейптаун',     country:'ЮАР',         flag:'🇿🇦', tz:'Africa/Johannesburg',      a:['cape town']},
+  {name:'Лагос',        country:'Нигерия',     flag:'🇳🇬', tz:'Africa/Lagos',             a:['lagos','nigeria']},
+  {name:'Аккра',        country:'Гана',        flag:'🇬🇭', tz:'Africa/Accra',             a:['accra','ghana']},
+  {name:'Аддис-Абеба',  country:'Эфиопия',    flag:'🇪🇹', tz:'Africa/Addis_Ababa',       a:['addis ababa','ethiopia']},
+  // ── ИНДИЯ И ЮГО-ВОСТОЧНАЯ АЗИЯ
+  {name:'Дели',         country:'Индия',       flag:'🇮🇳', tz:'Asia/Kolkata',             a:['delhi','india','new delhi']},
+  {name:'Мумбай',       country:'Индия',       flag:'🇮🇳', tz:'Asia/Kolkata',             a:['mumbai','bombay']},
+  {name:'Гоа',          country:'Индия',       flag:'🇮🇳', tz:'Asia/Kolkata',             a:['goa']},
+  {name:'Бангалор',     country:'Индия',       flag:'🇮🇳', tz:'Asia/Kolkata',             a:['bangalore','bengaluru']},
+  {name:'Катманду',     country:'Непал',       flag:'🇳🇵', tz:'Asia/Kathmandu',           a:['kathmandu','nepal']},
+  {name:'Коломбо',      country:'Шри-Ланка',   flag:'🇱🇰', tz:'Asia/Colombo',             a:['colombo','sri lanka','шриланка']},
+  {name:'Мале',         country:'Мальдивы',    flag:'🇲🇻', tz:'Indian/Maldives',          a:['male','maldives']},
+  {name:'Дакка',        country:'Бангладеш',   flag:'🇧🇩', tz:'Asia/Dhaka',               a:['dhaka','bangladesh']},
+  {name:'Янгон',        country:'Мьянма',      flag:'🇲🇲', tz:'Asia/Rangoon',             a:['yangon','myanmar','burma']},
+  {name:'Бангкок',      country:'Таиланд',     flag:'🇹🇭', tz:'Asia/Bangkok',             a:['bangkok','thailand']},
+  {name:'Паттайя',      country:'Таиланд',     flag:'🇹🇭', tz:'Asia/Bangkok',             a:['pattaya']},
+  {name:'Пхукет',       country:'Таиланд',     flag:'🇹🇭', tz:'Asia/Bangkok',             a:['phuket']},
+  {name:'Чиангмай',     country:'Таиланд',     flag:'🇹🇭', tz:'Asia/Bangkok',             a:['chiang mai']},
+  {name:'Вьентьян',     country:'Лаос',        flag:'🇱🇦', tz:'Asia/Vientiane',           a:['vientiane','laos']},
+  {name:'Пномпень',     country:'Камбоджа',    flag:'🇰🇭', tz:'Asia/Phnom_Penh',          a:['phnom penh','cambodia']},
+  {name:'Сиемреап',     country:'Камбоджа',    flag:'🇰🇭', tz:'Asia/Phnom_Penh',          a:['siem reap','angkor']},
+  {name:'Хошимин',      country:'Вьетнам',     flag:'🇻🇳', tz:'Asia/Ho_Chi_Minh',         a:['ho chi minh','saigon','vietnam']},
+  {name:'Ханой',        country:'Вьетнам',     flag:'🇻🇳', tz:'Asia/Ho_Chi_Minh',         a:['hanoi']},
+  {name:'Дананг',       country:'Вьетнам',     flag:'🇻🇳', tz:'Asia/Ho_Chi_Minh',         a:['da nang','danang']},
+  {name:'Куала-Лумпур', country:'Малайзия',    flag:'🇲🇾', tz:'Asia/Kuala_Lumpur',        a:['kuala lumpur','malaysia']},
+  {name:'Сингапур',     country:'Сингапур',    flag:'🇸🇬', tz:'Asia/Singapore',           a:['singapore']},
+  {name:'Джакарта',     country:'Индонезия',   flag:'🇮🇩', tz:'Asia/Jakarta',             a:['jakarta','indonesia']},
+  {name:'Бали',         country:'Индонезия',   flag:'🇮🇩', tz:'Asia/Makassar',            a:['bali']},
+  {name:'Манила',       country:'Филиппины',   flag:'🇵🇭', tz:'Asia/Manila',              a:['manila','philippines']},
+  // ── ВОСТОЧНАЯ АЗИЯ
+  {name:'Пекин',        country:'Китай',       flag:'🇨🇳', tz:'Asia/Shanghai',            a:['beijing','china']},
+  {name:'Шанхай',       country:'Китай',       flag:'🇨🇳', tz:'Asia/Shanghai',            a:['shanghai']},
+  {name:'Гуанчжоу',     country:'Китай',       flag:'🇨🇳', tz:'Asia/Shanghai',            a:['guangzhou','canton']},
+  {name:'Гонконг',      country:'Гонконг',     flag:'🇭🇰', tz:'Asia/Hong_Kong',           a:['hong kong']},
+  {name:'Тайпей',       country:'Тайвань',     flag:'🇹🇼', tz:'Asia/Taipei',              a:['taipei','taiwan']},
+  {name:'Токио',        country:'Япония',      flag:'🇯🇵', tz:'Asia/Tokyo',               a:['tokyo','japan']},
+  {name:'Осака',        country:'Япония',      flag:'🇯🇵', tz:'Asia/Tokyo',               a:['osaka']},
+  {name:'Киото',        country:'Япония',      flag:'🇯🇵', tz:'Asia/Tokyo',               a:['kyoto']},
+  {name:'Сеул',         country:'Корея',       flag:'🇰🇷', tz:'Asia/Seoul',               a:['seoul','korea']},
+  {name:'Улан-Батор',   country:'Монголия',    flag:'🇲🇳', tz:'Asia/Ulaanbaatar',         a:['ulaanbaatar','mongolia']},
+  // ── ОКЕАНИЯ
+  {name:'Перт',         country:'Австралия',   flag:'🇦🇺', tz:'Australia/Perth',          a:['perth','australia']},
+  {name:'Дарвин',       country:'Австралия',   flag:'🇦🇺', tz:'Australia/Darwin',         a:['darwin']},
+  {name:'Брисбен',      country:'Австралия',   flag:'🇦🇺', tz:'Australia/Brisbane',       a:['brisbane']},
+  {name:'Сидней',       country:'Австралия',   flag:'🇦🇺', tz:'Australia/Sydney',         a:['sydney']},
+  {name:'Мельбурн',     country:'Австралия',   flag:'🇦🇺', tz:'Australia/Melbourne',      a:['melbourne']},
+  {name:'Окленд',       country:'Новая Зеландия',flag:'🇳🇿',tz:'Pacific/Auckland',        a:['auckland','new zealand']},
+  {name:'Папеэте',      country:'Французская Полинезия',flag:'🇵🇫',tz:'Pacific/Tahiti',   a:['tahiti','papeete']},
+  {name:'Фиджи',        country:'Фиджи',       flag:'🇫🇯', tz:'Pacific/Fiji',             a:['fiji']},
+  // ── СЕВЕРНАЯ АМЕРИКА
+  {name:'Анкоридж',     country:'США',         flag:'🇺🇸', tz:'America/Anchorage',        a:['anchorage','alaska']},
+  {name:'Лос-Анджелес', country:'США',         flag:'🇺🇸', tz:'America/Los_Angeles',      a:['los angeles','la','usa']},
+  {name:'Сан-Франциско',country:'США',         flag:'🇺🇸', tz:'America/Los_Angeles',      a:['san francisco','sf']},
+  {name:'Лас-Вегас',    country:'США',         flag:'🇺🇸', tz:'America/Los_Angeles',      a:['las vegas','vegas']},
+  {name:'Сиэтл',        country:'США',         flag:'🇺🇸', tz:'America/Los_Angeles',      a:['seattle']},
+  {name:'Денвер',       country:'США',         flag:'🇺🇸', tz:'America/Denver',           a:['denver']},
+  {name:'Чикаго',       country:'США',         flag:'🇺🇸', tz:'America/Chicago',          a:['chicago']},
+  {name:'Нью-Йорк',     country:'США',         flag:'🇺🇸', tz:'America/New_York',         a:['new york','nyc']},
+  {name:'Майами',       country:'США',         flag:'🇺🇸', tz:'America/New_York',         a:['miami']},
+  {name:'Вашингтон',    country:'США',         flag:'🇺🇸', tz:'America/New_York',         a:['washington','dc']},
+  {name:'Бостон',       country:'США',         flag:'🇺🇸', tz:'America/New_York',         a:['boston']},
+  {name:'Орландо',      country:'США',         flag:'🇺🇸', tz:'America/New_York',         a:['orlando']},
+  {name:'Гонолулу',     country:'США',         flag:'🇺🇸', tz:'Pacific/Honolulu',         a:['honolulu','hawaii']},
+  {name:'Торонто',      country:'Канада',      flag:'🇨🇦', tz:'America/Toronto',          a:['toronto','canada']},
+  {name:'Ванкувер',     country:'Канада',      flag:'🇨🇦', tz:'America/Vancouver',        a:['vancouver']},
+  {name:'Монреаль',     country:'Канада',      flag:'🇨🇦', tz:'America/Toronto',          a:['montreal']},
+  {name:'Мехико',       country:'Мексика',     flag:'🇲🇽', tz:'America/Mexico_City',      a:['mexico city','mexico']},
+  {name:'Канкун',       country:'Мексика',     flag:'🇲🇽', tz:'America/Cancun',           a:['cancun']},
+  {name:'Гавана',       country:'Куба',        flag:'🇨🇺', tz:'America/Havana',           a:['havana','cuba']},
+  {name:'Пунта-Кана',   country:'Доминикана',  flag:'🇩🇴', tz:'America/Santo_Domingo',    a:['punta cana','dominican']},
+  {name:'Кингстон',     country:'Ямайка',      flag:'🇯🇲', tz:'America/Jamaica',          a:['kingston','jamaica']},
+  {name:'Панама',       country:'Панама',      flag:'🇵🇦', tz:'America/Panama',           a:['panama']},
+  {name:'Сан-Хосе',     country:'Коста-Рика',  flag:'🇨🇷', tz:'America/Costa_Rica',       a:['san jose','costa rica']},
+  // ── ЮЖНАЯ АМЕРИКА
+  {name:'Каракас',      country:'Венесуэла',   flag:'🇻🇪', tz:'America/Caracas',          a:['caracas','venezuela']},
+  {name:'Богота',       country:'Колумбия',    flag:'🇨🇴', tz:'America/Bogota',           a:['bogota','colombia']},
+  {name:'Картахена',    country:'Колумбия',    flag:'🇨🇴', tz:'America/Bogota',           a:['cartagena']},
+  {name:'Лима',         country:'Перу',        flag:'🇵🇪', tz:'America/Lima',             a:['lima','peru']},
+  {name:'Кито',         country:'Эквадор',     flag:'🇪🇨', tz:'America/Guayaquil',        a:['quito','ecuador']},
+  {name:'Сан-Паулу',    country:'Бразилия',    flag:'🇧🇷', tz:'America/Sao_Paulo',        a:['sao paulo','brazil']},
+  {name:'Рио-де-Жанейро',country:'Бразилия',  flag:'🇧🇷', tz:'America/Sao_Paulo',        a:['rio de janeiro','rio']},
+  {name:'Буэнос-Айрес', country:'Аргентина',   flag:'🇦🇷', tz:'America/Argentina/Buenos_Aires',a:['buenos aires','argentina']},
+  {name:'Сантьяго',     country:'Чили',        flag:'🇨🇱', tz:'America/Santiago',         a:['santiago','chile']},
 ];
 
-// Popular quick-pick  [name, tz, flag]
-const POPULAR = [
-  ['Москва',    'Europe/Moscow',     '🇷🇺'],
-  ['Дубай',     'Asia/Dubai',        '🇦🇪'],
-  ['Бангкок',   'Asia/Bangkok',      '🇹🇭'],
-  ['Токио',     'Asia/Tokyo',        '🇯🇵'],
-  ['Нью-Йорк',  'America/New_York',  '🇺🇸'],
-  ['Лондон',    'Europe/London',     '🇬🇧'],
-  ['Париж',     'Europe/Paris',      '🇫🇷'],
-  ['Пекин',     'Asia/Shanghai',     '🇨🇳'],
-  ['Сингапур',  'Asia/Singapore',    '🇸🇬'],
-  ['Сидней',    'Australia/Sydney',  '🇦🇺'],
-  ['Дели',      'Asia/Kolkata',      '🇮🇳'],
-  ['Стамбул',   'Europe/Istanbul',   '🇹🇷'],
-];
+/* ═══════════════════════════════════════════════════════
+   SEARCH LOGIC
+═══════════════════════════════════════════════════════ */
+function search(q) {
+  if (!q || q.length < 1) return [];
+  const lq = q.toLowerCase();
+  const seen = new Set();
+  const result = [];
+  for (const c of DB) {
+    const key = c.tz + c.name;
+    if (seen.has(key)) continue;
+    if (c.name.toLowerCase().includes(lq) ||
+        c.country.toLowerCase().includes(lq) ||
+        c.a.some(x => x.includes(lq))) {
+      seen.add(key);
+      result.push(c);
+      if (result.length >= 8) break;
+    }
+  }
+  return result;
+}
 
-// ════════════════════════════════════════════════
-// STATE
-// ════════════════════════════════════════════════
-let tzFrom = null;
-let tzTo   = null;
+/* ═══════════════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════════════ */
+let sel = { from: null, to: null }; // selected city objects
 
-// ════════════════════════════════════════════════
-// TELEGRAM
-// ════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════
+   TELEGRAM
+═══════════════════════════════════════════════════════ */
 const tg = window.Telegram?.WebApp;
 if (tg) { tg.ready(); tg.expand(); }
 
-// ════════════════════════════════════════════════
-// BUILD SELECT OPTIONS
-// ════════════════════════════════════════════════
-function buildOptions(filterText) {
-  const q = (filterText || '').toLowerCase().trim();
-  return CITIES.filter(c => !q || c.label.toLowerCase().includes(q) || c.tz.toLowerCase().includes(q));
-}
+/* ═══════════════════════════════════════════════════════
+   SEARCH UI — for each slot (from/to)
+═══════════════════════════════════════════════════════ */
+['from','to'].forEach(slot => {
+  const inp = document.getElementById(`inp-${slot}`);
+  const dd  = document.getElementById(`dd-${slot}`);
+  const clr = document.getElementById(`clr-${slot}`);
 
-function populateSelect(selectId, filterId, selectedTz) {
-  const sel    = document.getElementById(selectId);
-  const filter = document.getElementById(filterId).value;
-  const list   = buildOptions(filter);
-  const prev   = sel.value;
+  inp.addEventListener('input', () => {
+    clr.style.display = inp.value ? 'block' : 'none';
+    showDropdown(slot, inp.value);
+  });
 
-  sel.innerHTML = list.map(c =>
-    `<option value="${c.tz}"${c.tz === (selectedTz ?? prev) ? ' selected' : ''}>${c.label}</option>`
+  inp.addEventListener('focus', () => {
+    if (inp.value) showDropdown(slot, inp.value);
+  });
+
+  // Hide dropdown on blur — but ONLY if the mousedown wasn't on a dd-item
+  // (mousedown on dd-item fires BEFORE blur, sets a flag)
+  inp.addEventListener('blur', () => {
+    // small delay so mousedown on dd-item can fire first
+    setTimeout(() => closeDropdown(slot), 150);
+  });
+
+  clr.addEventListener('mousedown', e => {
+    e.preventDefault(); // prevent input blur
+    inp.value = '';
+    clr.style.display = 'none';
+    sel[slot] = null;
+    closeDropdown(slot);
+    renderCard(slot);
+    renderDiff();
+  });
+});
+
+function showDropdown(slot, q) {
+  const dd = document.getElementById(`dd-${slot}`);
+  const results = search(q);
+
+  if (!q.trim() || !results.length) {
+    dd.innerHTML = q.trim()
+      ? `<div class="dd-none">Ничего не найдено</div>`
+      : '';
+    dd.classList.toggle('open', !!q.trim());
+    return;
+  }
+
+  dd.innerHTML = results.map((c, i) =>
+    `<div class="dd-item" data-slot="${slot}" data-idx="${i}">
+       <span class="dd-flag">${c.flag}</span>
+       <div>
+         <div class="dd-name">${c.name}</div>
+         <div class="dd-meta">${c.country} · ${fmtOffset(c.tz)}</div>
+       </div>
+     </div>`
   ).join('');
 
-  // If selected item disappeared from filter, deselect
-  if (selectedTz && !list.find(c => c.tz === selectedTz)) sel.value = '';
+  // Store results so mousedown handler can access them
+  dd._results = results;
+
+  // Use mousedown (fires before blur) to pick a city
+  dd.querySelectorAll('.dd-item').forEach(el => {
+    el.addEventListener('mousedown', e => {
+      e.preventDefault(); // crucial — prevents input losing focus before we read value
+      const city = dd._results[+el.dataset.idx];
+      pickCity(slot, city);
+    });
+    // touchstart for mobile
+    el.addEventListener('touchstart', e => {
+      e.preventDefault();
+      const city = dd._results[+el.dataset.idx];
+      pickCity(slot, city);
+    }, { passive: false });
+  });
+
+  dd.classList.add('open');
 }
 
-function initSelects() {
-  populateSelect('select-from', 'filter-from', tzFrom);
-  populateSelect('select-to',   'filter-to',   tzTo);
+function closeDropdown(slot) {
+  document.getElementById(`dd-${slot}`).classList.remove('open');
 }
 
-// filter inputs
-document.getElementById('filter-from').addEventListener('input', () => {
-  populateSelect('select-from', 'filter-from', null);
-});
-document.getElementById('filter-to').addEventListener('input', () => {
-  populateSelect('select-to', 'filter-to', null);
-});
-
-// select change
-function onSelectChange(slot) {
-  const val = document.getElementById(`select-${slot}`).value;
-  if (!val) return;
-  if (slot === 'from') tzFrom = val;
-  else                 tzTo   = val;
-  renderAll();
+function pickCity(slot, city) {
+  sel[slot] = city;
+  const inp = document.getElementById(`inp-${slot}`);
+  inp.value = `${city.flag} ${city.name}, ${city.country}`;
+  document.getElementById(`clr-${slot}`).style.display = 'block';
+  closeDropdown(slot);
+  renderCard(slot);
+  renderDiff();
 }
 
-// ════════════════════════════════════════════════
-// SWAP
-// ════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════
+   SWAP
+═══════════════════════════════════════════════════════ */
 function swapCities() {
-  [tzFrom, tzTo] = [tzTo, tzFrom];
-  populateSelect('select-from', 'filter-from', tzFrom);
-  populateSelect('select-to',   'filter-to',   tzTo);
-  renderAll();
+  [sel.from, sel.to] = [sel.to, sel.from];
+  ['from','to'].forEach(s => {
+    const inp = document.getElementById(`inp-${s}`);
+    const clr = document.getElementById(`clr-${s}`);
+    if (sel[s]) {
+      inp.value = `${sel[s].flag} ${sel[s].name}, ${sel[s].country}`;
+      clr.style.display = 'block';
+    } else {
+      inp.value = '';
+      clr.style.display = 'none';
+    }
+    renderCard(s);
+  });
+  renderDiff();
 }
 
-// ════════════════════════════════════════════════
-// POPULAR GRID
-// ════════════════════════════════════════════════
-function renderPopular() {
-  document.getElementById('pop-grid').innerHTML = POPULAR.map(([name, tz, flag]) => {
-    const af = tzFrom === tz ? 'af' : '';
-    const at = tzTo   === tz ? 'at' : '';
-    return `<button class="pop-btn ${af} ${at}" onclick="pickPopular('${tz}')">
-      <span class="pf">${flag}</span>${name}
-    </button>`;
-  }).join('');
-}
-
-function pickPopular(tz) {
-  if (!tzFrom)       { tzFrom = tz; populateSelect('select-from','filter-from', tz); }
-  else if (!tzTo)    { tzTo   = tz; populateSelect('select-to',  'filter-to',   tz); }
-  else               { tzTo   = tz; populateSelect('select-to',  'filter-to',   tz); }
-  renderAll();
-}
-
-// ════════════════════════════════════════════════
-// TIME HELPERS
-// ════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════
+   TIME HELPERS
+═══════════════════════════════════════════════════════ */
 function fmtTime(tz) {
   return new Intl.DateTimeFormat('ru', {
     timeZone: tz, hour:'2-digit', minute:'2-digit', second:'2-digit', hour12: false
   }).format(new Date());
 }
-
 function fmtDate(tz) {
   return new Intl.DateTimeFormat('ru', {
     timeZone: tz, weekday:'short', day:'numeric', month:'short'
   }).format(new Date());
 }
-
 function getOffsetMin(tz) {
   const now = new Date();
-  const utc = Date.UTC(
-    now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(),
-    now.getUTCHours(),    now.getUTCMinutes()
-  );
   const loc = new Date(now.toLocaleString('en-US', { timeZone: tz }));
-  const utcD = new Date(now.toLocaleString('en-US', { timeZone: 'UTC' }));
-  return Math.round((loc - utcD) / 60000);
+  const utc = new Date(now.toLocaleString('en-US', { timeZone: 'UTC' }));
+  return Math.round((loc - utc) / 60000);
 }
-
 function fmtOffset(tz) {
   const m = getOffsetMin(tz);
   const h = Math.floor(Math.abs(m) / 60);
-  const min = Math.abs(m) % 60;
+  const mn = Math.abs(m) % 60;
   const sign = m >= 0 ? '+' : '−';
-  return `UTC${sign}${h}${min ? ':' + String(min).padStart(2,'0') : ''}`;
+  return `UTC${sign}${h}${mn ? ':' + String(mn).padStart(2,'0') : ''}`;
 }
-
-function workStatus(tz) {
+function workBadge(tz) {
   const h = parseInt(new Intl.DateTimeFormat('ru', {
     timeZone: tz, hour:'2-digit', hour12: false
   }).format(new Date()), 10);
@@ -552,103 +693,85 @@ function workStatus(tz) {
   return                          { cls:'night',   text:'🌙 Ночь' };
 }
 
-// city label from tz
-function labelOf(tz) {
-  const c = CITIES.find(x => x.tz === tz);
-  return c ? c.label.replace(/\s*\(UTC.*\)$/, '') : tz;
-}
+/* ═══════════════════════════════════════════════════════
+   RENDER
+═══════════════════════════════════════════════════════ */
+function renderCard(slot) {
+  const el   = document.getElementById(`card-${slot}`);
+  const city = sel[slot];
+  const lbl  = slot === 'from' ? 'Откуда' : 'Куда';
 
-// ════════════════════════════════════════════════
-// RENDER CARD
-// ════════════════════════════════════════════════
-function renderCard(id, tz) {
-  const el = document.getElementById(id);
-  if (!tz) {
-    el.innerHTML = `<div class="city-name">—</div><div class="placeholder-text">выбери<br>город</div>`;
+  if (!city) {
+    el.innerHTML = `<div class="tc-label">${lbl}</div><div class="tc-empty">выбери город</div>`;
     return;
   }
-  const ws = workStatus(tz);
+  const wb = workBadge(city.tz);
   el.innerHTML = `
-    <div class="city-name">${labelOf(tz)}</div>
-    <div class="clock">${fmtTime(tz)}</div>
-    <div class="date-str">${fmtDate(tz)}</div>
-    <div class="utc-str">${fmtOffset(tz)}</div>
-    <span class="work-badge ${ws.cls}">${ws.text}</span>
+    <div class="tc-label">${lbl}</div>
+    <div class="tc-city">${city.flag} ${city.name}</div>
+    <div class="tc-clock">${fmtTime(city.tz)}</div>
+    <div class="tc-date">${fmtDate(city.tz)}</div>
+    <div class="tc-utc">${fmtOffset(city.tz)}</div>
+    <span class="tc-badge ${wb.cls}">${wb.text}</span>
   `;
 }
 
-// ════════════════════════════════════════════════
-// RENDER DIFF
-// ════════════════════════════════════════════════
 function renderDiff() {
   const col = document.getElementById('diff-col');
-  if (!tzFrom || !tzTo) { col.innerHTML = '<div class="diff-arrow">⇄</div>'; return; }
-
-  const diffMin = getOffsetMin(tzTo) - getOffsetMin(tzFrom);
+  if (!sel.from || !sel.to) {
+    col.innerHTML = '<div class="diff-arrow">⇄</div>';
+    return;
+  }
+  const diffMin = getOffsetMin(sel.to.tz) - getOffsetMin(sel.from.tz);
   const absH = Math.floor(Math.abs(diffMin) / 60);
   const absM = Math.abs(diffMin) % 60;
 
-  let valText, cls;
+  let valHtml, cls;
   if (diffMin === 0) {
-    valText = '=0'; cls = 'zero';
+    valHtml = '= 0'; cls = 'zero';
   } else {
     const sign = diffMin > 0 ? '+' : '−';
-    valText = absM ? `${sign}${absH}ч\n${absM}м` : `${sign}${absH}ч`;
+    valHtml = absM
+      ? `${sign}${absH}ч\n${absM}м`
+      : `${sign}${absH}ч`;
     cls = diffMin > 0 ? 'pos' : 'neg';
   }
-
   col.innerHTML = `
-    <div class="diff-val ${cls}" style="white-space:pre;text-align:center">${valText}</div>
+    <div class="diff-val ${cls}">${valHtml}</div>
     <div class="diff-unit">разница</div>
   `;
 }
 
-// ════════════════════════════════════════════════
-// TICK
-// ════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════
+   TICK — every second
+═══════════════════════════════════════════════════════ */
 function tick() {
-  if (tzFrom) {
-    const card = document.getElementById('card-from');
-    const cl = card.querySelector('.clock');
-    const dt = card.querySelector('.date-str');
-    const wb = card.querySelector('.work-badge');
-    if (cl) cl.textContent = fmtTime(tzFrom);
-    if (dt) dt.textContent = fmtDate(tzFrom);
-    if (wb) { const ws = workStatus(tzFrom); wb.textContent = ws.text; wb.className = `work-badge ${ws.cls}`; }
-  }
-  if (tzTo) {
-    const card = document.getElementById('card-to');
-    const cl = card.querySelector('.clock');
-    const dt = card.querySelector('.date-str');
-    const wb = card.querySelector('.work-badge');
-    if (cl) cl.textContent = fmtTime(tzTo);
-    if (dt) dt.textContent = fmtDate(tzTo);
-    if (wb) { const ws = workStatus(tzTo); wb.textContent = ws.text; wb.className = `work-badge ${ws.cls}`; }
-  }
+  ['from','to'].forEach(slot => {
+    const city = sel[slot];
+    if (!city) return;
+    const card = document.getElementById(`card-${slot}`);
+    const cl = card.querySelector('.tc-clock');
+    const dt = card.querySelector('.tc-date');
+    const wb = card.querySelector('.tc-badge');
+    if (cl) cl.textContent = fmtTime(city.tz);
+    if (dt) dt.textContent = fmtDate(city.tz);
+    if (wb) { const b = workBadge(city.tz); wb.textContent = b.text; wb.className = `tc-badge ${b.cls}`; }
+  });
 }
+setInterval(tick, 1000);
 
-// ════════════════════════════════════════════════
-// RENDER ALL
-// ════════════════════════════════════════════════
-function renderAll() {
-  renderCard('card-from', tzFrom);
-  renderCard('card-to',   tzTo);
-  renderDiff();
-  renderPopular();
-}
-
-// ════════════════════════════════════════════════
-// INIT
-// ════════════════════════════════════════════════
-// Auto-detect local timezone for "from"
+/* ═══════════════════════════════════════════════════════
+   INIT — auto-detect local timezone
+═══════════════════════════════════════════════════════ */
 try {
   const localTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  if (CITIES.find(c => c.tz === localTz)) tzFrom = localTz;
+  const found = DB.find(c => c.tz === localTz);
+  if (found) pickCity('from', found);
 } catch(e) {}
 
-initSelects();
-renderAll();
-setInterval(tick, 1000);
+renderCard('from');
+renderCard('to');
+renderDiff();
 </script>
 </body>
 </html>
