@@ -50,18 +50,75 @@ ADMIN_ID    = 462171750
 def get_main_keyboard():
     return ReplyKeyboardMarkup(
         [
-            [KeyboardButton("🌍 Подобрать страну"),                               KeyboardButton("📖 Инструкция для новичка")],
-            [KeyboardButton("🛂 Визы для россиян"),                               KeyboardButton("🌤 Сезоны путешествий")],
-            [KeyboardButton("🗺 Мои страны", web_app=WebAppInfo(url=WEBAPP_URL)),  KeyboardButton("🗺 Карта мира", web_app=WebAppInfo(url=MAP_URL))],
-            [KeyboardButton("🔤 Переводчик"),                                     KeyboardButton("💱 Конвертер валют", web_app=WebAppInfo(url=CURRENCY_URL))],
-            [KeyboardButton("✅ Чеклист", web_app=WebAppInfo(url=CHECKLIST_URL)),  KeyboardButton("📊 Моя статистика", web_app=WebAppInfo(url=STATS_URL))],
-            [KeyboardButton("🚁 Дроны"),                                          KeyboardButton("⛔ Несовместимые страны")],
-            [KeyboardButton("🎬 Фильмы"),                                         KeyboardButton("📚 Путеводители")],
-            [KeyboardButton("🛋 Лаунджи аэропортов"),                             KeyboardButton("✈️ Авторские туры")],
-            [KeyboardButton("🚢 Круизы"),                                          KeyboardButton("💰 Общий счёт", web_app=WebAppInfo(url=SPLITWISE_URL))],
-            [KeyboardButton("🕐 Разница во времени", web_app=WebAppInfo(url=TIMEZONE_URL))],
-            [KeyboardButton("🤝 Партнёры"),                                          KeyboardButton("🆘 Поддержка")],
-            [KeyboardButton("⭐ Премиум"),                                          KeyboardButton(CHANNEL_BTN)],
+            [KeyboardButton("🧭 Планирование"),    KeyboardButton("🛠 Инструменты")],
+            [KeyboardButton("🗺 Мои путешествия"), KeyboardButton("📚 Знания")],
+            [KeyboardButton("✈️ Услуги"),           KeyboardButton("🤝 Партнёры")],
+            [KeyboardButton("⭐ Премиум"),          KeyboardButton("🆘 Поддержка")],
+            [KeyboardButton(CHANNEL_BTN)],
+        ],
+        resize_keyboard=True,
+        one_time_keyboard=True,
+    )
+
+
+def get_folder_planning_kb():
+    return ReplyKeyboardMarkup(
+        [
+            [KeyboardButton("🌍 Подобрать страну"),      KeyboardButton("🌤 Сезоны путешествий")],
+            [KeyboardButton("🛂 Визы"),                   KeyboardButton("⛔ Несовместимые страны")],
+            [KeyboardButton(HOME_BTN)],
+        ],
+        resize_keyboard=True,
+        one_time_keyboard=True,
+    )
+
+
+def get_folder_tools_kb():
+    return ReplyKeyboardMarkup(
+        [
+            [KeyboardButton("🔤 Переводчик"),
+             KeyboardButton("💱 Конвертер валют", web_app=WebAppInfo(url=CURRENCY_URL))],
+            [KeyboardButton("🕐 Разница во времени", web_app=WebAppInfo(url=TIMEZONE_URL)),
+             KeyboardButton("💰 Общий счёт", web_app=WebAppInfo(url=SPLITWISE_URL))],
+            [KeyboardButton(HOME_BTN)],
+        ],
+        resize_keyboard=True,
+        one_time_keyboard=True,
+    )
+
+
+def get_folder_mytrips_kb():
+    return ReplyKeyboardMarkup(
+        [
+            [KeyboardButton("🗺 Мои страны", web_app=WebAppInfo(url=WEBAPP_URL)),
+             KeyboardButton("🗺 Карта мира", web_app=WebAppInfo(url=MAP_URL))],
+            [KeyboardButton("✅ Чеклист", web_app=WebAppInfo(url=CHECKLIST_URL)),
+             KeyboardButton("📊 Моя статистика", web_app=WebAppInfo(url=STATS_URL))],
+            [KeyboardButton(HOME_BTN)],
+        ],
+        resize_keyboard=True,
+        one_time_keyboard=True,
+    )
+
+
+def get_folder_knowledge_kb():
+    return ReplyKeyboardMarkup(
+        [
+            [KeyboardButton("📖 Инструкция для новичка"), KeyboardButton("🚁 Дроны")],
+            [KeyboardButton("🛋 Лаунджи аэропортов"),     KeyboardButton("🚢 Круизы")],
+            [KeyboardButton("🎬 Фильмы о путешествиях")],
+            [KeyboardButton(HOME_BTN)],
+        ],
+        resize_keyboard=True,
+        one_time_keyboard=True,
+    )
+
+
+def get_folder_services_kb():
+    return ReplyKeyboardMarkup(
+        [
+            [KeyboardButton("📚 Путеводители"), KeyboardButton("✈️ Авторские туры")],
+            [KeyboardButton(HOME_BTN)],
         ],
         resize_keyboard=True,
         one_time_keyboard=True,
@@ -744,7 +801,46 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
-    if text == "🌍 Подобрать страну":
+
+    # ── Folder buttons ──────────────────────────────────────────────────────
+    if text == "🧭 Планирование":
+        await update.message.reply_text(
+            "🧭 *Планирование*\n\nВыбери раздел:",
+            parse_mode="Markdown",
+            reply_markup=get_folder_planning_kb(),
+        )
+        return MAIN_MENU
+    elif text == "🛠 Инструменты":
+        await update.message.reply_text(
+            "🛠 *Инструменты*\n\nВыбери раздел:",
+            parse_mode="Markdown",
+            reply_markup=get_folder_tools_kb(),
+        )
+        return MAIN_MENU
+    elif text == "🗺 Мои путешествия":
+        await update.message.reply_text(
+            "🗺 *Мои путешествия*\n\nВыбери раздел:",
+            parse_mode="Markdown",
+            reply_markup=get_folder_mytrips_kb(),
+        )
+        return MAIN_MENU
+    elif text == "📚 Знания":
+        await update.message.reply_text(
+            "📚 *Знания*\n\nВыбери раздел:",
+            parse_mode="Markdown",
+            reply_markup=get_folder_knowledge_kb(),
+        )
+        return MAIN_MENU
+    elif text == "✈️ Услуги":
+        await update.message.reply_text(
+            "✈️ *Услуги*\n\nВыбери раздел:",
+            parse_mode="Markdown",
+            reply_markup=get_folder_services_kb(),
+        )
+        return MAIN_MENU
+
+    # ── Feature buttons ──────────────────────────────────────────────────────
+    elif text == "🌍 Подобрать страну":
         context.user_data["answers"] = {}
         context.user_data["step"] = 0
         q = QUESTIONS[0]
@@ -758,9 +854,9 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await show_help_menu(update, context)
     elif text == "🔤 Переводчик":
         return await start_translator(update, context)
-    elif text == "🛂 Визы для россиян":
+    elif text == "🛂 Визы":
         return await show_visa_menu(update, context)
-    elif text == "🎬 Фильмы":
+    elif text == "🎬 Фильмы о путешествиях":
         return await show_movies_menu(update, context)
     elif text == INCOMPATIBLE_BTN:
         return await show_incompatible_menu(update, context)
@@ -773,7 +869,7 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text in ("📚 Путеводители", "✈️ Авторские туры"):
         await update.message.reply_text(
             "🚧 В разработке — скоро появится!",
-            reply_markup=get_main_keyboard(),
+            reply_markup=get_folder_services_kb(),
         )
         return MAIN_MENU
     elif text == "🚢 Круизы":
