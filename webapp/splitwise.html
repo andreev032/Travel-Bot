@@ -793,24 +793,10 @@ function exportResult() {
     lines.push('\n✅ Все в расчёте!');
   }
 
-  const text = lines.join('\n');
-
-  if (tg) {
-    tg.sendData(JSON.stringify({ type: 'splitwise_export', text, currency: cur }));
-    toast('📤 Отправлено в чат');
-  } else {
-    // fallback: clipboard
-    navigator.clipboard.writeText(text).then(() => toast('📋 Скопировано в буфер'))
-      .catch(() => {
-        const ta = document.createElement('textarea');
-        ta.value = text;
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand('copy');
-        document.body.removeChild(ta);
-        toast('📋 Скопировано');
-      });
-  }
+  toast('✅ Данные сохранены');
+  setTimeout(() => {
+    if (tg) tg.close();
+  }, 1200);
 }
 
 // ════════════════════════════════════════════════
