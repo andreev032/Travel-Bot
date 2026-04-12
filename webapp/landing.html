@@ -145,13 +145,12 @@
     /* ─── Hero ──────────────────────────────────────────────────────────────── */
     .hero {
       position: relative;
-      min-height: 100svh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
+      height: 50vh;
+      min-height: 340px;
       overflow: hidden;
     }
+
+    /* Фото: занимает весь блок, лицо не обрезается сверху */
     .hero-bg {
       position: absolute;
       inset: 0;
@@ -159,76 +158,63 @@
       height: 100%;
       object-fit: cover;
       object-position: center top;
-      transform: scale(1.05);
-      transition: transform 8s ease;
       display: block;
     }
-    .hero-bg.loaded { transform: scale(1); }
+
+    /* Тёмный градиент снизу — текст читается на любом фото */
     .hero-overlay {
       position: absolute;
       inset: 0;
       background: linear-gradient(
         to bottom,
-        rgba(8,11,26,.55) 0%,
-        rgba(30,16,101,.75) 50%,
-        rgba(8,11,26,.95) 100%
+        rgba(8,11,26,.10)  0%,
+        rgba(8,11,26,.20) 35%,
+        rgba(8,11,26,.72) 65%,
+        rgba(8,11,26,.97) 100%
       );
     }
-    .hero-particles {
-      position: absolute;
-      inset: 0;
-      overflow: hidden;
-      pointer-events: none;
-    }
-    .particle {
-      position: absolute;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(168,85,247,.6), transparent 70%);
-      animation: float linear infinite;
-    }
-    @keyframes float {
-      0%   { transform: translateY(100vh) scale(0); opacity: 0; }
-      10%  { opacity: 1; }
-      90%  { opacity: 1; }
-      100% { transform: translateY(-20vh) scale(1); opacity: 0; }
-    }
+
+    /* Контент прилипает ко дну hero, поверх градиента */
     .hero-content {
-      position: relative;
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
       z-index: 2;
-      padding: 120px 20px 80px;
+      text-align: center;
+      padding: 0 20px 32px;
     }
+
     .hero-badge {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      padding: 8px 20px;
+      padding: 6px 16px;
       border-radius: 50px;
-      background: rgba(255,255,255,.1);
-      border: 1px solid rgba(255,255,255,.2);
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.22);
       backdrop-filter: blur(10px);
-      font-size: .85rem;
+      font-size: .8rem;
       font-weight: 600;
-      margin-bottom: 28px;
-      animation: fadeDown .8s ease;
+      margin-bottom: 12px;
+      animation: fadeUp .8s ease both;
     }
     .hero-badge .dot {
-      width: 8px; height: 8px;
+      width: 7px; height: 7px;
       border-radius: 50%;
       background: #4ade80;
-      box-shadow: 0 0 8px #4ade80;
+      box-shadow: 0 0 7px #4ade80;
       animation: pulse 2s infinite;
     }
     @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.4} }
-    @keyframes fadeDown {
-      from { opacity:0; transform:translateY(-20px); }
-      to   { opacity:1; transform:none; }
-    }
+
     .hero h1 {
-      font-size: clamp(2.4rem, 8vw, 5rem);
+      font-size: clamp(1.9rem, 6vw, 3.6rem);
       font-weight: 900;
       line-height: 1.1;
-      margin-bottom: 20px;
-      animation: fadeUp .9s .2s ease both;
+      margin-bottom: 12px;
+      animation: fadeUp .9s .15s ease both;
+      text-shadow: 0 2px 16px rgba(0,0,0,.5);
     }
     .hero h1 span {
       background: linear-gradient(90deg, #a78bfa, #60a5fa, #a78bfa);
@@ -239,45 +225,26 @@
       animation: shimmer 4s linear infinite;
     }
     @keyframes shimmer { 0%{background-position:0%} 100%{background-position:200%} }
+
     .hero-sub {
-      font-size: clamp(1rem, 3vw, 1.3rem);
-      color: rgba(255,255,255,.8);
-      max-width: 520px;
-      margin: 0 auto 40px;
-      animation: fadeUp .9s .35s ease both;
+      font-size: clamp(.88rem, 2.5vw, 1.1rem);
+      color: rgba(255,255,255,.82);
+      max-width: 480px;
+      margin: 0 auto 20px;
+      animation: fadeUp .9s .28s ease both;
+      text-shadow: 0 1px 8px rgba(0,0,0,.6);
     }
     .hero-actions {
       display: flex;
-      gap: 14px;
+      gap: 12px;
       justify-content: center;
       flex-wrap: wrap;
-      animation: fadeUp .9s .5s ease both;
+      animation: fadeUp .9s .42s ease both;
     }
     @keyframes fadeUp {
-      from { opacity:0; transform:translateY(24px); }
+      from { opacity:0; transform:translateY(20px); }
       to   { opacity:1; transform:none; }
     }
-    .hero-scroll {
-      position: absolute;
-      bottom: 32px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-      color: rgba(255,255,255,.5);
-      font-size: .75rem;
-      animation: fadeUp 1s 1s ease both;
-      z-index: 2;
-    }
-    .scroll-line {
-      width: 1px;
-      height: 40px;
-      background: linear-gradient(to bottom, rgba(255,255,255,.5), transparent);
-      animation: scrollPulse 2s infinite;
-    }
-    @keyframes scrollPulse { 0%,100%{opacity:.5}50%{opacity:1} }
 
     /* ─── Features ──────────────────────────────────────────────────────────── */
     .features { background: var(--bg2); position: relative; overflow: hidden; }
@@ -566,21 +533,23 @@
 
   <!-- ── Hero ───────────────────────────────────────────────────────────────── -->
   <section class="hero" id="hero">
+    <!-- Фото: 50vh, object-fit cover, лицо сверху не обрезается -->
     <img class="hero-bg" id="heroBg"
          src="https://raw.githubusercontent.com/andreev032/Travel-Bot/main/photo_2026-04-12_22-22-07.jpg"
          alt="Путешественник как местный"
          fetchpriority="high"
     />
+    <!-- Тёмный градиент снизу для читаемости текста -->
     <div class="hero-overlay"></div>
-    <div class="hero-particles" id="particles"></div>
 
+    <!-- Текст поверх фото, прижат ко дну -->
     <div class="hero-content">
       <div class="hero-badge">
         <span class="dot"></span>
         Telegram-бот для путешественников
       </div>
       <h1>Путешествуй<br><span>как местный</span></h1>
-      <p class="hero-sub">Всё для самостоятельного путешествия — в одном боте. Визы, маршруты, переводчик, конвертер и ещё 20 инструментов.</p>
+      <p class="hero-sub">Всё для самостоятельного путешествия — в одном боте.</p>
       <div class="hero-actions">
         <a href="https://t.me/like_a_local_bot" class="btn btn-primary" target="_blank" rel="noopener">
           ✈️ Открыть бота
@@ -589,11 +558,6 @@
           Узнать больше
         </a>
       </div>
-    </div>
-
-    <div class="hero-scroll">
-      <div class="scroll-line"></div>
-      Скролл
     </div>
   </section>
 
@@ -821,22 +785,6 @@
       heroBg.addEventListener('error', () => heroBg.classList.add('loaded')); // fallback
     }
 
-    // ── Floating particles ─────────────────────────────────────────────────────
-    const particlesEl = document.getElementById('particles');
-    const PARTICLE_COUNT = 14;
-    for (let i = 0; i < PARTICLE_COUNT; i++) {
-      const p = document.createElement('div');
-      p.className = 'particle';
-      const size = Math.random() * 160 + 60;
-      p.style.cssText = `
-        width:${size}px;height:${size}px;
-        left:${Math.random() * 100}%;
-        animation-duration:${Math.random() * 18 + 12}s;
-        animation-delay:${Math.random() * -20}s;
-        opacity:${Math.random() * .4 + .1};
-      `;
-      particlesEl.appendChild(p);
-    }
 
     // ── Scroll reveal ──────────────────────────────────────────────────────────
     const revealEls = document.querySelectorAll('.reveal');
