@@ -60,7 +60,8 @@ def get_main_keyboard():
             [KeyboardButton("🛋 Лаунджи аэропортов"),                             KeyboardButton("✈️ Авторские туры")],
             [KeyboardButton("🚢 Круизы"),                                          KeyboardButton("💰 Общий счёт", web_app=WebAppInfo(url=SPLITWISE_URL))],
             [KeyboardButton("🕐 Разница во времени", web_app=WebAppInfo(url=TIMEZONE_URL))],
-            [KeyboardButton(CHANNEL_BTN),                                            KeyboardButton("🆘 Поддержка")],
+            [KeyboardButton("🤝 Партнёры"),                                          KeyboardButton("🆘 Поддержка")],
+            [KeyboardButton(CHANNEL_BTN)],
         ],
         resize_keyboard=True,
         one_time_keyboard=True,
@@ -778,6 +779,16 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return MAIN_MENU
     elif text == "🚢 Круизы":
         return await cruise_menu_handler(update, context)
+    elif text == "🤝 Партнёры":
+        await update.message.reply_text(
+            "🤝 *Партнёры*\n\n"
+            "🚧 Раздел в разработке — скоро появится!\n\n"
+            "Здесь будут лучшие сервисы для путешественников со специальными "
+            "условиями для подписчиков канала @like\\_a\\_local",
+            parse_mode="Markdown",
+            reply_markup=ReplyKeyboardMarkup([[HOME_BTN]], resize_keyboard=True),
+        )
+        return MAIN_MENU
     elif text == "🆘 Поддержка":
         return await show_support_menu(update, context)
     elif text == CHANNEL_BTN:
