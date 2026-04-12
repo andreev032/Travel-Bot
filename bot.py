@@ -61,7 +61,7 @@ def get_main_keyboard():
             [KeyboardButton("🚢 Круизы"),                                          KeyboardButton("💰 Общий счёт", web_app=WebAppInfo(url=SPLITWISE_URL))],
             [KeyboardButton("🕐 Разница во времени", web_app=WebAppInfo(url=TIMEZONE_URL))],
             [KeyboardButton("🤝 Партнёры"),                                          KeyboardButton("🆘 Поддержка")],
-            [KeyboardButton("⭐ Premium"),                                          KeyboardButton(CHANNEL_BTN)],
+            [KeyboardButton("⭐ Премиум"),                                          KeyboardButton(CHANNEL_BTN)],
         ],
         resize_keyboard=True,
         one_time_keyboard=True,
@@ -778,9 +778,9 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return MAIN_MENU
     elif text == "🚢 Круизы":
         return await cruise_menu_handler(update, context)
-    elif text == "⭐ Premium":
+    elif text == "⭐ Премиум":
         await update.message.reply_text(
-            "⭐ *Как местный Premium*\n\n"
+            "⭐ *Как местный Премиум*\n\n"
             "🚧 В разработке — скоро появится!",
             parse_mode="Markdown",
             reply_markup=ReplyKeyboardMarkup([[HOME_BTN]], resize_keyboard=True),
