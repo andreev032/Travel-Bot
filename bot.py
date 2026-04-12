@@ -885,9 +885,7 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == "🤝 Партнёры":
         await update.message.reply_text(
             "🤝 *Партнёры*\n\n"
-            "🚧 Раздел в разработке — скоро появится!\n\n"
-            "Здесь будут лучшие сервисы для путешественников со специальными "
-            "условиями для подписчиков канала @like\\_a\\_local",
+            "🚧 В разработке — скоро появится!",
             parse_mode="Markdown",
             reply_markup=ReplyKeyboardMarkup([[HOME_BTN]], resize_keyboard=True),
         )
