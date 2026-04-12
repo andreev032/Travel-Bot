@@ -44,13 +44,15 @@ CHANNEL_BTN = "📢 Наш канал"
 def get_main_keyboard():
     return ReplyKeyboardMarkup(
         [
-            [KeyboardButton("🌍 Подобрать страну"),                              KeyboardButton("📖 Инструкция для новичка")],
-            [KeyboardButton("🛂 Визы для россиян"),                              KeyboardButton("🌤 Сезоны путешествий")],
-            [KeyboardButton("🗺 Мои страны", web_app=WebAppInfo(url=WEBAPP_URL)), KeyboardButton("🗺 Карта мира", web_app=WebAppInfo(url=MAP_URL))],
-            [KeyboardButton("🔤 Переводчик"),                                    KeyboardButton("💱 Конвертер валют", web_app=WebAppInfo(url=CURRENCY_URL))],
-            [KeyboardButton("✅ Чеклист", web_app=WebAppInfo(url=CHECKLIST_URL)), KeyboardButton("📊 Моя статистика", web_app=WebAppInfo(url=STATS_URL))],
-            [KeyboardButton("🚁 Дроны"),                                         KeyboardButton("⛔ Несовместимые страны")],
-            [KeyboardButton("🎬 Фильмы"),                                        KeyboardButton(CHANNEL_BTN)],
+            [KeyboardButton("🌍 Подобрать страну"),                               KeyboardButton("📖 Инструкция для новичка")],
+            [KeyboardButton("🛂 Визы для россиян"),                               KeyboardButton("🌤 Сезоны путешествий")],
+            [KeyboardButton("🗺 Мои страны", web_app=WebAppInfo(url=WEBAPP_URL)),  KeyboardButton("🗺 Карта мира", web_app=WebAppInfo(url=MAP_URL))],
+            [KeyboardButton("🔤 Переводчик"),                                     KeyboardButton("💱 Конвертер валют", web_app=WebAppInfo(url=CURRENCY_URL))],
+            [KeyboardButton("✅ Чеклист", web_app=WebAppInfo(url=CHECKLIST_URL)),  KeyboardButton("📊 Моя статистика", web_app=WebAppInfo(url=STATS_URL))],
+            [KeyboardButton("🚁 Дроны"),                                          KeyboardButton("⛔ Несовместимые страны")],
+            [KeyboardButton("🎬 Фильмы"),                                         KeyboardButton("📚 Путеводители")],
+            [KeyboardButton("🛃 Оформление виз"),                                 KeyboardButton("✈️ Авторские туры")],
+            [KeyboardButton(CHANNEL_BTN)],
         ],
         resize_keyboard=True,
         one_time_keyboard=True,
@@ -685,6 +687,12 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await drone_menu_handler(update, context)
     elif text == "🌤 Сезоны путешествий":
         return await season_menu_handler(update, context)
+    elif text in ("📚 Путеводители", "🛃 Оформление виз", "✈️ Авторские туры"):
+        await update.message.reply_text(
+            "🚧 В разработке — скоро появится!",
+            reply_markup=get_main_keyboard(),
+        )
+        return MAIN_MENU
     elif text == CHANNEL_BTN:
         inline_kb = InlineKeyboardMarkup([[InlineKeyboardButton("📢 Перейти в канал", url=CHANNEL_URL)]])
         await update.message.reply_text(
