@@ -2051,7 +2051,7 @@ def _strip_hashtags(text: str) -> str:
     return re.sub(r'\s*#\w+', '', text).strip()
 
 
-async def _send_post(bot, post: dict, label: str, chat_id: int | None = None) -> bool:
+async def _send_post(bot, post: dict, label: str, chat_id: int | None = None) -> tuple[bool, str]:
     """Send a post dict {"keyword": ..., "text": ...} with photo + signature.
 
     Fallback chain:
@@ -2059,7 +2059,7 @@ async def _send_post(bot, post: dict, label: str, chat_id: int | None = None) ->
       2. send_photo + plain caption
       3. send_message + Markdown (with signature)
       4. send_message + plain text
-    Returns True on success.
+    Returns (success: bool, detail: str) — detail describes what was sent or the error.
     """
     target  = chat_id if chat_id is not None else CHANNEL_ID
     text    = _strip_hashtags(post["text"])
@@ -2069,44 +2069,63 @@ async def _send_post(bot, post: dict, label: str, chat_id: int | None = None) ->
     # Use static photo_url from post dict (Wikimedia Commons direct link)
     photo_url = post.get("photo_url")
     if photo_url:
-        logger.info(f"{label}: статическое фото → {photo_url}")
+        logger.info(f"{label}: photo_url → {photo_url}")
     else:
-        logger.info(f"{label}: photo_url не задан для '{keyword}', отправляем текст")
+        logger.info(f"{label}: photo_url не задан для '{keyword}' — только текст")
+
+    errors: list[str] = []
+
     if photo_url:
         # Attempt 1: photo + Markdown caption
+        logger.info(f"{label}: попытка 1 — send_photo + Markdown | URL={photo_url}")
         try:
             await bot.send_photo(chat_id=target, photo=photo_url,
                                  caption=signed, parse_mode="Markdown")
-            logger.info(f"{label}: отправлен с фото + Markdown ✓")
-            return True
+            logger.info(f"{label}: ✅ отправлен фото + Markdown")
+            return True, "✅ фото + Markdown caption"
         except Exception as e1:
-            logger.warning(f"{label}: photo+Markdown error — {type(e1).__name__}: {e1}")
+            err = f"{type(e1).__name__}: {e1}"
+            logger.warning(f"{label}: ❌ попытка 1 (фото+Markdown) — {err}")
+            errors.append(f"фото+Markdown: {err}")
+
         # Attempt 2: photo + plain caption
+        logger.info(f"{label}: попытка 2 — send_photo + plain | URL={photo_url}")
         try:
             await bot.send_photo(chat_id=target, photo=photo_url, caption=text)
-            logger.info(f"{label}: отправлен с фото + plain ✓")
-            return True
+            logger.info(f"{label}: ✅ отправлен фото + plain")
+            return True, "✅ фото + plain caption"
         except Exception as e2:
-            logger.warning(f"{label}: photo+plain error — {type(e2).__name__}: {e2}")
+            err = f"{type(e2).__name__}: {e2}"
+            logger.warning(f"{label}: ❌ попытка 2 (фото+plain) — {err}")
+            errors.append(f"фото+plain: {err}")
 
     # Attempt 3: text + Markdown (with signature)
+    logger.info(f"{label}: попытка 3 — send_message + Markdown")
     try:
         await bot.send_message(chat_id=target, text=signed, parse_mode="Markdown",
                                disable_web_page_preview=True)
-        logger.info(f"{label}: отправлен текст + Markdown ✓")
-        return True
+        logger.info(f"{label}: ✅ отправлен текст + Markdown")
+        return True, "✅ текст + Markdown (фото не отправилось)"
     except Exception as e3:
-        logger.warning(f"{label}: text+Markdown error — {type(e3).__name__}: {e3}")
+        err = f"{type(e3).__name__}: {e3}"
+        logger.warning(f"{label}: ❌ попытка 3 (текст+Markdown) — {err}")
+        errors.append(f"текст+Markdown: {err}")
 
     # Attempt 4: plain text
+    logger.info(f"{label}: попытка 4 — send_message plain")
     try:
         await bot.send_message(chat_id=target, text=text,
                                disable_web_page_preview=True)
-        logger.info(f"{label}: отправлен plain text ✓")
-        return True
+        logger.info(f"{label}: ✅ отправлен plain text")
+        return True, "✅ plain текст (все остальные попытки провалились)"
     except Exception as e4:
-        logger.error(f"{label}: plain error — {type(e4).__name__}: {e4}")
-        return False
+        err = f"{type(e4).__name__}: {e4}"
+        logger.error(f"{label}: ❌ попытка 4 (plain) — {err}")
+        errors.append(f"plain: {err}")
+
+    detail = "❌ все 4 попытки провалились:\n" + "\n".join(f"  • {e}" for e in errors)
+    logger.error(f"{label}: {detail}")
+    return False, detail
 
 
 async def scheduler(bot) -> None:
@@ -2136,7 +2155,8 @@ async def scheduler(bot) -> None:
                     f"Автопост #{_post_index} (пост {idx+1}/{len(CHANNEL_POSTS)})"
                     f" keyword='{post.get('keyword')}': отправка в {CHANNEL_ID}"
                 )
-                await _send_post(bot, post, f"Автопост #{_post_index}")
+                ok, detail = await _send_post(bot, post, f"Автопост #{_post_index}")
+                logger.info(f"Автопост #{_post_index}: результат — {detail}")
 
         except asyncio.CancelledError:
             logger.info("Планировщик остановлен (CancelledError)")
@@ -2222,15 +2242,16 @@ async def testpost_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     label = f"/testpost #{_post_index}"
     logger.info(f"{label}: отправка поста {idx+1} (keyword='{keyword}') в тестовый канал {TEST_CHANNEL_ID}")
 
-    success = await _send_post(context.bot, post, label, chat_id=TEST_CHANNEL_ID)
-    if success:
-        await update.message.reply_text(f"✅ Пост #{_post_index} отправлен в тестовый канал")
-    else:
-        await update.message.reply_text(
-            f"❌ Пост #{_post_index} не отправлен — проверь логи бота.\n"
-            f"Убедись что бот — администратор тестового канала с правом публикации.",
-            parse_mode="Markdown",
-        )
+    ok, detail = await _send_post(context.bot, post, label, chat_id=TEST_CHANNEL_ID)
+
+    result_lines = [
+        f"{'✅' if ok else '❌'} Пост #{_post_index} — {detail}",
+    ]
+    if photo_url:
+        result_lines.append(f"🖼 URL фото: `{photo_url}`")
+    if not ok:
+        result_lines.append("💡 Убедись что бот — администратор канала с правом публикации")
+    await update.message.reply_text("\n".join(result_lines), parse_mode="Markdown")
 
 
 async def post_init(app: Application) -> None:
