@@ -34,6 +34,7 @@ MAP_URL         = "https://andreev032.github.io/Travel-Bot/map.html"
 CHECKLIST_URL   = "https://andreev032.github.io/Travel-Bot/checklist.html"
 STATS_URL       = "https://andreev032.github.io/Travel-Bot/stats.html"
 CURRENCY_URL    = "https://andreev032.github.io/Travel-Bot/currency.html"
+SPLITWISE_URL   = "https://andreev032.github.io/Travel-Bot/splitwise.html"
 CHANNEL_URL     = "https://t.me/like_a_local"
 
 
@@ -52,7 +53,7 @@ def get_main_keyboard():
             [KeyboardButton("🚁 Дроны"),                                          KeyboardButton("⛔ Несовместимые страны")],
             [KeyboardButton("🎬 Фильмы"),                                         KeyboardButton("📚 Путеводители")],
             [KeyboardButton("🛃 Оформление виз"),                                 KeyboardButton("✈️ Авторские туры")],
-            [KeyboardButton(CHANNEL_BTN)],
+            [KeyboardButton("💰 Общий счёт", web_app=WebAppInfo(url=SPLITWISE_URL)), KeyboardButton(CHANNEL_BTN)],
         ],
         resize_keyboard=True,
         one_time_keyboard=True,
