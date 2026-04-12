@@ -43,14 +43,13 @@ CHANNEL_BTN = "📢 Наш канал"
 def get_main_keyboard():
     return ReplyKeyboardMarkup(
         [
-            [KeyboardButton("🌍 Подобрать страну"), KeyboardButton("📖 Инструкция для новичка")],
+            [KeyboardButton("🌍 Подобрать страну"),                              KeyboardButton("📖 Инструкция для новичка")],
+            [KeyboardButton("🛂 Визы для россиян"),                              KeyboardButton("🌤 Сезоны путешествий")],
             [KeyboardButton("🗺 Мои страны", web_app=WebAppInfo(url=WEBAPP_URL)), KeyboardButton("🗺 Карта мира", web_app=WebAppInfo(url=MAP_URL))],
-            [KeyboardButton("🔤 Переводчик"), KeyboardButton(CHANNEL_BTN)],
-            [KeyboardButton("🛂 Визы для россиян"), KeyboardButton("✅ Чеклист путешественника", web_app=WebAppInfo(url=CHECKLIST_URL))],
-            [KeyboardButton("🎬 Фильмы для путешественников"), KeyboardButton("📊 Моя статистика", web_app=WebAppInfo(url=STATS_URL))],
-            [KeyboardButton("💱 Конвертер валют", web_app=WebAppInfo(url=CURRENCY_URL))],
-            [KeyboardButton("⛔ Несовместимые страны"), KeyboardButton("🚁 Дроны в путешествиях")],
-            [KeyboardButton("🌤 Сезоны путешествий")],
+            [KeyboardButton("🔤 Переводчик"),                                    KeyboardButton("💱 Конвертер валют", web_app=WebAppInfo(url=CURRENCY_URL))],
+            [KeyboardButton("✅ Чеклист", web_app=WebAppInfo(url=CHECKLIST_URL)), KeyboardButton("📊 Моя статистика", web_app=WebAppInfo(url=STATS_URL))],
+            [KeyboardButton("🚁 Дроны"),                                         KeyboardButton("⛔ Несовместимые страны")],
+            [KeyboardButton("🎬 Фильмы"),                                        KeyboardButton(CHANNEL_BTN)],
         ],
         resize_keyboard=True,
         one_time_keyboard=True,
@@ -646,9 +645,14 @@ def score_destination(dest, answers):
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data.clear()
     await update.message.reply_text(
-        "Привет! Я твой travel-помощник 🌍\n\n"
-        "Помогу подобрать страну, покажу карту маршрута или отвечу на вопросы если едешь впервые.\n\n"
-        "Что хочешь сделать?",
+        "✈️ Привет! Я твой travel-помощник «Как местный» 🎒\n"
+        "Всё что нужно для путешествия — в одном месте:\n\n"
+        "🌍 Подберу страну под твои желания\n"
+        "📋 Расскажу всё про 195 стран мира\n"
+        "🔤 Переведу любую фразу\n"
+        "🗺 Покажу мир на карте\n"
+        "✅ Помогу не забыть ничего в дорогу\n\n"
+        "Куда летим? 🌍",
         reply_markup=get_main_keyboard(),
     )
     return MAIN_MENU
@@ -672,11 +676,11 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await start_translator(update, context)
     elif text == "🛂 Визы для россиян":
         return await show_visa_menu(update, context)
-    elif text == "🎬 Фильмы для путешественников":
+    elif text == "🎬 Фильмы":
         return await show_movies_menu(update, context)
     elif text == INCOMPATIBLE_BTN:
         return await show_incompatible_menu(update, context)
-    elif text == "🚁 Дроны в путешествиях":
+    elif text == "🚁 Дроны":
         return await drone_menu_handler(update, context)
     elif text == "🌤 Сезоны путешествий":
         return await season_menu_handler(update, context)
