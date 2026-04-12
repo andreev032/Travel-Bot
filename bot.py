@@ -66,7 +66,7 @@ def get_folder_planning_kb():
         [
             [KeyboardButton("🌍 Подобрать страну"),      KeyboardButton("🌤 Сезоны путешествий")],
             [KeyboardButton("🛂 Визы"),                   KeyboardButton("⛔ Несовместимые страны")],
-            [KeyboardButton(HOME_BTN)],
+            [KeyboardButton("◀️ Назад"),                  KeyboardButton(HOME_BTN)],
         ],
         resize_keyboard=True,
         one_time_keyboard=True,
@@ -80,7 +80,7 @@ def get_folder_tools_kb():
              KeyboardButton("💱 Конвертер валют", web_app=WebAppInfo(url=CURRENCY_URL))],
             [KeyboardButton("🕐 Разница во времени", web_app=WebAppInfo(url=TIMEZONE_URL)),
              KeyboardButton("💰 Общий счёт", web_app=WebAppInfo(url=SPLITWISE_URL))],
-            [KeyboardButton(HOME_BTN)],
+            [KeyboardButton("◀️ Назад"),                  KeyboardButton(HOME_BTN)],
         ],
         resize_keyboard=True,
         one_time_keyboard=True,
@@ -94,7 +94,7 @@ def get_folder_mytrips_kb():
              KeyboardButton("🗺 Карта мира", web_app=WebAppInfo(url=MAP_URL))],
             [KeyboardButton("✅ Чеклист", web_app=WebAppInfo(url=CHECKLIST_URL)),
              KeyboardButton("📊 Моя статистика", web_app=WebAppInfo(url=STATS_URL))],
-            [KeyboardButton(HOME_BTN)],
+            [KeyboardButton("◀️ Назад"),                  KeyboardButton(HOME_BTN)],
         ],
         resize_keyboard=True,
         one_time_keyboard=True,
@@ -107,7 +107,7 @@ def get_folder_knowledge_kb():
             [KeyboardButton("📖 Инструкция для новичка"), KeyboardButton("🚁 Дроны")],
             [KeyboardButton("🛋 Лаунджи аэропортов"),     KeyboardButton("🚢 Круизы")],
             [KeyboardButton("🎬 Фильмы о путешествиях")],
-            [KeyboardButton(HOME_BTN)],
+            [KeyboardButton("◀️ Назад"),                   KeyboardButton(HOME_BTN)],
         ],
         resize_keyboard=True,
         one_time_keyboard=True,
@@ -118,7 +118,7 @@ def get_folder_services_kb():
     return ReplyKeyboardMarkup(
         [
             [KeyboardButton("📚 Путеводители"), KeyboardButton("✈️ Авторские туры")],
-            [KeyboardButton(HOME_BTN)],
+            [KeyboardButton("◀️ Назад"),         KeyboardButton(HOME_BTN)],
         ],
         resize_keyboard=True,
         one_time_keyboard=True,
@@ -130,6 +130,39 @@ async def go_home(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "🏠 Главное меню:",
         reply_markup=get_main_keyboard(),
+    )
+    return MAIN_MENU
+
+
+async def show_folder_planning(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Вернуться в папку 🧭 Планирование."""
+    context.user_data.clear()
+    await update.message.reply_text(
+        "🧭 *Планирование*\n\nВыбери раздел:",
+        parse_mode="Markdown",
+        reply_markup=get_folder_planning_kb(),
+    )
+    return MAIN_MENU
+
+
+async def show_folder_knowledge(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Вернуться в папку 📚 Знания."""
+    context.user_data.clear()
+    await update.message.reply_text(
+        "📚 *Знания*\n\nВыбери раздел:",
+        parse_mode="Markdown",
+        reply_markup=get_folder_knowledge_kb(),
+    )
+    return MAIN_MENU
+
+
+async def show_folder_tools(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Вернуться в папку 🛠 Инструменты."""
+    context.user_data.clear()
+    await update.message.reply_text(
+        "🛠 *Инструменты*\n\nВыбери раздел:",
+        parse_mode="Markdown",
+        reply_markup=get_folder_tools_kb(),
     )
     return MAIN_MENU
 
@@ -802,6 +835,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
 
+    # ◀️ Назад из подменю папок → главное меню
+    if text == "◀️ Назад":
+        return await go_home(update, context)
+
     # ── Folder buttons ──────────────────────────────────────────────────────
     if text == "🧭 Планирование":
         await update.message.reply_text(
@@ -879,7 +916,7 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "⭐ *Как местный Премиум*\n\n"
             "🚧 В разработке — скоро появится!",
             parse_mode="Markdown",
-            reply_markup=ReplyKeyboardMarkup([[HOME_BTN]], resize_keyboard=True),
+            reply_markup=ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True),
         )
         return MAIN_MENU
     elif text == "🤝 Партнёры":
@@ -887,7 +924,7 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "🤝 *Партнёры*\n\n"
             "🚧 В разработке — скоро появится!",
             parse_mode="Markdown",
-            reply_markup=ReplyKeyboardMarkup([[HOME_BTN]], resize_keyboard=True),
+            reply_markup=ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True),
         )
         return MAIN_MENU
     elif text == "🆘 Поддержка":
@@ -909,7 +946,7 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def show_help_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    keyboard = [[topic] for topic in HELP_TOPICS.keys()] + [["🏠 Главное меню"]]
+    keyboard = [[topic] for topic in HELP_TOPICS.keys()] + [["◀️ Назад", HOME_BTN]]
     await update.message.reply_text(
         "📖 *Инструкция для новичка*\n\nВыбери тему:",
         parse_mode="Markdown",
@@ -924,8 +961,10 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def help_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
+    if text == "◀️ Назад":
+        return await show_folder_knowledge(update, context)
     if text in HELP_TOPICS:
-        keyboard = [["◀️ Назад в меню"]]
+        keyboard = [["◀️ Назад в меню", HOME_BTN]]
         await update.message.reply_text(
             HELP_TOPICS[text],
             parse_mode="Markdown",
@@ -1040,13 +1079,15 @@ async def start_translator(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "🇬🇧 английский → 🇷🇺 русский\n\n"
         "_Язык определяется автоматически по наличию кириллицы._",
         parse_mode="Markdown",
-        reply_markup=ReplyKeyboardMarkup([[HOME_BTN]], resize_keyboard=True, one_time_keyboard=False),
+        reply_markup=ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True, one_time_keyboard=False),
     )
     return TRANSLATING
 
 
 async def handle_translation(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip()
+    if text == "◀️ Назад":
+        return await show_folder_tools(update, context)
     if not text:
         return TRANSLATING
 
@@ -1082,7 +1123,7 @@ _VISA_MAIN_KB = [
     ["📋 Нужна виза"],
     ["💡 Полезная информация"],
     ["🚧 Оформить визу"],
-    [HOME_BTN],
+    ["◀️ Назад", HOME_BTN],
 ]
 
 
@@ -1097,6 +1138,8 @@ async def show_visa_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def visa_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
+    if text == "◀️ Назад":
+        return await show_folder_planning(update, context)
     if text == "🚧 Оформить визу":
         await update.message.reply_text(
             "🚧 В разработке — скоро появится!",
@@ -1105,7 +1148,7 @@ async def visa_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return VISA_MENU
     if text in VISAS:
         content = VISAS[text]
-        back_kb = ReplyKeyboardMarkup([["◀️ Назад"], [HOME_BTN]], resize_keyboard=True, one_time_keyboard=True)
+        back_kb = ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True, one_time_keyboard=True)
         if len(content) > 4000:
             chunks = [content[i:i+4000] for i in range(0, len(content), 4000)]
             for chunk in chunks[:-1]:
@@ -1430,8 +1473,9 @@ CRUISE_DATA: dict[str, str] = {
 
 async def cruise_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Главное меню раздела круизов."""
+    context.user_data["cruise_depth"] = "menu"
     keyboard = ReplyKeyboardMarkup(
-        [[btn] for btn in CRUISE_BTNS] + [[HOME_BTN]],
+        [[btn] for btn in CRUISE_BTNS] + [["◀️ Назад", HOME_BTN]],
         resize_keyboard=True,
     )
     await update.message.reply_text(
@@ -1448,11 +1492,14 @@ async def cruise_section_handler(update: Update, context: ContextTypes.DEFAULT_T
     if text == HOME_BTN:
         return await go_home(update, context)
     if text == "◀️ Назад":
+        if context.user_data.get("cruise_depth") == "menu":
+            return await show_folder_knowledge(update, context)
         return await cruise_menu_handler(update, context)
     content = CRUISE_DATA.get(text)
     if not content:
         return await cruise_menu_handler(update, context)
-    back_kb = ReplyKeyboardMarkup([["◀️ Назад"], [HOME_BTN]], resize_keyboard=True, one_time_keyboard=True)
+    context.user_data["cruise_depth"] = "section"
+    back_kb = ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True, one_time_keyboard=True)
     if len(content) > 4000:
         chunks = [content[i:i+4000] for i in range(0, len(content), 4000)]
         for chunk in chunks[:-1]:
@@ -1695,7 +1742,7 @@ MOVIES_REGION_BTNS = list(MOVIES_REGIONS_DATA.keys())
 
 
 async def show_movies_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    keyboard = [[b] for b in MOVIES_MENU_BTNS] + [[HOME_BTN]]
+    keyboard = [[b] for b in MOVIES_MENU_BTNS] + [["◀️ Назад", HOME_BTN]]
     await update.message.reply_text(
         "🎬 *Фильмы для путешественников*\n\nВыбери категорию:",
         parse_mode="Markdown",
@@ -1706,15 +1753,17 @@ async def show_movies_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def movies_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
+    if text == "◀️ Назад":
+        return await show_folder_knowledge(update, context)
     if text in MOVIES_LIST_DATA:
         context.user_data["movies_back"] = "menu"
         await update.message.reply_text(
             MOVIES_LIST_DATA[text], parse_mode="Markdown",
-            reply_markup=ReplyKeyboardMarkup([["◀️ Назад"], [HOME_BTN]], resize_keyboard=True, one_time_keyboard=True),
+            reply_markup=ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True, one_time_keyboard=True),
         )
         return MOVIES_LIST
     if text == "🗺 Фильмы по странам":
-        keyboard = [[b] for b in MOVIES_REGION_BTNS] + [["◀️ Назад"], [HOME_BTN]]
+        keyboard = [[b] for b in MOVIES_REGION_BTNS] + [["◀️ Назад", HOME_BTN]]
         await update.message.reply_text(
             "🗺 *Фильмы по странам*\n\nВыбери регион:",
             parse_mode="Markdown",
@@ -1732,10 +1781,10 @@ async def movies_region_handler(update: Update, context: ContextTypes.DEFAULT_TY
         context.user_data["movies_back"] = "region"
         await update.message.reply_text(
             MOVIES_REGIONS_DATA[text], parse_mode="Markdown",
-            reply_markup=ReplyKeyboardMarkup([["◀️ Назад"], [HOME_BTN]], resize_keyboard=True, one_time_keyboard=True),
+            reply_markup=ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True, one_time_keyboard=True),
         )
         return MOVIES_LIST
-    keyboard = [[b] for b in MOVIES_REGION_BTNS] + [["◀️ Назад"], [HOME_BTN]]
+    keyboard = [[b] for b in MOVIES_REGION_BTNS] + [["◀️ Назад", HOME_BTN]]
     await update.message.reply_text(
         "🗺 *Фильмы по странам*\n\nВыбери регион:",
         parse_mode="Markdown",
@@ -1747,7 +1796,7 @@ async def movies_region_handler(update: Update, context: ContextTypes.DEFAULT_TY
 async def movies_list_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message.text == "◀️ Назад":
         if context.user_data.get("movies_back") == "region":
-            keyboard = [[b] for b in MOVIES_REGION_BTNS] + [["◀️ Назад"], [HOME_BTN]]
+            keyboard = [[b] for b in MOVIES_REGION_BTNS] + [["◀️ Назад", HOME_BTN]]
             await update.message.reply_text(
                 "🗺 *Фильмы по странам*\n\nВыбери регион:",
                 parse_mode="Markdown",
@@ -2026,8 +2075,10 @@ async def show_incompatible_menu(update: Update, context: ContextTypes.DEFAULT_T
 
 async def incompatible_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
-    if text == "◀️ Назад" or text == HOME_BTN:
+    if text == HOME_BTN:
         return await go_home(update, context)
+    if text == "◀️ Назад":
+        return await show_folder_planning(update, context)
     if text in INCOMPATIBLE_CATEGORIES:
         content = INCOMPATIBLE_CATEGORIES[text]
         keyboard = [["◀️ Назад к категориям"], [HOME_BTN]]
@@ -2630,7 +2681,7 @@ async def drone_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE)
     keyboard = ReplyKeyboardMarkup([
         ["✅ Можно летать", "📋 Нужно разрешение"],
         ["🚫 Запрещено", "⚠️ Общие правила везде"],
-        [HOME_BTN],
+        ["◀️ Назад", HOME_BTN],
     ], resize_keyboard=True)
     await update.message.reply_text(
         "🚁 *Дроны в путешествиях*\n\nВыбери категорию:",
@@ -2645,14 +2696,14 @@ async def drone_category_handler(update: Update, context: ContextTypes.DEFAULT_T
     if text == HOME_BTN:
         return await go_home(update, context)
     if text == "◀️ Назад":
-        return await drone_menu_handler(update, context)
+        return await show_folder_knowledge(update, context)
 
     # Общие правила — отвечаем сразу без регионального подменю
     if text == "⚠️ Общие правила везде":
         keyboard = ReplyKeyboardMarkup([
             ["✅ Можно летать", "📋 Нужно разрешение"],
             ["🚫 Запрещено", "⚠️ Общие правила везде"],
-            [HOME_BTN],
+            ["◀️ Назад", HOME_BTN],
         ], resize_keyboard=True)
         await update.message.reply_text(DRONE_RULES_TEXT, parse_mode="Markdown", reply_markup=keyboard)
         return DRONE_MENU
@@ -2663,7 +2714,7 @@ async def drone_category_handler(update: Update, context: ContextTypes.DEFAULT_T
     # Сохраняем категорию и показываем регионы
     context.user_data["drone_category"] = text
     keyboard = ReplyKeyboardMarkup(
-        [[r] for r in DRONE_REGION_BTNS] + [["◀️ Назад"], [HOME_BTN]],
+        [[r] for r in DRONE_REGION_BTNS] + [["◀️ Назад", HOME_BTN]],
         resize_keyboard=True
     )
     await update.message.reply_text(
@@ -2690,7 +2741,7 @@ async def drone_region_handler(update: Update, context: ContextTypes.DEFAULT_TYP
         content = f"Данные для региона {text} временно недоступны."
 
     back_keyboard = ReplyKeyboardMarkup(
-        [[r] for r in DRONE_REGION_BTNS] + [["◀️ Назад"], [HOME_BTN]],
+        [[r] for r in DRONE_REGION_BTNS] + [["◀️ Назад", HOME_BTN]],
         resize_keyboard=True
     )
     await update.message.reply_text(content, parse_mode="Markdown", reply_markup=back_keyboard)
@@ -2945,8 +2996,9 @@ SEASON_DATA: dict[str, str] = {
 
 async def season_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Главное меню раздела сезонов — выбор региона."""
+    context.user_data["season_depth"] = "menu"
     keyboard = ReplyKeyboardMarkup(
-        [[btn] for btn in SEASON_REGION_BTNS] + [[HOME_BTN]],
+        [[btn] for btn in SEASON_REGION_BTNS] + [["◀️ Назад", HOME_BTN]],
         resize_keyboard=True,
     )
     await update.message.reply_text(
@@ -2963,12 +3015,15 @@ async def season_region_handler(update: Update, context: ContextTypes.DEFAULT_TY
     if text == HOME_BTN:
         return await go_home(update, context)
     if text == "◀️ Назад":
+        if context.user_data.get("season_depth") == "menu":
+            return await show_folder_planning(update, context)
         return await season_menu_handler(update, context)
     content = SEASON_DATA.get(text)
     if not content:
         return await season_menu_handler(update, context)
+    context.user_data["season_depth"] = "region"
     back_keyboard = ReplyKeyboardMarkup(
-        [["◀️ Назад"], [HOME_BTN]],
+        [["◀️ Назад", HOME_BTN]],
         resize_keyboard=True,
     )
     await update.message.reply_text(content, parse_mode="Markdown", reply_markup=back_keyboard)
@@ -3169,8 +3224,9 @@ LOUNGE_DATA: dict[str, str] = {
 
 async def lounge_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Главное меню раздела лаунджей."""
+    context.user_data["lounge_depth"] = "menu"
     keyboard = ReplyKeyboardMarkup(
-        [[btn] for btn in LOUNGE_BTNS] + [[HOME_BTN]],
+        [[btn] for btn in LOUNGE_BTNS] + [["◀️ Назад", HOME_BTN]],
         resize_keyboard=True,
     )
     await update.message.reply_text(
@@ -3187,12 +3243,15 @@ async def lounge_section_handler(update: Update, context: ContextTypes.DEFAULT_T
     if text == HOME_BTN:
         return await go_home(update, context)
     if text == "◀️ Назад":
+        if context.user_data.get("lounge_depth") == "menu":
+            return await show_folder_knowledge(update, context)
         return await lounge_menu_handler(update, context)
     content = LOUNGE_DATA.get(text)
     if not content:
         return await lounge_menu_handler(update, context)
+    context.user_data["lounge_depth"] = "section"
     back_keyboard = ReplyKeyboardMarkup(
-        [["◀️ Назад"], [HOME_BTN]],
+        [["◀️ Назад", HOME_BTN]],
         resize_keyboard=True,
     )
     # Split long messages if needed
