@@ -26,7 +26,8 @@ _post_index = 0
 
 MAIN_MENU, ANSWERING, HELP_MENU, HELP_TOPIC, TRANSLATING, VISA_MENU, VISA_CATEGORY, \
     MOVIES_MENU, MOVIES_REGION, MOVIES_LIST, INCOMPATIBLE_MENU, INCOMPATIBLE_TOPIC, \
-    DRONE_MENU, DRONE_SECTION, SEASON_MENU, SEASON_REGION = range(16)
+    DRONE_MENU, DRONE_SECTION, SEASON_MENU, SEASON_REGION, \
+    LOUNGE_MENU, LOUNGE_SECTION = range(18)
 
 # Замени на реальный HTTPS-URL после деплоя webapp/index.html
 WEBAPP_URL      = "https://andreev032.github.io/Travel-Bot/"
@@ -53,7 +54,8 @@ def get_main_keyboard():
             [KeyboardButton("✅ Чеклист", web_app=WebAppInfo(url=CHECKLIST_URL)),  KeyboardButton("📊 Моя статистика", web_app=WebAppInfo(url=STATS_URL))],
             [KeyboardButton("🚁 Дроны"),                                          KeyboardButton("⛔ Несовместимые страны")],
             [KeyboardButton("🎬 Фильмы"),                                         KeyboardButton("📚 Путеводители")],
-            [KeyboardButton("🛃 Оформление виз"),                                 KeyboardButton("✈️ Авторские туры")],
+            [KeyboardButton("🛋 Лаунджи аэропортов"),                             KeyboardButton("🛃 Оформление виз")],
+            [KeyboardButton("✈️ Авторские туры")],
             [KeyboardButton("💰 Общий счёт", web_app=WebAppInfo(url=SPLITWISE_URL)), KeyboardButton("🕐 Разница во времени", web_app=WebAppInfo(url=TIMEZONE_URL))],
             [KeyboardButton(CHANNEL_BTN)],
         ],
@@ -690,6 +692,8 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await drone_menu_handler(update, context)
     elif text == "🌤 Сезоны путешествий":
         return await season_menu_handler(update, context)
+    elif text == "🛋 Лаунджи аэропортов":
+        return await lounge_menu_handler(update, context)
     elif text in ("📚 Путеводители", "🛃 Оформление виз", "✈️ Авторские туры"):
         await update.message.reply_text(
             "🚧 В разработке — скоро появится!",
@@ -2344,6 +2348,313 @@ async def season_region_handler(update: Update, context: ContextTypes.DEFAULT_TY
     return SEASON_REGION
 
 
+## ── LOUNGES ──────────────────────────────────────────────────────────────────
+
+LOUNGE_BTNS = [
+    "📱 Как попасть в лаундж",
+    "🇷🇺 Лаунджи Москвы",
+    "🌍 Лучшие лаунджи мира",
+    "🏆 По направлениям",
+    "💡 Лайфхаки",
+]
+
+LOUNGE_DATA: dict[str, str] = {
+
+"📱 Как попасть в лаундж": (
+    "📱 *Как попасть в лаундж аэропорта*\n\n"
+    "━━━━━━━━━━━━━━━━━━\n"
+    "💳 *Банковские карты*\n\n"
+    "🏦 *Tinkoff Premium / Black*\n"
+    "До 2 бесплатных визитов в месяц по Priority Pass. Карта от 1 990₽/мес или бесплатно при остатке от 3 млн₽.\n\n"
+    "🏦 *Альфа-Банк Alfa Premium*\n"
+    "Безлимитный Priority Pass + 1 гость бесплатно. Карта от 5 000₽/мес.\n\n"
+    "🏦 *СберПремьер / СберПервый*\n"
+    "СберПремьер — 4 визита/год, СберПервый — безлимит по Lounge Key. Пакет от 2 499₽/мес.\n\n"
+    "🏦 *ВТБ Прайм*\n"
+    "Безлимитный Priority Pass. Пакет от 5 000₽/мес.\n\n"
+    "🏦 *Райффайзен Premium*\n"
+    "2 визита/мес по Priority Pass. Карта от 3 000₽/мес.\n\n"
+    "🏦 *Газпромбанк Премиум*\n"
+    "До 4 визитов/квартал по DragonPass. От 2 000₽/мес.\n\n"
+    "🏦 *Открытие Premium*\n"
+    "2 бесплатных визита/мес + скидка 50% на дополнительные.\n\n"
+    "━━━━━━━━━━━━━━━━━━\n"
+    "🌐 *Priority Pass*\n"
+    "Доступ в 1 400+ лаунджей в 148 странах.\n"
+    "• Standard: $99/год + $35 за визит\n"
+    "• Standard Plus: $329/год — 10 бесплатных визитов\n"
+    "• Prestige: $469/год — безлимит\n"
+    "Купить: prioritypass.com или через банк.\n\n"
+    "🐉 *DragonPass*\n"
+    "Аналог Priority Pass, акцент на Азию и Россию.\n"
+    "700+ лаунджей. Разовый визит от $25-35.\n"
+    "Часто выгоднее PP для путешествий в Китай и СНГ.\n\n"
+    "🔑 *Lounge Key*\n"
+    "1 000+ лаунджей, входит в ряд банковских пакетов.\n"
+    "Разовый визит от $25-30. Сайт: loungekey.com\n\n"
+    "━━━━━━━━━━━━━━━━━━\n"
+    "✈️ *Бизнес-класс и статусные карты*\n"
+    "Билет бизнес-класса → автоматический доступ в лаундж авиакомпании.\n"
+    "Статус Gold/Platinum в программах лояльности (Аэрофлот Бонус, Miles&Smiles и др.) → бесплатный вход.\n\n"
+    "💵 *Платный вход*\n"
+    "Москва (SVO/DME): 2 000–4 000₽\n"
+    "Дубай, Сингапур: $30–50\n"
+    "Бангкок, Стамбул: $20–35\n"
+    "Обычно включает: еда, напитки, Wi-Fi, часто душ.\n\n"
+    "⚠️ _Условия и цены меняются — уточняй на сайте лаунджа_"
+),
+
+"🇷🇺 Лаунджи Москвы": (
+    "🇷🇺 *Лаунджи московских аэропортов*\n\n"
+    "━━━━━━━━━━━━━━━━━━\n"
+    "✈️ *Шереметьево (SVO)*\n\n"
+    "🏛 *Аэрофлот Бизнес Лаундж*\n"
+    "📍 Терминал B (внутренние) и D/E/F (международные)\n"
+    "🕐 Круглосуточно\n"
+    "✅ Горячее питание, алкоголь, душевые кабины, Wi-Fi, детская зона\n"
+    "💳 Бизнес-класс Аэрофлота, Gold/Platinum статус\n"
+    "⭐ Рейтинг: 4.2/5\n\n"
+    "🏛 *No.1 Traveller Lounge*\n"
+    "📍 Терминал D, зона вылета\n"
+    "🕐 05:00–00:00\n"
+    "✅ Шведский стол, открытый бар, Wi-Fi, душ, игровая зона\n"
+    "💳 Priority Pass, DragonPass, платно (~3 500₽)\n"
+    "⭐ Рейтинг: 4.4/5\n\n"
+    "🏛 *Sky Lounge SVO*\n"
+    "📍 Терминал F, международный\n"
+    "🕐 06:00–23:00\n"
+    "✅ Горячие блюда, бар, Wi-Fi, пресса\n"
+    "💳 Priority Pass, Lounge Key\n"
+    "⭐ Рейтинг: 3.9/5\n\n"
+    "🏛 *Meridian Lounge (Turkish Airlines)*\n"
+    "📍 Терминал D\n"
+    "🕐 По расписанию рейсов TK\n"
+    "✅ Турецкая кухня, чай, Wi-Fi\n"
+    "💳 Бизнес TK, Miles&Smiles Elite\n"
+    "⭐ Рейтинг: 4.0/5\n\n"
+    "━━━━━━━━━━━━━━━━━━\n"
+    "✈️ *Домодедово (DME)*\n\n"
+    "🏛 *Galaktika Lounge*\n"
+    "📍 Центральное здание, 3 этаж, зона вылета\n"
+    "🕐 Круглосуточно\n"
+    "✅ Горячее, алкоголь, Wi-Fi, душ, спа-кресла\n"
+    "💳 Priority Pass, DragonPass, платно (~2 500₽)\n"
+    "⭐ Рейтинг: 4.3/5\n\n"
+    "🏛 *Dnata Lounge DME*\n"
+    "📍 Терминал, зона международных вылетов\n"
+    "🕐 24/7\n"
+    "✅ Фуршет, бар, Wi-Fi, тихая зона\n"
+    "💳 Priority Pass, Lounge Key\n"
+    "⭐ Рейтинг: 3.8/5\n\n"
+    "━━━━━━━━━━━━━━━━━━\n"
+    "✈️ *Внуково (VKO)*\n\n"
+    "🏛 *VIP Lounge Внуково*\n"
+    "📍 Терминал A, 2 этаж\n"
+    "🕐 24/7\n"
+    "✅ Питание, алкоголь, Wi-Fi, душевые, детская\n"
+    "💳 Priority Pass, DragonPass, платно (~2 000₽)\n"
+    "⭐ Рейтинг: 4.0/5\n\n"
+    "🏛 *Utair Lounge*\n"
+    "📍 Терминал A, зона вылета\n"
+    "🕐 По расписанию\n"
+    "✅ Снеки, горячие напитки, Wi-Fi\n"
+    "💳 Бизнес Utair, пакеты банков\n"
+    "⭐ Рейтинг: 3.7/5\n\n"
+    "⚠️ _Время работы и условия могут меняться_"
+),
+
+"🌍 Лучшие лаунджи мира": (
+    "🌍 *Топ-10 лучших лаунджей мира*\n\n"
+    "🥇 *1. Singapore Changi — Singapore Airlines SilverKris*\n"
+    "📍 Терминал 3, Сингапур\n"
+    "Признан лучшим в мире 10+ лет подряд. Личные комнаты-сьюты, горячая кухня 4 кухонь мира, бассейн на крыше (T1), спа. Только бизнес/первый класс SQ.\n\n"
+    "🥈 *2. Qatar Airways Al Mourjan Business Lounge*\n"
+    "📍 Доха, Хамад Аэропорт\n"
+    "Крупнейший лаундж в мире (10 000 м²). Ресторан с à la carte меню, бары, спа, душевые, тихие зоны, детский уголок.\n\n"
+    "🥉 *3. Emirates First Class Lounge Dubai*\n"
+    "📍 Терминал 3, DXB\n"
+    "Бар с живым барменом, спа и массаж, горячий душ, изысканная кухня. Только первый класс Emirates.\n\n"
+    "4️⃣ *Cathay Pacific The Pier, Гонконг*\n"
+    "📍 HKG, Терминал 1\n"
+    "Кабины для сна, ресторан с видом на перрон, полноценный спа-центр с ваннами.\n\n"
+    "5️⃣ *Lufthansa First Class Terminal, Франкфурт*\n"
+    "📍 FRA — отдельное здание!\n"
+    "Собственный терминал только для первого класса LH. Трансфер на Porsche Cayenne, личный повар, спа, комнаты сна.\n\n"
+    "6️⃣ *Qantas First Lounge, Сидней*\n"
+    "📍 SYD, Международный терминал\n"
+    "Спа от Endota, шеф-повар, коктейль-бар, кровати для сна. Лучший лаундж Австралии.\n\n"
+    "7️⃣ *American Express Centurion Lounge, NYC*\n"
+    "📍 JFK, Терминал 4\n"
+    "Открыт для владельцев Amex Platinum и Centurion. Кулинарные шоу, фирменные коктейли, спа.\n\n"
+    "8️⃣ *SATS Premier Lounge, Сингапур*\n"
+    "📍 Changi T2/T3\n"
+    "Доступен по Priority Pass! Отличный фуршет, душевые, тихая зона, детский уголок. Лучший PP-лаундж Азии.\n\n"
+    "9️⃣ *TAV Primeclass, Стамбул*\n"
+    "📍 IST, все терминалы\n"
+    "Доступен по PP. Шикарный фуршет с турецкой кухней, открытый бар, душевые, массаж (платно).\n\n"
+    "🔟 *Air France La Première, CDG*\n"
+    "📍 Париж, Терминал 2E\n"
+    "Только первый класс AF. Кухня мишленовского уровня, личный консьерж, спа, комнаты сна.\n\n"
+    "⚠️ _Большинство топ-лаунджей — только бизнес/первый класс._\n"
+    "_По PP: SATS Сингапур, TAV Стамбул, Al Safwa Доха._"
+),
+
+"🏆 По направлениям": (
+    "🏆 *Лаунджи по популярным направлениям*\n\n"
+    "━━━━━━━━━━━━━━━━━━\n"
+    "🇹🇭 *Таиланд — Бангкок (BKK/DMK), Пхукет (HKT)*\n"
+    "🏛 Miracle Lounge (BKK, T1) — PP ✅ Фуршет, бар, Wi-Fi\n"
+    "🏛 Coral Executive Lounge (BKK, T2) — PP ✅ Тайская кухня, душ\n"
+    "🏛 True Move Lounge (HKT) — PP ✅ Базовый уровень, снеки\n\n"
+    "🇻🇳 *Вьетнам — Хошимин (SGN), Ханой (HAN)*\n"
+    "🏛 Lotus Lounge (SGN) — PP ✅ Вьетнамская кухня, Wi-Fi\n"
+    "🏛 Song Hong Business Lounge (HAN) — PP ✅ Горячее, бар\n"
+    "🏛 VIP Lounge T1 (HAN) — платно ~$25 ✅ Снеки, кофе\n\n"
+    "🇦🇪 *ОАЭ — Дубай (DXB), Абу-Даби (AUH)*\n"
+    "🏛 Emirates Business Lounge (DXB T3) — бизнес EK ✅ Топ-уровень\n"
+    "🏛 Marhaba Lounge (DXB T1) — PP ✅ Арабская кухня, душ\n"
+    "🏛 Al Dhabi Lounge (AUH) — PP ✅ Хорошая кухня, бар\n\n"
+    "🇹🇷 *Турция — Стамбул (IST, SAW)*\n"
+    "🏛 TAV Primeclass IST — PP ✅ ⭐ Лучший PP в регионе, шведский стол\n"
+    "🏛 Turkish Airlines Lounge (IST) — бизнес TK ✅ Легендарный, 7 000 м²\n"
+    "🏛 Primeclass SAW — PP ✅ Уютный, хорошая кухня\n\n"
+    "🇪🇬 *Египет — Каир (CAI), Хургада (HRG), Шарм (SSH)*\n"
+    "🏛 EgyptAir Lounge (CAI) — PP ✅ Арабская кухня, Wi-Fi\n"
+    "🏛 Coral Lounge (HRG) — платно ~2 500₽ ✅ Базовый уровень\n"
+    "🏛 Sharm VIP Lounge (SSH) — PP ✅ Снеки, прохладные напитки\n\n"
+    "🇬🇪 *Грузия — Тбилиси (TBS)*\n"
+    "🏛 Business Lounge TBS — PP ✅ Грузинская кухня, вино, хинкали!\n"
+    "🏛 Georgian Airways Lounge — статус ✅ Уютный, хорошее вино\n"
+    "🏛 Tbilisi Lounge (TBS) — платно ~$20 ✅ Открытый бар\n\n"
+    "🇦🇲 *Армения — Ереван (EVN)*\n"
+    "🏛 Armavia Lounge (EVN) — PP ✅ Армянская кухня, коньяк!\n"
+    "🏛 Yerevan Business Lounge — платно ~$25 ✅ Хороший уровень\n\n"
+    "🇸🇬 *Сингапур (SIN)*\n"
+    "🏛 SATS Premier T2/T3 — PP ✅ ⭐ Лучший PP в Азии, горячая кухня\n"
+    "🏛 Plaza Premium T1/T2 — PP ✅ Душ, массаж, детская зона\n"
+    "🏛 SilverKris (Singapore Airlines) — бизнес SQ ✅ Мировой топ\n\n"
+    "🇯🇵 *Япония — Токио (NRT/HND), Осака (KIX)*\n"
+    "🏛 IASS Executive Lounge (NRT T1) — PP ✅ Японская кухня, сакэ\n"
+    "🏛 KAL Lounge (NRT) — PP ✅ Уютный, тихий\n"
+    "🏛 ANA Lounge (HND) — бизнес ANA ✅ Традиционная японская кухня\n\n"
+    "🇨🇳 *Китай — Пекин (PEK), Шанхай (PVG)*\n"
+    "🏛 Air China Phoenix Lounge (PEK) — PP ✅ Китайская кухня, димсамы\n"
+    "🏛 No.1 Lounge (PVG T2) — PP ✅ Горячее, бар, душ\n"
+    "🏛 BLLA Lounge (PEK T3) — PP ✅ Современный, Wi-Fi 6\n\n"
+    "🇮🇩 *Индонезия/Бали (DPS)*\n"
+    "🏛 Garuda Indonesia Lounge (DPS) — PP ✅ Балийская кухня, тихо\n"
+    "🏛 Premier Lounge Bali — PP ✅ Снеки, кофе, Wi-Fi\n"
+    "🏛 Plaza Premium (DPS) — PP ✅ Хороший уровень, душ\n\n"
+    "🇲🇾 *Малайзия — Куала-Лумпур (KUL)*\n"
+    "🏛 Plaza Premium KLIA — PP ✅ ⭐ Отличный уровень, 5 залов\n"
+    "🏛 Malaysia Airlines Golden Lounge — бизнес MH ✅ Малайская кухня\n"
+    "🏛 Sama-Sama Lounge (KLIA2) — PP ✅ Стильный, хорошая еда\n\n"
+    "🇰🇭 *Камбоджа — Пномпень (PNH), Сиемреап (REP)*\n"
+    "🏛 Cambodia Angkor Air Lounge (PNH) — PP ✅ Базовый, кхмерские снеки\n"
+    "🏛 Siem Reap Lounge (REP) — платно ~$20 ✅ Небольшой, уютный\n\n"
+    "🇲🇻 *Мальдивы — Мале (MLE)*\n"
+    "🏛 MACL VIP Lounge (MLE) — PP ✅ Небольшой, напитки, Wi-Fi\n"
+    "🏛 Business Class Lounge — бизнес ✅ Свежие морепродукты\n\n"
+    "⚠️ _Доступ по PP — уточняй актуальность на loungereview.com_"
+),
+
+"💡 Лайфхаки": (
+    "💡 *Лайфхаки про лаунджи аэропортов*\n\n"
+    "━━━━━━━━━━━━━━━━━━\n"
+    "🆓 *Как попасть бесплатно*\n\n"
+    "1️⃣ Оформи карту с Priority Pass — многие банки дают 2-4 бесплатных визита/мес\n"
+    "2️⃣ Используй ошибочные тарифы бизнес-класса — они периодически появляются\n"
+    "3️⃣ Апгрейд через мили — если нет денег на бизнес-класс\n"
+    "4️⃣ Покупай билет ребёнку до 2 лет в бизнес — сам идёшь в лаундж\n"
+    "5️⃣ Карты Amex Platinum (международная) — безлимитный Centurion Lounge\n"
+    "6️⃣ Статус Gold в Skyteam/Star Alliance/Oneworld — вход во многие лаунджи\n\n"
+    "━━━━━━━━━━━━━━━━━━\n"
+    "⏰ *Лучшее время для визита*\n\n"
+    "• Приходи за 2-3 часа до рейса — можно нормально поесть и принять душ\n"
+    "• Избегай 07:00-09:00 и 17:00-19:00 — пиковые часы, всё занято\n"
+    "• В будние дни тише, чем в выходные\n"
+    "• Транзитные пассажиры приходят волнами — следи за расписанием\n"
+    "• За 30 минут до посадки лаундж пустеет — можно взять свободное место\n\n"
+    "━━━━━━━━━━━━━━━━━━\n"
+    "🎒 *Что взять с собой обязательно*\n\n"
+    "✅ Карту Priority Pass / DragonPass (физическую или в приложении)\n"
+    "✅ Банковскую карту с доступом — иногда просят предъявить\n"
+    "✅ Посадочный талон — без него не пустят\n"
+    "✅ Паспорт — на международных рейсах\n"
+    "✅ Зарядник — розеток много, можно зарядить всё\n"
+    "✅ Пустой желудок 😄 — еда обычно хорошая и бесплатная\n\n"
+    "━━━━━━━━━━━━━━━━━━\n"
+    "📱 *Приложения для поиска лаунджей*\n\n"
+    "🔍 *LoungeBuddy* (iOS/Android)\n"
+    "Лучшее приложение. Показывает все лаунджи, фото, отзывы, часы работы и доступность по твоей карте. Покупка разового доступа прямо в приложении.\n\n"
+    "🔍 *Priority Pass App*\n"
+    "Официальное приложение PP. Карта, список лаунджей, проверка баланса визитов, цифровая карта PP.\n\n"
+    "🔍 *DragonPass App*\n"
+    "Аналог для DragonPass. Особенно актуален для лаунджей в Азии и России.\n\n"
+    "🔍 *LoungeReview.com*\n"
+    "Лучший сайт с отзывами. Актуальная информация, фото, часы работы.\n\n"
+    "🔍 *SeatGuru / FlightAware*\n"
+    "Полезно для проверки терминала вылета и поиска лаунджа нужного терминала.\n\n"
+    "━━━━━━━━━━━━━━━━━━\n"
+    "💎 *Бонусные лайфхаки*\n\n"
+    "• В некоторых лаунджах можно взять еду с собой на борт — спроси!\n"
+    "• Душ в лаундже — бронируй сразу при входе, очередь бывает\n"
+    "• В аэропортах Азии лаунджи по PP часто лучше европейских\n"
+    "• Lounge порой открывает доступ без карты за доплату — торгуйся\n"
+    "• В Changi (Сингапур) 3 терминала — проверь, в каком твой рейс\n\n"
+    "⚠️ _Условия могут меняться — всегда проверяй актуальный список в PP App_"
+),
+}
+
+
+async def lounge_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Главное меню раздела лаунджей."""
+    keyboard = ReplyKeyboardMarkup(
+        [[btn] for btn in LOUNGE_BTNS] + [[HOME_BTN]],
+        resize_keyboard=True,
+    )
+    await update.message.reply_text(
+        "🛋 *Лаунджи аэропортов*\n\nВыбери раздел:",
+        parse_mode="Markdown",
+        reply_markup=keyboard,
+    )
+    return LOUNGE_MENU
+
+
+async def lounge_section_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Показывает контент выбранного раздела."""
+    text = update.message.text
+    if text == HOME_BTN:
+        return await go_home(update, context)
+    if text == "◀️ Назад":
+        return await lounge_menu_handler(update, context)
+    content = LOUNGE_DATA.get(text)
+    if not content:
+        return await lounge_menu_handler(update, context)
+    back_keyboard = ReplyKeyboardMarkup(
+        [["◀️ Назад"], [HOME_BTN]],
+        resize_keyboard=True,
+    )
+    # Split long messages if needed
+    if len(content) > 4000:
+        parts = []
+        current = ""
+        for line in content.split("\n"):
+            if len(current) + len(line) + 1 > 4000:
+                parts.append(current)
+                current = line
+            else:
+                current = current + "\n" + line if current else line
+        if current:
+            parts.append(current)
+        for i, part in enumerate(parts):
+            kb = back_keyboard if i == len(parts) - 1 else None
+            await update.message.reply_text(part, parse_mode="Markdown", reply_markup=kb)
+    else:
+        await update.message.reply_text(content, parse_mode="Markdown", reply_markup=back_keyboard)
+    return LOUNGE_SECTION
+
+
 ## ── AUTOPOST ─────────────────────────────────────────────────────────────────
 
 CHANNEL_SIGNATURE = f"\n\n🎒 [Как местный]({CHANNEL_URL}) | [Подписаться]({CHANNEL_URL})"
@@ -2673,6 +2984,14 @@ def main():
                 home,
                 MessageHandler(filters.Regex("^(◀️ Назад)$"), season_region_handler),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, season_region_handler),
+            ],
+            LOUNGE_MENU: [
+                home,
+                MessageHandler(filters.TEXT & ~filters.COMMAND, lounge_section_handler),
+            ],
+            LOUNGE_SECTION: [
+                home,
+                MessageHandler(filters.TEXT & ~filters.COMMAND, lounge_section_handler),
             ],
         },
         fallbacks=[
