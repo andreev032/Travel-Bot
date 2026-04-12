@@ -27,7 +27,8 @@ _post_index = 0
 MAIN_MENU, ANSWERING, HELP_MENU, HELP_TOPIC, TRANSLATING, VISA_MENU, VISA_CATEGORY, \
     MOVIES_MENU, MOVIES_REGION, MOVIES_LIST, INCOMPATIBLE_MENU, INCOMPATIBLE_TOPIC, \
     DRONE_MENU, DRONE_SECTION, SEASON_MENU, SEASON_REGION, \
-    LOUNGE_MENU, LOUNGE_SECTION, VISA_NEED_MENU, VISA_NEED_SECTION = range(20)
+    LOUNGE_MENU, LOUNGE_SECTION, VISA_NEED_MENU, VISA_NEED_SECTION, \
+    SUPPORT_MENU, SUPPORT_TYPING = range(22)
 
 # Замени на реальный HTTPS-URL после деплоя webapp/index.html
 WEBAPP_URL      = "https://andreev032.github.io/Travel-Bot/"
@@ -42,6 +43,7 @@ CHANNEL_URL     = "https://t.me/like_a_local"
 
 HOME_BTN    = "🏠 Главное меню"
 CHANNEL_BTN = "📢 Наш канал"
+ADMIN_ID    = 462171750
 
 
 def get_main_keyboard():
@@ -56,7 +58,7 @@ def get_main_keyboard():
             [KeyboardButton("🎬 Фильмы"),                                         KeyboardButton("📚 Путеводители")],
             [KeyboardButton("🛋 Лаунджи аэропортов"),                             KeyboardButton("✈️ Авторские туры")],
             [KeyboardButton("💰 Общий счёт", web_app=WebAppInfo(url=SPLITWISE_URL)), KeyboardButton("🕐 Разница во времени", web_app=WebAppInfo(url=TIMEZONE_URL))],
-            [KeyboardButton(CHANNEL_BTN)],
+            [KeyboardButton(CHANNEL_BTN),                                            KeyboardButton("🆘 Поддержка")],
         ],
         resize_keyboard=True,
         one_time_keyboard=True,
@@ -946,6 +948,8 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=get_main_keyboard(),
         )
         return MAIN_MENU
+    elif text == "🆘 Поддержка":
+        return await show_support_menu(update, context)
     elif text == CHANNEL_BTN:
         inline_kb = InlineKeyboardMarkup([[InlineKeyboardButton("📢 Перейти в канал", url=CHANNEL_URL)]])
         await update.message.reply_text(
@@ -1218,6 +1222,83 @@ async def visa_need_section_handler(update: Update, context: ContextTypes.DEFAUL
     if text == "◀️ Назад":
         return await show_visa_need_menu(update, context)
     return await show_visa_need_menu(update, context)
+
+
+## ── SUPPORT ─────────────────────────────────────────────────────────────────
+
+_SUPPORT_TYPES = {
+    "✍️ Написать нам":       "Общее обращение",
+    "🐛 Сообщить об ошибке": "Ошибка в боте",
+    "💡 Предложить идею":    "Предложение",
+}
+
+_SUPPORT_KB = ReplyKeyboardMarkup(
+    [[btn] for btn in _SUPPORT_TYPES] + [["◀️ Назад"], [HOME_BTN]],
+    resize_keyboard=True,
+    one_time_keyboard=True,
+)
+
+
+async def show_support_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "🆘 *Поддержка*\n\nВыбери тип обращения:",
+        parse_mode="Markdown",
+        reply_markup=_SUPPORT_KB,
+    )
+    return SUPPORT_MENU
+
+
+async def support_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text
+    if text == HOME_BTN:
+        return await go_home(update, context)
+    if text == "◀️ Назад":
+        return await go_home(update, context)
+    if text in _SUPPORT_TYPES:
+        context.user_data["support_type"] = _SUPPORT_TYPES[text]
+        await update.message.reply_text(
+            "✏️ Напиши своё сообщение — мы обязательно его прочитаем:",
+            reply_markup=ReplyKeyboardMarkup([["◀️ Назад"], [HOME_BTN]], resize_keyboard=True),
+        )
+        return SUPPORT_TYPING
+    return await show_support_menu(update, context)
+
+
+async def support_typing_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text
+    if text == HOME_BTN:
+        return await go_home(update, context)
+    if text == "◀️ Назад":
+        return await show_support_menu(update, context)
+
+    user = update.effective_user
+    support_type = context.user_data.get("support_type", "Не указан")
+    name = user.full_name or "Без имени"
+    username = f"@{user.username}" if user.username else "нет username"
+
+    admin_text = (
+        f"🆘 *Обращение в поддержку*\n\n"
+        f"👤 Имя: {name}\n"
+        f"🔗 Username: {username}\n"
+        f"🆔 Telegram ID: `{user.id}`\n"
+        f"📋 Тип: {support_type}\n\n"
+        f"💬 Сообщение:\n{text}"
+    )
+    try:
+        await context.bot.send_message(
+            chat_id=ADMIN_ID,
+            text=admin_text,
+            parse_mode="Markdown",
+        )
+    except Exception as e:
+        logger.warning(f"support: не удалось отправить сообщение админу: {e}")
+
+    await update.message.reply_text(
+        "✅ Сообщение отправлено! Мы ответим в ближайшее время.",
+        reply_markup=get_main_keyboard(),
+    )
+    context.user_data.pop("support_type", None)
+    return MAIN_MENU
 
 
 ## ── MOVIES ──────────────────────────────────────────────────────────────────
@@ -3240,6 +3321,14 @@ def main():
             LOUNGE_SECTION: [
                 home,
                 MessageHandler(filters.TEXT & ~filters.COMMAND, lounge_section_handler),
+            ],
+            SUPPORT_MENU: [
+                home,
+                MessageHandler(filters.TEXT & ~filters.COMMAND, support_menu_handler),
+            ],
+            SUPPORT_TYPING: [
+                home,
+                MessageHandler(filters.TEXT & ~filters.COMMAND, support_typing_handler),
             ],
         },
         fallbacks=[
