@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>🕐 Разница во времени</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --bg:      #0d1117;
+      --surface: #161b22;
+      --card:    #1c2230;
+      --border:  #30363d;
+      --accent:  #58a6ff;
+      --accent2: #3fb950;
+      --warn:    #d29922;
+      --danger:  #f85149;
+      --text:    #e6edf3;
+      --sub:     #7d8590;
+      --radius:  14px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 15px;
+      min-height: 100vh;
+      padding-bottom: 20px;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 16px 12px;
+      text-align: center;
+    }
+    header h1 { font-size: 18px; font-weight: 700; }
+    header p  { font-size: 12px; color: var(--sub); margin-top: 3px; }
+
+    /* ── MAIN LAYOUT ── */
+    main { padding: 14px 14px 0; }
+
+    /* ── CITY CARD ── */
+    .city-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      margin-bottom: 12px;
+      position: relative;
+    }
+    .city-card .label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      color: var(--sub);
+      margin-bottom: 8px;
+    }
+    .city-card.from .label { color: var(--accent); }
+    .city-card.to   .label { color: var(--accent2); }
+
+    /* search input */
+    .search-wrap { position: relative; }
+    .search-wrap input {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 15px;
+      padding: 10px 12px 10px 36px;
+      width: 100%;
+      outline: none;
+      transition: border-color .15s;
+    }
+    .search-wrap input:focus { border-color: var(--accent); }
+    .search-wrap .ico {
+      position: absolute;
+      left: 11px; top: 50%;
+      transform: translateY(-50%);
+      font-size: 16px;
+      pointer-events: none;
+    }
+
+    /* dropdown */
+    .dropdown {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0; right: 0;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      max-height: 210px;
+      overflow-y: auto;
+      z-index: 50;
+      display: none;
+    }
+    .dropdown.open { display: block; }
+    .dropdown-item {
+      padding: 10px 14px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .dropdown-item:last-child { border-bottom: none; }
+    .dropdown-item:hover { background: var(--surface); }
+    .dropdown-item .flag { font-size: 18px; flex-shrink: 0; }
+    .dropdown-item .city-name { font-weight: 600; }
+    .dropdown-item .tz-name   { font-size: 12px; color: var(--sub); }
+
+    /* time display */
+    .time-display {
+      margin-top: 12px;
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+    .time-big {
+      font-size: 38px;
+      font-weight: 700;
+      letter-spacing: -1px;
+      line-height: 1;
+    }
+    .city-card.from .time-big { color: var(--accent); }
+    .city-card.to   .time-big { color: var(--accent2); }
+
+    .time-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .time-date   { font-size: 13px; color: var(--sub); }
+    .time-tz     { font-size: 12px; color: var(--sub); }
+
+    .work-badge {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .work-badge.work    { background: rgba(63,185,80,.15); color: var(--accent2); border: 1px solid var(--accent2); }
+    .work-badge.evening { background: rgba(210,153,34,.15); color: var(--warn);   border: 1px solid var(--warn); }
+    .work-badge.night   { background: rgba(248,81,73,.15);  color: var(--danger); border: 1px solid var(--danger); }
+
+    .city-placeholder {
+      color: var(--sub);
+      font-size: 14px;
+      padding: 8px 0 2px;
+    }
+
+    /* ── DIFF BANNER ── */
+    .diff-banner {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+    .diff-banner.hidden { display: none; }
+    .diff-number {
+      font-size: 40px;
+      font-weight: 800;
+      letter-spacing: -1px;
+    }
+    .diff-number.pos  { color: var(--accent2); }
+    .diff-number.neg  { color: var(--accent); }
+    .diff-number.zero { color: var(--sub); }
+    .diff-label { font-size: 13px; color: var(--sub); margin-top: 4px; }
+
+    /* ── POPULAR ── */
+    .section-title {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      color: var(--sub);
+      margin-bottom: 8px;
+    }
+
+    .popular-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 7px;
+      margin-bottom: 14px;
+    }
+    .pop-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      cursor: pointer;
+      font-size: 12px;
+      padding: 8px 6px;
+      text-align: center;
+      transition: all .15s;
+      line-height: 1.3;
+    }
+    .pop-btn:hover, .pop-btn.active-from { border-color: var(--accent);  background: rgba(88,166,255,.1); color: var(--accent); }
+    .pop-btn.active-to                   { border-color: var(--accent2); background: rgba(63,185,80,.1);  color: var(--accent2); }
+    .pop-btn .pop-flag  { font-size: 18px; display: block; margin-bottom: 3px; }
+    .pop-btn .pop-label { font-size: 11px; }
+
+    /* ── SWAP BUTTON ── */
+    .swap-row {
+      display: flex;
+      justify-content: center;
+      margin: -4px 0 12px;
+    }
+    .swap-btn {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      width: 36px; height: 36px;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .15s;
+    }
+    .swap-btn:hover { background: var(--surface); }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🕐 Разница во времени</h1>
+  <p>Текущее время в любом городе мира</p>
+</header>
+
+<main>
+
+  <!-- FROM -->
+  <div class="city-card from">
+    <div class="label">📍 Откуда</div>
+    <div class="search-wrap">
+      <span class="ico">🔍</span>
+      <input id="search-from" type="text" placeholder="Город или страна…" autocomplete="off" />
+      <div class="dropdown" id="dd-from"></div>
+    </div>
+    <div id="display-from"><p class="city-placeholder">Выбери город</p></div>
+  </div>
+
+  <!-- SWAP -->
+  <div class="swap-row">
+    <button class="swap-btn" onclick="swapCities()" title="Поменять местами">⇅</button>
+  </div>
+
+  <!-- TO -->
+  <div class="city-card to">
+    <div class="label">🏁 Куда</div>
+    <div class="search-wrap">
+      <span class="ico">🔍</span>
+      <input id="search-to" type="text" placeholder="Город или страна…" autocomplete="off" />
+      <div class="dropdown" id="dd-to"></div>
+    </div>
+    <div id="display-to"><p class="city-placeholder">Выбери город</p></div>
+  </div>
+
+  <!-- DIFF -->
+  <div class="diff-banner hidden" id="diff-banner">
+    <div class="diff-number" id="diff-number"></div>
+    <div class="diff-label"  id="diff-label"></div>
+  </div>
+
+  <!-- POPULAR -->
+  <div class="section-title">⚡ Быстрый выбор</div>
+  <div class="popular-grid" id="popular-grid"></div>
+
+</main>
+
+<script>
+// ════════════════════════════════════════════════
+// CITY DATABASE
+// ════════════════════════════════════════════════
+const CITIES = [
+  { name: 'Москва',        country: 'Россия',       tz: 'Europe/Moscow',      flag: '🇷🇺', aliases: ['moscow','москва','russia','россия'] },
+  { name: 'Санкт-Петербург', country: 'Россия',     tz: 'Europe/Moscow',      flag: '🇷🇺', aliases: ['spb','питер','saint petersburg','петербург'] },
+  { name: 'Новосибирск',   country: 'Россия',       tz: 'Asia/Novosibirsk',   flag: '🇷🇺', aliases: ['novosibirsk','новосибирск'] },
+  { name: 'Екатеринбург',  country: 'Россия',       tz: 'Asia/Yekaterinburg', flag: '🇷🇺', aliases: ['ekaterinburg','екатеринбург','yekaterinburg'] },
+  { name: 'Владивосток',   country: 'Россия',       tz: 'Asia/Vladivostok',   flag: '🇷🇺', aliases: ['vladivostok','владивосток'] },
+  { name: 'Дубай',         country: 'ОАЭ',          tz: 'Asia/Dubai',         flag: '🇦🇪', aliases: ['dubai','дубай','uae','оаэ','abu dhabi','абу-даби'] },
+  { name: 'Бангкок',       country: 'Таиланд',      tz: 'Asia/Bangkok',       flag: '🇹🇭', aliases: ['bangkok','бангкок','thailand','таиланд','pattaya','паттайя'] },
+  { name: 'Токио',         country: 'Япония',       tz: 'Asia/Tokyo',         flag: '🇯🇵', aliases: ['tokyo','токио','japan','япония','osaka','осака'] },
+  { name: 'Нью-Йорк',      country: 'США',          tz: 'America/New_York',   flag: '🇺🇸', aliases: ['new york','нью-йорк','ньюйорк','usa','сша'] },
+  { name: 'Лос-Анджелес',  country: 'США',          tz: 'America/Los_Angeles',flag: '🇺🇸', aliases: ['los angeles','лос-анджелес','la','лосанджелес'] },
+  { name: 'Лондон',        country: 'Великобритания',tz: 'Europe/London',     flag: '🇬🇧', aliases: ['london','лондон','uk','англия','britain'] },
+  { name: 'Париж',         country: 'Франция',      tz: 'Europe/Paris',       flag: '🇫🇷', aliases: ['paris','париж','france','франция'] },
+  { name: 'Берлин',        country: 'Германия',     tz: 'Europe/Berlin',      flag: '🇩🇪', aliases: ['berlin','берлин','germany','германия'] },
+  { name: 'Рим',           country: 'Италия',       tz: 'Europe/Rome',        flag: '🇮🇹', aliases: ['rome','рим','italy','италия'] },
+  { name: 'Мадрид',        country: 'Испания',      tz: 'Europe/Madrid',      flag: '🇪🇸', aliases: ['madrid','мадрид','spain','испания','barcelona','барселона'] },
+  { name: 'Пекин',         country: 'Китай',        tz: 'Asia/Shanghai',      flag: '🇨🇳', aliases: ['beijing','пекин','china','китай','shanghai','шанхай'] },
+  { name: 'Сингапур',      country: 'Сингапур',     tz: 'Asia/Singapore',     flag: '🇸🇬', aliases: ['singapore','сингапур'] },
+  { name: 'Сидней',        country: 'Австралия',    tz: 'Australia/Sydney',   flag: '🇦🇺', aliases: ['sydney','сидней','australia','австралия'] },
+  { name: 'Дели',          country: 'Индия',        tz: 'Asia/Kolkata',       flag: '🇮🇳', aliases: ['delhi','дели','india','индия','mumbai','мумбай','calcutta'] },
+  { name: 'Стамбул',       country: 'Турция',       tz: 'Europe/Istanbul',    flag: '🇹🇷', aliases: ['istanbul','стамбул','turkey','турция','ankara','анкара'] },
+  { name: 'Сеул',          country: 'Корея',        tz: 'Asia/Seoul',         flag: '🇰🇷', aliases: ['seoul','сеул','korea','корея'] },
+  { name: 'Тбилиси',       country: 'Грузия',       tz: 'Asia/Tbilisi',       flag: '🇬🇪', aliases: ['tbilisi','тбилиси','georgia','грузия'] },
+  { name: 'Ереван',        country: 'Армения',      tz: 'Asia/Yerevan',       flag: '🇦🇲', aliases: ['yerevan','ереван','armenia','армения'] },
+  { name: 'Баку',          country: 'Азербайджан',  tz: 'Asia/Baku',          flag: '🇦🇿', aliases: ['baku','баку','azerbaijan','азербайджан'] },
+  { name: 'Ташкент',       country: 'Узбекистан',   tz: 'Asia/Tashkent',      flag: '🇺🇿', aliases: ['tashkent','ташкент','uzbekistan','узбекистан'] },
+  { name: 'Алматы',        country: 'Казахстан',    tz: 'Asia/Almaty',        flag: '🇰🇿', aliases: ['almaty','алматы','kazakhstan','казахстан'] },
+  { name: 'Бишкек',        country: 'Кыргызстан',   tz: 'Asia/Bishkek',       flag: '🇰🇬', aliases: ['bishkek','бишкек','kyrgyzstan','кыргызстан'] },
+  { name: 'Катманду',      country: 'Непал',        tz: 'Asia/Kathmandu',     flag: '🇳🇵', aliases: ['kathmandu','катманду','nepal','непал'] },
+  { name: 'Коломбо',       country: 'Шри-Ланка',    tz: 'Asia/Colombo',       flag: '🇱🇰', aliases: ['colombo','коломбо','srilanka','шри-ланка','шриланка'] },
+  { name: 'Мале',          country: 'Мальдивы',     tz: 'Indian/Maldives',    flag: '🇲🇻', aliases: ['male','мале','maldives','мальдивы'] },
+  { name: 'Бали',          country: 'Индонезия',    tz: 'Asia/Makassar',      flag: '🇮🇩', aliases: ['bali','бали','indonesia','индонезия','jakarta','джакарта'] },
+  { name: 'Куала-Лумпур',  country: 'Малайзия',     tz: 'Asia/Kuala_Lumpur',  flag: '🇲🇾', aliases: ['kuala lumpur','куала-лумпур','malaysia','малайзия'] },
+  { name: 'Манила',        country: 'Филиппины',    tz: 'Asia/Manila',        flag: '🇵🇭', aliases: ['manila','манила','philippines','филиппины'] },
+  { name: 'Ханой',         country: 'Вьетнам',      tz: 'Asia/Ho_Chi_Minh',   flag: '🇻🇳', aliases: ['hanoi','ханой','vietnam','вьетнам','ho chi minh','хошимин'] },
+  { name: 'Пномпень',      country: 'Камбоджа',     tz: 'Asia/Phnom_Penh',    flag: '🇰🇭', aliases: ['phnom penh','пномпень','cambodia','камбоджа'] },
+  { name: 'Вьентьян',      country: 'Лаос',         tz: 'Asia/Vientiane',     flag: '🇱🇦', aliases: ['vientiane','вьентьян','laos','лаос'] },
+  { name: 'Каир',          country: 'Египет',       tz: 'Africa/Cairo',       flag: '🇪🇬', aliases: ['cairo','каир','egypt','египет'] },
+  { name: 'Касабланка',    country: 'Марокко',      tz: 'Africa/Casablanca',  flag: '🇲🇦', aliases: ['casablanca','касабланка','morocco','марокко'] },
+  { name: 'Найроби',       country: 'Кения',        tz: 'Africa/Nairobi',     flag: '🇰🇪', aliases: ['nairobi','найроби','kenya','кения'] },
+  { name: 'Йоханнесбург',  country: 'ЮАР',          tz: 'Africa/Johannesburg',flag: '🇿🇦', aliases: ['johannesburg','йоханнесбург','southafrica','юар'] },
+  { name: 'Амман',         country: 'Иордания',     tz: 'Asia/Amman',         flag: '🇯🇴', aliases: ['amman','амман','jordan','иордания'] },
+  { name: 'Доха',          country: 'Катар',        tz: 'Asia/Qatar',         flag: '🇶🇦', aliases: ['doha','доха','qatar','катар'] },
+  { name: 'Эр-Рияд',       country: 'Саудовская Аравия', tz: 'Asia/Riyadh',   flag: '🇸🇦', aliases: ['riyadh','эр-рияд','saudi','аравия'] },
+  { name: 'Мехико',        country: 'Мексика',      tz: 'America/Mexico_City',flag: '🇲🇽', aliases: ['mexico','мехико','mexico city'] },
+  { name: 'Рио-де-Жанейро',country: 'Бразилия',     tz: 'America/Sao_Paulo',  flag: '🇧🇷', aliases: ['rio','рио','brazil','бразилия','sao paulo','сан-паулу'] },
+  { name: 'Буэнос-Айрес',  country: 'Аргентина',    tz: 'America/Argentina/Buenos_Aires', flag: '🇦🇷', aliases: ['buenos aires','буэнос-айрес','argentina','аргентина'] },
+  { name: 'Торонто',       country: 'Канада',       tz: 'America/Toronto',    flag: '🇨🇦', aliases: ['toronto','торонто','canada','канада'] },
+  { name: 'Гавана',        country: 'Куба',         tz: 'America/Havana',     flag: '🇨🇺', aliases: ['havana','гавана','cuba','куба'] },
+  { name: 'Амстердам',     country: 'Нидерланды',   tz: 'Europe/Amsterdam',   flag: '🇳🇱', aliases: ['amsterdam','амстердам','netherlands','нидерланды'] },
+  { name: 'Вена',          country: 'Австрия',      tz: 'Europe/Vienna',      flag: '🇦🇹', aliases: ['vienna','вена','austria','австрия'] },
+  { name: 'Прага',         country: 'Чехия',        tz: 'Europe/Prague',      flag: '🇨🇿', aliases: ['prague','прага','czech','чехия'] },
+  { name: 'Варшава',       country: 'Польша',       tz: 'Europe/Warsaw',      flag: '🇵🇱', aliases: ['warsaw','варшава','poland','польша'] },
+  { name: 'Хельсинки',     country: 'Финляндия',    tz: 'Europe/Helsinki',    flag: '🇫🇮', aliases: ['helsinki','хельсинки','finland','финляндия'] },
+  { name: 'Стокгольм',     country: 'Швеция',       tz: 'Europe/Stockholm',   flag: '🇸🇪', aliases: ['stockholm','стокгольм','sweden','швеция'] },
+  { name: 'Осло',          country: 'Норвегия',     tz: 'Europe/Oslo',        flag: '🇳🇴', aliases: ['oslo','осло','norway','норвегия'] },
+  { name: 'Дублин',        country: 'Ирландия',     tz: 'Europe/Dublin',      flag: '🇮🇪', aliases: ['dublin','дублин','ireland','ирландия'] },
+  { name: 'Лиссабон',      country: 'Португалия',   tz: 'Europe/Lisbon',      flag: '🇵🇹', aliases: ['lisbon','лиссабон','portugal','португалия'] },
+  { name: 'Афины',         country: 'Греция',       tz: 'Europe/Athens',      flag: '🇬🇷', aliases: ['athens','афины','greece','греция'] },
+  { name: 'Варна',         country: 'Болгария',     tz: 'Europe/Sofia',       flag: '🇧🇬', aliases: ['varna','варна','sofia','софия','bulgaria','болгария'] },
+  { name: 'Будапешт',      country: 'Венгрия',      tz: 'Europe/Budapest',    flag: '🇭🇺', aliases: ['budapest','будапешт','hungary','венгрия'] },
+  { name: 'Дубровник',     country: 'Хорватия',     tz: 'Europe/Zagreb',      flag: '🇭🇷', aliases: ['dubrovnik','дубровник','croatia','хорватия','zagreb','загреб'] },
+  { name: 'Подгорица',     country: 'Черногория',   tz: 'Europe/Podgorica',   flag: '🇲🇪', aliases: ['podgorica','подгорица','montenegro','черногория'] },
+  { name: 'Пекин',         country: 'Китай',        tz: 'Asia/Shanghai',      flag: '🇨🇳', aliases: [] },
+];
+
+// Popular (quick-pick) — 12 cities
+const POPULAR = [
+  'Москва','Дубай','Бангкок','Токио','Нью-Йорк','Лондон',
+  'Париж','Пекин','Сингапур','Сидней','Дели','Стамбул',
+];
+
+// ════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════
+let cityFrom = null; // { name, country, tz, flag }
+let cityTo   = null;
+
+// ════════════════════════════════════════════════
+// TELEGRAM
+// ════════════════════════════════════════════════
+const tg = window.Telegram?.WebApp;
+if (tg) { tg.ready(); tg.expand(); }
+
+// Try to auto-detect user's city from local timezone
+(function autoDetect() {
+  try {
+    const localTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const found = CITIES.find(c => c.tz === localTz);
+    if (found) selectCity('from', found, false);
+  } catch(e) {}
+})();
+
+// ════════════════════════════════════════════════
+// SEARCH
+// ════════════════════════════════════════════════
+function searchCities(q) {
+  if (!q || q.length < 1) return [];
+  const lq = q.toLowerCase().trim();
+  const seen = new Set();
+  return CITIES.filter(c => {
+    const key = c.tz;
+    if (seen.has(key)) return false;
+    const match = c.name.toLowerCase().includes(lq) ||
+                  c.country.toLowerCase().includes(lq) ||
+                  c.aliases.some(a => a.includes(lq));
+    if (match) { seen.add(key); return true; }
+    return false;
+  }).slice(0, 8);
+}
+
+function setupSearch(inputId, ddId, slot) {
+  const inp = document.getElementById(inputId);
+  const dd  = document.getElementById(ddId);
+
+  inp.addEventListener('input', () => {
+    const results = searchCities(inp.value);
+    if (!results.length || !inp.value.trim()) { dd.classList.remove('open'); dd.innerHTML = ''; return; }
+    dd.innerHTML = results.map(c =>
+      `<div class="dropdown-item" onclick="selectCity('${slot}', findCity('${c.tz}'))">
+        <span class="flag">${c.flag}</span>
+        <div><div class="city-name">${c.name}</div><div class="tz-name">${c.country} · ${c.tz.replace(/_/g,' ')}</div></div>
+      </div>`
+    ).join('');
+    dd.classList.add('open');
+  });
+
+  inp.addEventListener('keydown', e => { if (e.key === 'Escape') dd.classList.remove('open'); });
+
+  document.addEventListener('click', e => {
+    if (!inp.contains(e.target) && !dd.contains(e.target)) dd.classList.remove('open');
+  });
+}
+
+function findCity(tz) {
+  return CITIES.find(c => c.tz === tz) || null;
+}
+
+setupSearch('search-from', 'dd-from', 'from');
+setupSearch('search-to',   'dd-to',   'to');
+
+// ════════════════════════════════════════════════
+// SELECT CITY
+// ════════════════════════════════════════════════
+function selectCity(slot, city, clearInput = true) {
+  if (!city) return;
+  if (slot === 'from') {
+    cityFrom = city;
+    if (clearInput) {
+      document.getElementById('search-from').value = '';
+      document.getElementById('dd-from').classList.remove('open');
+    }
+  } else {
+    cityTo = city;
+    if (clearInput) {
+      document.getElementById('search-to').value = '';
+      document.getElementById('dd-to').classList.remove('open');
+    }
+  }
+  renderPopularGrid();
+  renderDisplays();
+  renderDiff();
+}
+
+function swapCities() {
+  [cityFrom, cityTo] = [cityTo, cityFrom];
+  renderPopularGrid();
+  renderDisplays();
+  renderDiff();
+}
+
+// ════════════════════════════════════════════════
+// TIME HELPERS
+// ════════════════════════════════════════════════
+function getNow(tz) {
+  return new Date(new Date().toLocaleString('en-US', { timeZone: tz }));
+}
+
+function getOffset(tz) {
+  // offset in minutes from UTC
+  const now = new Date();
+  const utc = new Date(now.toLocaleString('en-US', { timeZone: 'UTC' }));
+  const loc = new Date(now.toLocaleString('en-US', { timeZone: tz }));
+  return (loc - utc) / 60000;
+}
+
+function formatTime(tz) {
+  return new Intl.DateTimeFormat('ru', {
+    timeZone: tz, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+  }).format(new Date());
+}
+
+function formatDate(tz) {
+  return new Intl.DateTimeFormat('ru', {
+    timeZone: tz, weekday: 'short', day: 'numeric', month: 'short'
+  }).format(new Date());
+}
+
+function formatUtcOffset(tz) {
+  const mins = getOffset(tz);
+  const h = Math.floor(Math.abs(mins) / 60);
+  const m = Math.abs(mins) % 60;
+  const sign = mins >= 0 ? '+' : '−';
+  return `UTC${sign}${h}${m ? ':' + String(m).padStart(2,'0') : ''}`;
+}
+
+function workStatus(tz) {
+  const h = parseInt(new Intl.DateTimeFormat('ru', { timeZone: tz, hour: '2-digit', hour12: false }).format(new Date()), 10);
+  if (h >= 9 && h < 18) return { cls: 'work',    text: '💼 Рабочее время' };
+  if (h >= 18 && h < 23) return { cls: 'evening', text: '🌆 Вечер' };
+  return                         { cls: 'night',   text: '🌙 Ночь — спят' };
+}
+
+// ════════════════════════════════════════════════
+// RENDER DISPLAYS
+// ════════════════════════════════════════════════
+function renderOneDisplay(city, containerId) {
+  const el = document.getElementById(containerId);
+  if (!city) { el.innerHTML = '<p class="city-placeholder">Выбери город</p>'; return; }
+  const ws = workStatus(city.tz);
+  el.innerHTML = `
+    <div class="time-display">
+      <div class="time-big" id="time-${containerId}">${formatTime(city.tz)}</div>
+      <div class="time-info">
+        <div class="time-date">${formatDate(city.tz)}</div>
+        <div class="time-tz">${formatUtcOffset(city.tz)}</div>
+      </div>
+    </div>
+    <span class="work-badge ${ws.cls}">${ws.text}</span>
+    <div style="margin-top:6px;font-size:13px;color:var(--sub)">${city.flag} ${city.name}, ${city.country}</div>
+  `;
+}
+
+function renderDisplays() {
+  renderOneDisplay(cityFrom, 'display-from');
+  renderOneDisplay(cityTo,   'display-to');
+}
+
+// ════════════════════════════════════════════════
+// RENDER DIFF
+// ════════════════════════════════════════════════
+function renderDiff() {
+  const banner = document.getElementById('diff-banner');
+  if (!cityFrom || !cityTo) { banner.classList.add('hidden'); return; }
+
+  const offFrom = getOffset(cityFrom.tz);
+  const offTo   = getOffset(cityTo.tz);
+  const diffMin = offTo - offFrom;
+  const diffH   = diffMin / 60;
+
+  banner.classList.remove('hidden');
+
+  const numEl = document.getElementById('diff-number');
+  const lblEl = document.getElementById('diff-label');
+
+  if (diffMin === 0) {
+    numEl.textContent = '= 0';
+    numEl.className = 'diff-number zero';
+    lblEl.textContent = `Одинаковый часовой пояс — ${formatUtcOffset(cityFrom.tz)}`;
+  } else {
+    const sign = diffH > 0 ? '+' : '−';
+    const absH = Math.abs(diffH);
+    const absM = Math.abs(diffMin) % 60;
+    const display = absM ? `${sign}${Math.floor(absH)}ч ${absM}м` : `${sign}${absH}ч`;
+    numEl.textContent = display;
+    numEl.className = `diff-number ${diffMin > 0 ? 'pos' : 'neg'}`;
+
+    const direction = diffMin > 0
+      ? `${cityTo.name} опережает ${cityFrom.name}`
+      : `${cityTo.name} отстаёт от ${cityFrom.name}`;
+    lblEl.textContent = direction;
+  }
+}
+
+// ════════════════════════════════════════════════
+// POPULAR GRID
+// ════════════════════════════════════════════════
+function renderPopularGrid() {
+  const grid = document.getElementById('popular-grid');
+  grid.innerHTML = POPULAR.map(name => {
+    const city = CITIES.find(c => c.name === name);
+    if (!city) return '';
+    const isFrom = cityFrom?.name === name;
+    const isTo   = cityTo?.name   === name;
+    const cls = isFrom ? 'active-from' : isTo ? 'active-to' : '';
+    return `<button class="pop-btn ${cls}" onclick="handlePopular('${name}')">
+      <span class="pop-flag">${city.flag}</span>
+      <span class="pop-label">${name}</span>
+    </button>`;
+  }).join('');
+}
+
+function handlePopular(name) {
+  const city = CITIES.find(c => c.name === name);
+  if (!city) return;
+  // If "from" not set, set from; else set to
+  if (!cityFrom) { selectCity('from', city); return; }
+  if (!cityTo)   { selectCity('to',   city); return; }
+  // Both set: set "to"
+  selectCity('to', city);
+}
+
+// ════════════════════════════════════════════════
+// TICK — update times every second
+// ════════════════════════════════════════════════
+function tick() {
+  if (cityFrom) {
+    const el = document.getElementById('time-display-from');
+    if (el) el.textContent = formatTime(cityFrom.tz);
+    // update work badge
+    const ws = workStatus(cityFrom.tz);
+    const b = document.querySelector('#display-from .work-badge');
+    if (b) { b.textContent = ws.text; b.className = `work-badge ${ws.cls}`; }
+    const t = document.querySelector('#display-from .time-big');
+    if (t) t.textContent = formatTime(cityFrom.tz);
+    const d = document.querySelector('#display-from .time-date');
+    if (d) d.textContent = formatDate(cityFrom.tz);
+  }
+  if (cityTo) {
+    const ws = workStatus(cityTo.tz);
+    const b = document.querySelector('#display-to .work-badge');
+    if (b) { b.textContent = ws.text; b.className = `work-badge ${ws.cls}`; }
+    const t = document.querySelector('#display-to .time-big');
+    if (t) t.textContent = formatTime(cityTo.tz);
+    const d = document.querySelector('#display-to .time-date');
+    if (d) d.textContent = formatDate(cityTo.tz);
+  }
+}
+
+setInterval(tick, 1000);
+
+// ════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════
+renderPopularGrid();
+renderDisplays();
+renderDiff();
+</script>
+</body>
+</html>
