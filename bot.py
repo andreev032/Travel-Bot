@@ -802,9 +802,15 @@ async def show_result(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_webapp_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         data = json.loads(update.message.web_app_data.data)
-        countries = data.get("countries", [])
     except (json.JSONDecodeError, AttributeError):
-        countries = []
+        data = {}
+
+    # Splitwise WebApp just closes — no data to process
+    if data.get("type") == "splitwise_export":
+        await update.message.reply_text("✅ Данные сохранены!", reply_markup=get_main_keyboard())
+        return MAIN_MENU
+
+    countries = data.get("countries", [])
 
     if not countries:
         await update.message.reply_text("Маршрут пустой. Попробуй ещё раз!", reply_markup=get_main_keyboard())
