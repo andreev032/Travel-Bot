@@ -3904,9 +3904,9 @@ _SKYENG_TEXT = (
     "🗺 Поймёшь указатели и навигацию\n"
     "🤝 Познакомишься с местными жителями\n"
     "💼 Откроет двери в международные направления\n\n"
-    "🎁 Специально для подписчиков «Как местный» — 5000 рублей на первые уроки!\n\n"
-    "👉 [Получить бонус](https://skyeng.ru/referral/?source_type=referral"
-    "&utm_source=referral&inviterHash=4d5449314d54597a4e44553d)"
+    "🎁 Специально для подписчиков «Как местный» — получи бонус на первые уроки!\n\n"
+    "👉 Получить бонус: https://skyeng.ru/referral/?source_type=referral"
+    "&utm_source=referral&inviterHash=4d5449314d54597a4e44553d"
 )
 
 
