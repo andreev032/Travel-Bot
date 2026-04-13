@@ -17,9 +17,10 @@
 
   :root {
     /* palette */
-    --orange:       #FF6B2B;
-    --orange-dim:   rgba(255,107,43,.15);
-    --orange-glow:  rgba(255,107,43,.35);
+    --accent:       #7c3aed;
+    --accent-b:     #4a90e2;
+    --accent-dim:   rgba(124,58,237,.15);
+    --accent-glow:  rgba(124,58,237,.35);
     --bg-deep:      #0a0a1a;
     --bg-mid:       #0f0f24;
     --bg-card:      #12122a;
@@ -34,7 +35,7 @@
     /* effects */
     --radius:       18px;
     --radius-sm:    11px;
-    --shadow-orange: 0 8px 32px rgba(255,107,43,.28);
+    --shadow-accent: 0 8px 32px rgba(124,58,237,.3);
     --shadow-card:   0 4px 24px rgba(0,0,0,.4);
   }
 
@@ -64,9 +65,9 @@
     font-weight: 700;
     letter-spacing: .13em;
     text-transform: uppercase;
-    color: var(--orange);
-    background: var(--orange-dim);
-    border: 1px solid rgba(255,107,43,.3);
+    color: var(--accent);
+    background: var(--accent-dim);
+    border: 1px solid rgba(124,58,237,.3);
     border-radius: 50px;
     padding: 5px 15px;
     margin-bottom: 16px;
@@ -75,8 +76,8 @@
     content: '';
     width: 6px; height: 6px;
     border-radius: 50%;
-    background: var(--orange);
-    box-shadow: 0 0 6px var(--orange);
+    background: var(--accent);
+    box-shadow: 0 0 6px var(--accent);
   }
 
   /* section heading with orange underline */
@@ -98,7 +99,7 @@
     position: absolute;
     left: 0; bottom: -4px;
     width: 100%; height: 3px;
-    background: var(--orange);
+    background: var(--accent);
     border-radius: 2px;
   }
   .section-sub {
@@ -129,19 +130,19 @@
   .btn:hover  { transform: translateY(-2px); }
   .btn:active { transform: translateY(0); }
 
-  .btn-orange {
-    background: var(--orange);
+  .btn-accent {
+    background: var(--accent);
     color: #fff;
-    box-shadow: var(--shadow-orange);
+    box-shadow: var(--shadow-accent);
   }
-  .btn-orange:hover { box-shadow: 0 12px 40px rgba(255,107,43,.45); }
+  .btn-accent:hover { box-shadow: 0 12px 40px rgba(124,58,237,.45); }
 
   .btn-ghost {
     background: transparent;
     color: var(--text);
     border: 1.5px solid rgba(255,255,255,.2);
   }
-  .btn-ghost:hover { border-color: var(--orange); color: var(--orange); }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
 
   /* ═══════════════════════════════════════════════════════════════
      NAVBAR
@@ -174,7 +175,7 @@
     align-items: center;
     gap: 8px;
   }
-  .logo-accent { color: var(--orange); }
+  .logo-accent { color: var(--accent); }
   .nav-btn { padding: 9px 22px; font-size: .88rem; }
 
   /* ═══════════════════════════════════════════════════════════════
@@ -207,8 +208,8 @@
     position: absolute;
     inset: 0;
     background-image:
-      linear-gradient(rgba(255,107,43,.035) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,107,43,.035) 1px, transparent 1px);
+      linear-gradient(rgba(124,58,237,.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124,58,237,.05) 1px, transparent 1px);
     background-size: 52px 52px;
     mask-image: radial-gradient(ellipse 90% 90% at 30% 50%, black 20%, transparent 100%);
     pointer-events: none;
@@ -224,7 +225,7 @@
   }
   .hero-orb-1 {           /* orange, top-right of left panel */
     width: 380px; height: 380px;
-    background: radial-gradient(circle, rgba(255,107,43,.16), transparent 65%);
+    background: radial-gradient(circle, rgba(74,144,226,.22), transparent 65%);
     top: -80px; right: -60px;
     animation-duration: 9s;
   }
@@ -248,8 +249,8 @@
     width: 1px;
     background: linear-gradient(to bottom,
       transparent,
-      rgba(255,107,43,.35) 30%,
-      rgba(255,107,43,.35) 70%,
+      rgba(124,58,237,.4) 30%,
+      rgba(124,58,237,.4) 70%,
       transparent);
   }
 
@@ -265,7 +266,7 @@
     line-height: 1;
     margin-bottom: 20px;
     display: block;
-    filter: drop-shadow(0 0 28px rgba(255,107,43,.55));
+    filter: drop-shadow(0 0 28px rgba(124,58,237,.6));
     animation: emojiIn .85s cubic-bezier(.34,1.56,.64,1) both;
   }
   @keyframes emojiIn {
@@ -283,7 +284,7 @@
   }
   .hero h1 em {
     font-style: normal;
-    color: var(--orange);
+    color: var(--accent);
     display: block;        /* «как местный» на отдельной строке */
   }
 
@@ -355,7 +356,7 @@
   .scroll-dot::after {
     content: '';
     width: 4px; height: 8px;
-    background: var(--orange);
+    background: var(--accent);
     border-radius: 2px;
     animation: scrollBounce 1.8s infinite;
   }
@@ -444,7 +445,7 @@
     top: -160px; right: -160px;
     width: 480px; height: 480px;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(255,107,43,.07), transparent 70%);
+    background: radial-gradient(circle, rgba(124,58,237,.08), transparent 70%);
     pointer-events: none;
   }
 
@@ -470,15 +471,15 @@
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(135deg, var(--orange-dim), transparent 60%);
+    background: linear-gradient(135deg, var(--accent-dim), transparent 60%);
     opacity: 0;
     transition: opacity .25s;
     border-radius: inherit;
   }
   .feat-card:hover {
     transform: translateY(-5px);
-    border-color: rgba(255,107,43,.45);
-    box-shadow: 0 12px 40px rgba(255,107,43,.12), var(--shadow-card);
+    border-color: rgba(124,58,237,.45);
+    box-shadow: 0 12px 40px rgba(124,58,237,.12), var(--shadow-card);
   }
   .feat-card:hover::before { opacity: 1; }
 
@@ -491,7 +492,7 @@
     transition: filter .25s;
   }
   .feat-card:hover .feat-icon {
-    filter: drop-shadow(0 0 10px rgba(255,107,43,.6));
+    filter: drop-shadow(0 0 10px rgba(124,58,237,.65));
   }
 
   .feat-title {
@@ -523,8 +524,8 @@
     position: absolute;
     inset: 0;
     background-image:
-      linear-gradient(rgba(255,107,43,.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,107,43,.03) 1px, transparent 1px);
+      linear-gradient(rgba(124,58,237,.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124,58,237,.04) 1px, transparent 1px);
     background-size: 40px 40px;
     pointer-events: none;
   }
@@ -541,7 +542,7 @@
     text-align: center;
     padding: 36px 20px;
     background: rgba(255,255,255,.03);
-    border: 1px solid rgba(255,107,43,.15);
+    border: 1px solid rgba(124,58,237,.15);
     border-radius: var(--radius);
     transition: transform .25s, border-color .25s, box-shadow .25s;
     position: relative;
@@ -552,7 +553,7 @@
     position: absolute;
     bottom: 0; left: 10%; right: 10%;
     height: 2px;
-    background: var(--orange);
+    background: var(--accent);
     border-radius: 2px;
     transform: scaleX(0);
     transition: transform .3s;
@@ -560,19 +561,19 @@
   }
   .stat-card:hover {
     transform: translateY(-4px);
-    border-color: rgba(255,107,43,.4);
-    box-shadow: 0 8px 32px rgba(255,107,43,.12);
+    border-color: rgba(124,58,237,.4);
+    box-shadow: 0 8px 32px rgba(124,58,237,.12);
   }
   .stat-card:hover::after { transform: scaleX(1); }
 
   .stat-number {
     font-size: clamp(2rem, 5vw, 3rem);
     font-weight: 900;
-    color: var(--orange);
+    color: var(--accent);
     line-height: 1;
     margin-bottom: 8px;
     letter-spacing: -.02em;
-    text-shadow: 0 0 40px rgba(255,107,43,.4);
+    text-shadow: 0 0 40px rgba(124,58,237,.4);
   }
   .stat-label {
     font-size: .88rem;
@@ -601,7 +602,7 @@
       left: calc(33.33% - 1px);
       right: calc(33.33% - 1px);
       height: 1px;
-      background: linear-gradient(90deg, transparent, var(--orange), transparent);
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
       opacity: .4;
     }
   }
@@ -617,7 +618,7 @@
   }
   .step:hover {
     transform: translateY(-4px);
-    border-color: rgba(255,107,43,.3);
+    border-color: rgba(124,58,237,.3);
   }
 
   .step-num {
@@ -626,12 +627,12 @@
     justify-content: center;
     width: 52px; height: 52px;
     border-radius: 50%;
-    background: var(--orange);
+    background: var(--accent);
     color: #fff;
     font-size: 1.25rem;
     font-weight: 900;
     margin: 0 auto 18px;
-    box-shadow: 0 6px 20px rgba(255,107,43,.4);
+    box-shadow: 0 6px 20px rgba(124,58,237,.4);
     position: relative;
     z-index: 1;
   }
@@ -642,7 +643,7 @@
     margin-bottom: 10px;
   }
   .step p { font-size: .88rem; color: var(--muted); }
-  .step a { color: var(--orange); text-decoration: none; font-weight: 600; }
+  .step a { color: var(--accent); text-decoration: none; font-weight: 600; }
   .step a:hover { text-decoration: underline; }
 
   /* ═══════════════════════════════════════════════════════════════
@@ -659,7 +660,7 @@
     bottom: -100px; left: 50%;
     transform: translateX(-50%);
     width: 600px; height: 400px;
-    background: radial-gradient(ellipse, rgba(255,107,43,.06), transparent 70%);
+    background: radial-gradient(ellipse, rgba(124,58,237,.07), transparent 70%);
     pointer-events: none;
   }
 
@@ -680,12 +681,12 @@
   }
   .review-card:hover {
     transform: translateY(-4px);
-    border-color: rgba(255,107,43,.3);
-    box-shadow: 0 10px 36px rgba(255,107,43,.08);
+    border-color: rgba(124,58,237,.3);
+    box-shadow: 0 10px 36px rgba(124,58,237,.09);
   }
 
   .review-stars {
-    color: var(--orange);
+    color: var(--accent);
     font-size: .95rem;
     letter-spacing: 2px;
     margin-bottom: 14px;
@@ -705,13 +706,13 @@
   .review-avatar {
     width: 42px; height: 42px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--orange), #c0392b);
+    background: linear-gradient(135deg, var(--accent), #1e40af);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 1.15rem;
     flex-shrink: 0;
-    box-shadow: 0 4px 12px rgba(255,107,43,.3);
+    box-shadow: 0 4px 12px rgba(124,58,237,.3);
   }
   .review-name  { font-weight: 700; font-size: .92rem; color: var(--white); }
   .review-meta  { font-size: .77rem; color: var(--muted); margin-top: 2px; }
@@ -731,7 +732,7 @@
     top: 50%; left: 50%;
     transform: translate(-50%, -50%);
     width: 700px; height: 500px;
-    background: radial-gradient(ellipse, rgba(255,107,43,.14), transparent 65%);
+    background: radial-gradient(ellipse, rgba(124,58,237,.14), transparent 65%);
     pointer-events: none;
   }
   /* decorative dots pattern */
@@ -739,7 +740,7 @@
     content: '';
     position: absolute;
     inset: 0;
-    background-image: radial-gradient(rgba(255,107,43,.07) 1px, transparent 1px);
+    background-image: radial-gradient(rgba(124,58,237,.08) 1px, transparent 1px);
     background-size: 28px 28px;
     pointer-events: none;
     mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, black, transparent);
@@ -759,7 +760,7 @@
   }
   .cta-final h2 em {
     font-style: normal;
-    color: var(--orange);
+    color: var(--accent);
   }
   .cta-final p {
     font-size: 1rem;
@@ -781,14 +782,14 @@
     color: var(--muted);
   }
   .cta-channel a {
-    color: var(--orange);
+    color: var(--accent);
     text-decoration: none;
     font-weight: 600;
-    border-bottom: 1px solid rgba(255,107,43,.4);
+    border-bottom: 1px solid rgba(124,58,237,.4);
     padding-bottom: 1px;
     transition: border-color .2s;
   }
-  .cta-channel a:hover { border-color: var(--orange); }
+  .cta-channel a:hover { border-color: var(--accent); }
 
   /* ═══════════════════════════════════════════════════════════════
      FOOTER
@@ -802,7 +803,7 @@
     border-top: 1px solid var(--border);
   }
   footer a { color: #5a6070; text-decoration: none; transition: color .2s; }
-  footer a:hover { color: var(--orange); }
+  footer a:hover { color: var(--accent); }
 
   /* ═══════════════════════════════════════════════════════════════
      RESPONSIVE
@@ -823,9 +824,9 @@
 <nav class="navbar" id="navbar">
   <div class="navbar-inner">
     <a href="#" class="logo">
-      🎒 <span>Как <span class="logo-accent">местный</span></span>
+      <span>Как <span class="logo-accent">местный</span></span>
     </a>
-    <a href="https://t.me/like_a_local_bot" class="btn btn-orange nav-btn" target="_blank" rel="noopener">
+    <a href="https://t.me/like_a_local_bot" class="btn btn-accent nav-btn" target="_blank" rel="noopener">
       Открыть бота
     </a>
   </div>
@@ -842,8 +843,6 @@
     <div class="hero-orb hero-orb-2"></div>
 
     <div class="hero-content">
-      <span class="hero-emoji">🎒</span>
-
       <h1>Путешествуй<br><em>как местный</em></h1>
 
       <p class="hero-sub">
@@ -852,7 +851,7 @@
       </p>
 
       <div class="hero-actions">
-        <a href="https://t.me/like_a_local_bot" class="btn btn-orange" target="_blank" rel="noopener">
+        <a href="https://t.me/like_a_local_bot" class="btn btn-accent" target="_blank" rel="noopener">
           ✈️ Открыть бота
         </a>
         <a href="#features" class="btn btn-ghost">
@@ -1072,11 +1071,11 @@
 ════════════════════════════════════════════════════════════════ -->
 <section class="cta-final" id="cta">
   <div class="cta-inner reveal">
-    <span class="badge" style="background:rgba(255,107,43,.12);border-color:rgba(255,107,43,.4)">Бесплатно навсегда</span>
+    <span class="badge" style="background:rgba(124,58,237,.12);border-color:rgba(124,58,237,.4)">Бесплатно навсегда</span>
     <h2>Готов путешествовать<br><em>умнее?</em></h2>
     <p>Присоединяйся к путешественникам, которые уже открыли мир по-другому</p>
     <div class="cta-actions">
-      <a href="https://t.me/like_a_local_bot" class="btn btn-orange" target="_blank" rel="noopener"
+      <a href="https://t.me/like_a_local_bot" class="btn btn-accent" target="_blank" rel="noopener"
          style="font-size:1.05rem;padding:17px 38px">
         🚀 Начать бесплатно
       </a>
@@ -1093,7 +1092,7 @@
 ════════════════════════════════════════════════════════════════ -->
 <footer>
   <div class="container">
-    🎒 <strong style="color:#5a6070">Как местный</strong>
+    <strong style="color:#5a6070">Как местный</strong>
     &nbsp;·&nbsp;
     <a href="https://t.me/like_a_local_bot" target="_blank" rel="noopener">@like_a_local_bot</a>
     &nbsp;·&nbsp;
