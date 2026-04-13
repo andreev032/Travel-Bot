@@ -3904,9 +3904,7 @@ _SKYENG_TEXT = (
     "🗺 Поймёшь указатели и навигацию\n"
     "🤝 Познакомишься с местными жителями\n"
     "💼 Откроет двери в международные направления\n\n"
-    "🎁 Специально для подписчиков «Как местный» — получи бонус на первые уроки!\n\n"
-    "👉 Получить бонус: https://skyeng.ru/referral/?source_type=referral"
-    "&utm_source=referral&inviterHash=4d5449314d54597a4e44553d"
+    "🎁 Специально для подписчиков «Как местный» — получи бонус на первые уроки!"
 )
 
 
@@ -3928,13 +3926,21 @@ async def partners_menu_handler(update: Update, context: ContextTypes.DEFAULT_TY
     if text == "◀️ Назад":
         return await go_home(update, context)
     if text == "🇬🇧 Школа английского Skyeng":
-        back_kb = ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True)
+        inline_kb = InlineKeyboardMarkup([[
+            InlineKeyboardButton(
+                "🎁 Получить бонус",
+                url="https://skyeng.ru/referral/?source_type=referral"
+                    "&utm_source=referral&inviterHash=4d5449314d54597a4e44553d",
+            )
+        ]])
         await update.message.reply_text(
             _SKYENG_TEXT,
             parse_mode="Markdown",
-            reply_markup=back_kb,
-            disable_web_page_preview=False,
+            reply_markup=inline_kb,
+            disable_web_page_preview=True,
         )
+        back_kb = ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True)
+        await update.message.reply_text("Навигация:", reply_markup=back_kb)
         return PARTNERS_MENU
     # Неизвестная кнопка — вернуть меню
     return await show_partners_menu(update, context)
