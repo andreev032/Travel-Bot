@@ -107,6 +107,7 @@ def get_folder_planning_kb():
         [
             [KeyboardButton("🌍 Подобрать страну"),      KeyboardButton("🌤 Сезоны путешествий")],
             [KeyboardButton("🛂 Визы"),                   KeyboardButton("⛔ Несовместимые страны")],
+            [KeyboardButton("✅ Чеклист", web_app=WebAppInfo(url=CHECKLIST_URL))],
             [KeyboardButton("◀️ Назад"),                  KeyboardButton(HOME_BTN)],
         ],
         resize_keyboard=True,
@@ -133,8 +134,7 @@ def get_folder_mytrips_kb():
         [
             [KeyboardButton("🗺 Мои страны", web_app=WebAppInfo(url=WEBAPP_URL)),
              KeyboardButton("🗺 Карта мира", web_app=WebAppInfo(url=MAP_URL))],
-            [KeyboardButton("✅ Чеклист", web_app=WebAppInfo(url=CHECKLIST_URL)),
-             KeyboardButton("📊 Моя статистика", web_app=WebAppInfo(url=STATS_URL))],
+            [KeyboardButton("📊 Моя статистика", web_app=WebAppInfo(url=STATS_URL))],
             [KeyboardButton("🏛 Мои достопримечательности", web_app=WebAppInfo(url=ATTRACTIONS_URL))],
             [KeyboardButton("◀️ Назад"),                  KeyboardButton(HOME_BTN)],
         ],
