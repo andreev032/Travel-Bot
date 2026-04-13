@@ -3,6 +3,7 @@ import re
 import json
 import logging
 import asyncio
+import traceback
 import urllib.request
 import urllib.parse
 import requests
@@ -3794,6 +3795,7 @@ def _strip_hashtags(text: str) -> str:
 
 def _download_photo_sync(photo_url: str) -> bytes | None:
     """Blocking download of photo bytes via requests. Run in executor."""
+    logger.info(f"download: [1/3] начинаем GET-запрос | URL={photo_url}")
     try:
         resp = requests.get(
             photo_url,
@@ -3801,19 +3803,30 @@ def _download_photo_sync(photo_url: str) -> bytes | None:
             allow_redirects=True,
             headers={"User-Agent": "Mozilla/5.0"},
         )
+        size = len(resp.content)
+        ctype = resp.headers.get("content-type", "?")
         logger.info(
-            f"download: HTTP {resp.status_code} | {len(resp.content)} байт"
-            f" | content-type={resp.headers.get('content-type', '?')} | URL={photo_url}"
+            f"download: [2/3] ответ получен | HTTP {resp.status_code}"
+            f" | {size} байт | content-type={ctype} | URL={photo_url}"
         )
         if resp.status_code == 200:
+            logger.info(f"download: [3/3] ✅ байты готовы ({size} байт)")
             return resp.content
-        logger.warning(f"download: статус {resp.status_code} — фото не получено")
+        logger.warning(
+            f"download: [3/3] ❌ статус {resp.status_code} — возвращаем None"
+        )
     except requests.exceptions.Timeout:
-        logger.warning(f"download: timeout (>15 сек) | URL={photo_url}")
+        logger.error(
+            f"download: ❌ Timeout (>15 сек) | URL={photo_url}\n{traceback.format_exc()}"
+        )
     except requests.exceptions.ConnectionError as e:
-        logger.warning(f"download: ошибка соединения — {e} | URL={photo_url}")
+        logger.error(
+            f"download: ❌ ConnectionError — {e} | URL={photo_url}\n{traceback.format_exc()}"
+        )
     except Exception as e:
-        logger.warning(f"download: ошибка — {type(e).__name__}: {e}")
+        logger.error(
+            f"download: ❌ {type(e).__name__}: {e} | URL={photo_url}\n{traceback.format_exc()}"
+        )
     return None
 
 
@@ -3832,75 +3845,97 @@ async def _send_post(bot, post: dict, label: str, chat_id: int | None = None) ->
     keyword = post.get("keyword", "travel")
     signed  = text + CHANNEL_SIGNATURE
 
+    # ── Шаг 0: диагностика входных данных ──────────────────────────────────
     photo_url = post.get("photo_url")
-    if photo_url:
-        logger.info(f"{label}: photo_url → {photo_url}")
-    else:
-        logger.info(f"{label}: photo_url не задан для '{keyword}' — только текст")
+    logger.info(
+        f"{label}: ── СТАРТ _send_post ──"
+        f" keyword='{keyword}' | target_chat={target}"
+        f" | text_len={len(text)} | photo_url={'✅ ' + photo_url if photo_url else '❌ нет'}"
+    )
 
     errors: list[str] = []
     photo_bytes: bytes | None = None
 
     if photo_url:
-        # Download photo as bytes in executor (blocking I/O)
-        logger.info(f"{label}: скачиваем фото через requests...")
+        # ── Шаг 1: скачиваем байты ─────────────────────────────────────────
+        logger.info(f"{label}: [шаг 1] запускаем _download_photo_sync в executor...")
         loop = asyncio.get_event_loop()
         photo_bytes = await loop.run_in_executor(None, _download_photo_sync, photo_url)
 
         if photo_bytes:
-            # Attempt 1: photo bytes + Markdown caption
-            logger.info(f"{label}: попытка 1 — send_photo(bytes) + Markdown | {len(photo_bytes)} байт")
+            logger.info(
+                f"{label}: [шаг 1] ✅ фото скачано — {len(photo_bytes)} байт"
+                f" ({len(photo_bytes) / 1024:.1f} КБ)"
+            )
+
+            # ── Шаг 2: send_photo(bytes) + Markdown ────────────────────────
+            logger.info(f"{label}: [шаг 2] send_photo(bytes) + Markdown caption...")
             try:
-                await bot.send_photo(chat_id=target, photo=photo_bytes,
-                                     caption=signed, parse_mode="Markdown")
-                logger.info(f"{label}: ✅ отправлен фото(bytes) + Markdown")
+                await bot.send_photo(
+                    chat_id=target, photo=photo_bytes,
+                    caption=signed, parse_mode="Markdown",
+                )
+                logger.info(f"{label}: [шаг 2] ✅ УСПЕХ — фото(bytes) + Markdown")
                 return True, "✅ фото(bytes) + Markdown caption"
             except Exception as e1:
                 err = f"{type(e1).__name__}: {e1}"
-                logger.warning(f"{label}: ❌ попытка 1 (bytes+Markdown) — {err}")
+                logger.error(
+                    f"{label}: [шаг 2] ❌ {err}\n{traceback.format_exc()}"
+                )
                 errors.append(f"bytes+Markdown: {err}")
 
-            # Attempt 2: photo bytes + plain caption
-            logger.info(f"{label}: попытка 2 — send_photo(bytes) + plain")
+            # ── Шаг 3: send_photo(bytes) + plain ───────────────────────────
+            logger.info(f"{label}: [шаг 3] send_photo(bytes) + plain caption...")
             try:
                 await bot.send_photo(chat_id=target, photo=photo_bytes, caption=text)
-                logger.info(f"{label}: ✅ отправлен фото(bytes) + plain")
+                logger.info(f"{label}: [шаг 3] ✅ УСПЕХ — фото(bytes) + plain")
                 return True, "✅ фото(bytes) + plain caption"
             except Exception as e2:
                 err = f"{type(e2).__name__}: {e2}"
-                logger.warning(f"{label}: ❌ попытка 2 (bytes+plain) — {err}")
+                logger.error(
+                    f"{label}: [шаг 3] ❌ {err}\n{traceback.format_exc()}"
+                )
                 errors.append(f"bytes+plain: {err}")
         else:
-            err = f"download failed (HTTP non-200 или timeout) | URL={photo_url}"
-            logger.warning(f"{label}: ❌ скачивание не удалось — {err}")
+            err = f"download вернул None | URL={photo_url}"
+            logger.error(f"{label}: [шаг 1] ❌ {err}")
             errors.append(f"download: {err}")
+    else:
+        logger.info(f"{label}: photo_url не задан — пропускаем скачивание")
 
-    # Attempt 3: text + Markdown (with signature)
-    logger.info(f"{label}: попытка 3 — send_message + Markdown")
+    # ── Шаг 4: send_message + Markdown ─────────────────────────────────────
+    logger.info(f"{label}: [шаг 4] send_message + Markdown (только текст)...")
     try:
-        await bot.send_message(chat_id=target, text=signed, parse_mode="Markdown",
-                               disable_web_page_preview=True)
-        logger.info(f"{label}: ✅ отправлен текст + Markdown")
+        await bot.send_message(
+            chat_id=target, text=signed, parse_mode="Markdown",
+            disable_web_page_preview=True,
+        )
+        logger.info(f"{label}: [шаг 4] ✅ УСПЕХ — текст + Markdown")
         return True, "✅ текст + Markdown (фото не отправилось)"
     except Exception as e3:
         err = f"{type(e3).__name__}: {e3}"
-        logger.warning(f"{label}: ❌ попытка 3 (текст+Markdown) — {err}")
+        logger.error(
+            f"{label}: [шаг 4] ❌ {err}\n{traceback.format_exc()}"
+        )
         errors.append(f"текст+Markdown: {err}")
 
-    # Attempt 4: plain text
-    logger.info(f"{label}: попытка 4 — send_message plain")
+    # ── Шаг 5: send_message plain ───────────────────────────────────────────
+    logger.info(f"{label}: [шаг 5] send_message plain text...")
     try:
-        await bot.send_message(chat_id=target, text=text,
-                               disable_web_page_preview=True)
-        logger.info(f"{label}: ✅ отправлен plain text")
+        await bot.send_message(
+            chat_id=target, text=text, disable_web_page_preview=True,
+        )
+        logger.info(f"{label}: [шаг 5] ✅ УСПЕХ — plain text")
         return True, "✅ plain текст (все остальные попытки провалились)"
     except Exception as e4:
         err = f"{type(e4).__name__}: {e4}"
-        logger.error(f"{label}: ❌ попытка 4 (plain) — {err}")
+        logger.error(
+            f"{label}: [шаг 5] ❌ {err}\n{traceback.format_exc()}"
+        )
         errors.append(f"plain: {err}")
 
-    detail = "❌ все 4 попытки провалились:\n" + "\n".join(f"  • {e}" for e in errors)
-    logger.error(f"{label}: {detail}")
+    detail = "❌ все попытки провалились:\n" + "\n".join(f"  • {e}" for e in errors)
+    logger.error(f"{label}: ── ФИНАЛ: {detail}")
     return False, detail
 
 
