@@ -2032,7 +2032,11 @@ _SUPPORT_KB = ReplyKeyboardMarkup(
 
 async def show_support_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "🆘 *Поддержка*\n\nВыбери тип обращения:",
+        "🆘 *Поддержка*\n\n"
+        "⚠️ Если бот не реагирует — зайди в меню бота и нажми /start. "
+        "Бот работает в режиме активной разработки, мы постоянно добавляем новые функции и обновления. "
+        "После каждого обновления рекомендуем нажать /start для корректной работы.\n\n"
+        "Чем можем помочь?",
         parse_mode="Markdown",
         reply_markup=_SUPPORT_KB,
     )
