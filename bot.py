@@ -132,11 +132,11 @@ def get_folder_tools_kb():
 def get_folder_mytrips_kb():
     return ReplyKeyboardMarkup(
         [
-            [KeyboardButton("🗺 Мои страны", web_app=WebAppInfo(url=WEBAPP_URL)),
-             KeyboardButton("🗺 Карта мира", web_app=WebAppInfo(url=MAP_URL))],
-            [KeyboardButton("📊 Моя статистика", web_app=WebAppInfo(url=STATS_URL))],
-            [KeyboardButton("🏛 Мои достопримечательности", web_app=WebAppInfo(url=ATTRACTIONS_URL))],
-            [KeyboardButton("◀️ Назад"),                  KeyboardButton(HOME_BTN)],
+            [KeyboardButton("🗺 Мои страны",    web_app=WebAppInfo(url=WEBAPP_URL)),
+             KeyboardButton("🗺 Карта мира",    web_app=WebAppInfo(url=MAP_URL))],
+            [KeyboardButton("📊 Моя статистика", web_app=WebAppInfo(url=STATS_URL)),
+             KeyboardButton("🏛 Мои достопримечательности", web_app=WebAppInfo(url=ATTRACTIONS_URL))],
+            [KeyboardButton("◀️ Назад"),         KeyboardButton(HOME_BTN)],
         ],
         resize_keyboard=True,
         one_time_keyboard=True,
