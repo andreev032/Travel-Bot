@@ -59,8 +59,28 @@ def record_user(user_id: int, username: str | None) -> None:
             visits.append(today)
     _save_users(data)
 
-# Счётчик текущего поста — перебираем по кругу
-_post_index = 0
+# ── Персистентный индекс поста (сохраняется между перезапусками) ─
+POST_INDEX_FILE = os.path.join(os.path.dirname(__file__), "post_index.json")
+
+def _load_post_index() -> int:
+    """Читает сохранённый индекс из post_index.json; возвращает 0 если файл не существует."""
+    try:
+        if os.path.exists(POST_INDEX_FILE):
+            with open(POST_INDEX_FILE, "r", encoding="utf-8") as f:
+                return int(json.load(f).get("index", 0))
+    except (ValueError, KeyError, OSError, json.JSONDecodeError):
+        pass
+    return 0
+
+def _save_post_index(idx: int) -> None:
+    """Атомарно сохраняет индекс через временный файл."""
+    tmp = POST_INDEX_FILE + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump({"index": idx}, f)
+    os.replace(tmp, POST_INDEX_FILE)
+
+# Счётчик текущего поста — перебираем по кругу; восстанавливается после перезапуска
+_post_index = _load_post_index()
 
 MAIN_MENU, ANSWERING, HELP_MENU, HELP_TOPIC, TRANSLATING, VISA_MENU, VISA_CATEGORY, \
     MOVIES_MENU, MOVIES_REGION, MOVIES_LIST, INCOMPATIBLE_MENU, INCOMPATIBLE_TOPIC, \
@@ -3772,11 +3792,23 @@ def _strip_hashtags(text: str) -> str:
 def _download_photo_sync(photo_url: str) -> bytes | None:
     """Blocking download of photo bytes via requests. Run in executor."""
     try:
-        resp = requests.get(photo_url, timeout=10)
-        logger.info(f"download: HTTP {resp.status_code} | {len(resp.content)} байт | URL={photo_url}")
+        resp = requests.get(
+            photo_url,
+            timeout=15,
+            allow_redirects=True,
+            headers={"User-Agent": "Mozilla/5.0"},
+        )
+        logger.info(
+            f"download: HTTP {resp.status_code} | {len(resp.content)} байт"
+            f" | content-type={resp.headers.get('content-type', '?')} | URL={photo_url}"
+        )
         if resp.status_code == 200:
             return resp.content
         logger.warning(f"download: статус {resp.status_code} — фото не получено")
+    except requests.exceptions.Timeout:
+        logger.warning(f"download: timeout (>15 сек) | URL={photo_url}")
+    except requests.exceptions.ConnectionError as e:
+        logger.warning(f"download: ошибка соединения — {e} | URL={photo_url}")
     except Exception as e:
         logger.warning(f"download: ошибка — {type(e).__name__}: {e}")
     return None
@@ -3892,6 +3924,7 @@ async def scheduler(bot) -> None:
                 idx  = _post_index % len(CHANNEL_POSTS)
                 post = CHANNEL_POSTS[idx]
                 _post_index += 1
+                _save_post_index(_post_index)
                 logger.info(
                     f"Автопост #{_post_index} (пост {idx+1}/{len(CHANNEL_POSTS)})"
                     f" keyword='{post.get('keyword')}': отправка в {CHANNEL_ID}"
@@ -4090,6 +4123,7 @@ async def testpost_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
     # 6. Attempt send → TEST_CHANNEL_ID only
     _post_index += 1
+    _save_post_index(_post_index)
     label = f"/testpost #{_post_index}"
     logger.info(f"{label}: отправка поста {idx+1} (keyword='{keyword}') в тестовый канал {TEST_CHANNEL_ID}")
 
