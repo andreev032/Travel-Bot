@@ -3514,9 +3514,7 @@ async def post_init(app: Application) -> None:
     """Called by PTB after initialize() — set bot commands, verify channel, launch scheduler."""
     # Register menu commands (visible via the '/' button next to the clip icon)
     await app.bot.set_my_commands([
-        BotCommand("start",    "Главное меню"),
-        BotCommand("menu",     "Главное меню"),
-        BotCommand("testpost", "Тест автопостинга (только для админа)"),
+        BotCommand("start", "Главное меню"),
     ])
     logger.info("Команды бота зарегистрированы ✓")
 
