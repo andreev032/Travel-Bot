@@ -370,18 +370,22 @@
     flex: 0 0 50%;
     position: relative;
     overflow: hidden;
+    background: #0a0a1a;          /* тёмный фон — нет белых полос при contain */
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
-  /* thin gradient on left edge of photo — smooth blend into left panel */
+  /* thin gradient on left edge — плавный переход в левую панель */
   .hero-right::before {
     content: '';
     position: absolute;
     inset: 0;
     background: linear-gradient(
       to right,
-      rgba(10,8,26,.65) 0%,
-      rgba(10,8,26,.15) 18%,
-      transparent       40%
+      rgba(10,8,26,.70) 0%,
+      rgba(10,8,26,.20) 15%,
+      transparent       35%
     );
     z-index: 1;
     pointer-events: none;
@@ -390,8 +394,8 @@
   .hero-photo {
     width: 100%;
     height: 100%;
-    object-fit: cover;
-    object-position: center top;  /* лицо не обрезается */
+    object-fit: contain;          /* показывает лицо целиком, без обрезки */
+    object-position: center center;
     display: block;
   }
 
@@ -403,8 +407,8 @@
       min-height: 100svh;
     }
     .hero-right {
-      flex: 0 0 40vh;
-      min-height: 240px;
+      flex: 0 0 55vh;            /* увеличено: лицо целиком при contain */
+      min-height: 300px;
     }
     .hero-left {
       flex: 1;
@@ -872,7 +876,7 @@
     </div>
   </div>
 
-  <!-- ── Right: photo, 100vh, object-fit cover ── -->
+  <!-- ── Right: photo, 100svh, object-fit contain, dark bg ── -->
   <div class="hero-right">
     <img class="hero-photo"
          src="https://raw.githubusercontent.com/andreev032/Travel-Bot/main/photo_2026-04-12_22-22-07.jpg"
