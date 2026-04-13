@@ -30,7 +30,8 @@ MAIN_MENU, ANSWERING, HELP_MENU, HELP_TOPIC, TRANSLATING, VISA_MENU, VISA_CATEGO
     LOUNGE_MENU, LOUNGE_SECTION, \
     SUPPORT_MENU, SUPPORT_TYPING, \
     CRUISE_MENU, CRUISE_SECTION, \
-    WONDERS_MENU, WONDERS_SEVEN_MENU, WONDERS_SECTION, UNESCO_MENU, UNESCO_REGION = range(27)
+    WONDERS_MENU, WONDERS_SEVEN_MENU, WONDERS_SECTION, UNESCO_MENU, UNESCO_REGION, \
+    PARTNERS_MENU = range(28)
 
 # Замени на реальный HTTPS-URL после деплоя webapp/index.html
 WEBAPP_URL      = "https://andreev032.github.io/Travel-Bot/"
@@ -928,13 +929,7 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return MAIN_MENU
     elif text == "🤝 Партнёры":
-        await update.message.reply_text(
-            "🤝 *Партнёры*\n\n"
-            "🚧 В разработке — скоро появится!",
-            parse_mode="Markdown",
-            reply_markup=ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True),
-        )
-        return MAIN_MENU
+        return await show_partners_menu(update, context)
     elif text == "🆘 Поддержка":
         return await show_support_menu(update, context)
     elif text == CHANNEL_BTN:
@@ -3881,6 +3876,58 @@ def _scheduler_done_cb(task: asyncio.Task) -> None:
         logger.warning("Задача планировщика завершилась без ошибки (неожиданно)")
 
 
+# ═══════════════════════════════════════════════════════════════
+#  🤝 ПАРТНЁРЫ
+# ═══════════════════════════════════════════════════════════════
+
+_PARTNERS_KB = ReplyKeyboardMarkup(
+    [
+        ["🇬🇧 Школа английского Skyeng"],
+        ["◀️ Назад", HOME_BTN],
+    ],
+    resize_keyboard=True,
+)
+
+_SKYENG_TEXT = (
+    "🇬🇧 *Skyeng — онлайн школа английского языка*\n\n"
+    "🎁 Специально для подписчиков «Как местный» — 5000 рублей на первые уроки\\!\n\n"
+    "Английский пригодится в любом путешествии — объяснишься в аэропорту, "
+    "отеле и ресторане без переводчика\\.\n\n"
+    "👉 [Получить 5000 рублей](https://skyeng.ru/referral/?source_type=referral"
+    "&utm_source=referral&inviterHash=4d5449314d54597a4e44553d)"
+)
+
+
+async def show_partners_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Показывает меню раздела Партнёры."""
+    await update.message.reply_text(
+        "🤝 *Партнёры*\n\nВыбери партнёра:",
+        parse_mode="Markdown",
+        reply_markup=_PARTNERS_KB,
+    )
+    return PARTNERS_MENU
+
+
+async def partners_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обрабатывает нажатия в меню Партнёры."""
+    text = update.message.text
+    if text == HOME_BTN:
+        return await go_home(update, context)
+    if text == "◀️ Назад":
+        return await go_home(update, context)
+    if text == "🇬🇧 Школа английского Skyeng":
+        back_kb = ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True)
+        await update.message.reply_text(
+            _SKYENG_TEXT,
+            parse_mode="MarkdownV2",
+            reply_markup=back_kb,
+            disable_web_page_preview=False,
+        )
+        return PARTNERS_MENU
+    # Неизвестная кнопка — вернуть меню
+    return await show_partners_menu(update, context)
+
+
 async def testpost_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Diagnostic: check TEST channel access, admin rights, then send next post there."""
     global _post_index
@@ -4101,6 +4148,10 @@ def main():
             UNESCO_REGION: [
                 home,
                 MessageHandler(filters.TEXT & ~filters.COMMAND, unesco_region_handler),
+            ],
+            PARTNERS_MENU: [
+                home,
+                MessageHandler(filters.TEXT & ~filters.COMMAND, partners_menu_handler),
             ],
         },
         fallbacks=[
