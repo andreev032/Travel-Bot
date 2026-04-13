@@ -4013,12 +4013,17 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     top5 = sorted(day_counts.items(), key=lambda x: x[1], reverse=True)[:5]
     top5_lines = "\n".join(f"  {d}: {c} визит(ов)" for d, c in top5) or "  нет данных"
 
+    # Дата первой записи в файле
+    all_first = [u.get("first_visit", "") for u in data.values() if u.get("first_visit")]
+    since = min(all_first) if all_first else "нет данных"
+
     text = (
         "📊 *Статистика пользователей*\n\n"
         f"👥 Всего пользователей: *{total}*\n"
         f"🆕 Новых за 7 дней: *{new_7}*\n"
         f"📅 Новых за 30 дней: *{new_30}*\n\n"
-        f"🔥 *Топ-5 активных дней:*\n{top5_lines}"
+        f"🔥 *Топ-5 активных дней:*\n{top5_lines}\n\n"
+        f"📌 Статистика ведётся с {since}"
     )
     await update.message.reply_text(text, parse_mode="Markdown")
 
