@@ -20,6 +20,44 @@ TOKEN            = "8701321387:AAHwb_WkmrimPtInwDftv8jb0d03gTkogqA"
 CHANNEL_ID       = -1003580791059   # ВРЕМЕННО: тестовый канал для проверки расписания
 TEST_CHANNEL_ID  = -1003580791059   # тестовый канал — команда /testpost
 MOSCOW_TZ        = ZoneInfo("Europe/Moscow")
+# ── Файл статистики пользователей ────────────────────────────────
+USERS_FILE = os.path.join(os.path.dirname(__file__), "users.json")
+
+def _load_users() -> dict:
+    """Загружает users.json; возвращает пустой словарь если файл не существует."""
+    if not os.path.exists(USERS_FILE):
+        return {}
+    try:
+        with open(USERS_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+def _save_users(data: dict) -> None:
+    """Сохраняет данные в users.json атомарно через временный файл."""
+    tmp = USERS_FILE + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, USERS_FILE)
+
+def record_user(user_id: int, username: str | None) -> None:
+    """Записывает визит пользователя. Первый визит фиксирует дату регистрации."""
+    data  = _load_users()
+    key   = str(user_id)
+    today = datetime.now(MOSCOW_TZ).date().isoformat()
+    if key not in data:
+        data[key] = {
+            "username":    username or "",
+            "first_visit": today,
+            "visits":      [today],
+        }
+    else:
+        # Обновляем username на случай смены
+        data[key]["username"] = username or data[key].get("username", "")
+        visits = data[key].setdefault("visits", [])
+        if today not in visits:
+            visits.append(today)
+    _save_users(data)
 
 # Счётчик текущего поста — перебираем по кругу
 _post_index = 0
@@ -47,7 +85,7 @@ CHANNEL_URL     = "https://t.me/like_a_local"
 
 HOME_BTN    = "🏠 Главное меню"
 CHANNEL_BTN = "📢 Наш канал"
-ADMIN_ID    = 462171750
+ADMIN_ID    = 462171750       # доступ к /stats и служебным командам
 
 
 def get_main_keyboard():
@@ -822,6 +860,8 @@ def score_destination(dest, answers):
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data.clear()
+    user = update.effective_user
+    record_user(user.id, user.username)
     await update.message.reply_text(
         "✈️ Привет! Я твой travel-помощник «Как местный» 🎒\n"
         "Всё что нужно для путешествия — в одном месте:\n\n"
@@ -3946,6 +3986,41 @@ async def partners_menu_handler(update: Update, context: ContextTypes.DEFAULT_TY
     return await show_partners_menu(update, context)
 
 
+async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Статистика пользователей — только для администратора."""
+    if update.effective_user.id != ADMIN_ID:
+        await update.message.reply_text("⛔ Нет доступа.")
+        return
+
+    data = _load_users()
+    total = len(data)
+
+    from datetime import timedelta
+    today     = datetime.now(MOSCOW_TZ).date()
+    cutoff_7  = (today - timedelta(days=6)).isoformat()
+    cutoff_30 = (today - timedelta(days=29)).isoformat()
+
+    new_7  = sum(1 for u in data.values() if u.get("first_visit", "") >= cutoff_7)
+    new_30 = sum(1 for u in data.values() if u.get("first_visit", "") >= cutoff_30)
+
+    # Топ-5 самых активных дней по количеству визитов
+    day_counts: dict[str, int] = {}
+    for u in data.values():
+        for day in u.get("visits", []):
+            day_counts[day] = day_counts.get(day, 0) + 1
+    top5 = sorted(day_counts.items(), key=lambda x: x[1], reverse=True)[:5]
+    top5_lines = "\n".join(f"  {d}: {c} визит(ов)" for d, c in top5) or "  нет данных"
+
+    text = (
+        "📊 *Статистика пользователей*\n\n"
+        f"👥 Всего пользователей: *{total}*\n"
+        f"🆕 Новых за 7 дней: *{new_7}*\n"
+        f"📅 Новых за 30 дней: *{new_30}*\n\n"
+        f"🔥 *Топ-5 активных дней:*\n{top5_lines}"
+    )
+    await update.message.reply_text(text, parse_mode="Markdown")
+
+
 async def testpost_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Diagnostic: check TEST channel access, admin rights, then send next post there."""
     global _post_index
@@ -4181,7 +4256,8 @@ def main():
     )
     app.add_handler(conv)
     app.add_handler(CommandHandler("testpost", testpost_command))
-    app.add_handler(CommandHandler("menu", menu_command))
+    app.add_handler(CommandHandler("stats",    stats_command))
+    app.add_handler(CommandHandler("menu",     menu_command))
 
     logger.info("Бот запущен!")
     app.run_polling(allowed_updates=Update.ALL_TYPES)
