@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Мои достопримечательности</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      height: 100%; overflow: hidden;
+      background: #0d1117; color: #c9d1d9;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      display: flex; flex-direction: column;
+    }
+
+    /* ── Header ── */
+    #header {
+      background: #161b22;
+      border-bottom: 1px solid #30363d;
+      padding: 10px 12px 8px;
+      flex-shrink: 0;
+    }
+    #search {
+      width: 100%; background: #21262d; border: 1px solid #30363d;
+      border-radius: 8px; padding: 9px 12px; color: #c9d1d9;
+      font-size: 14px; outline: none;
+    }
+    #search::placeholder { color: #484f58; }
+    #search:focus { border-color: #58a6ff; }
+
+    /* ── Counter bar ── */
+    #counter-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 7px 12px; background: #0d1117;
+      border-bottom: 1px solid #21262d; flex-shrink: 0; gap: 8px;
+    }
+    #counter-label { font-size: 13px; color: #8b949e; white-space: nowrap; }
+    #counter-badge {
+      background: #21262d; color: #484f58;
+      font-size: 12px; font-weight: 700;
+      padding: 3px 11px; border-radius: 20px;
+      min-width: 64px; text-align: center;
+      transition: background .2s, color .2s;
+    }
+    #counter-badge.has { background: #238636; color: #fff; }
+    #btn-reset {
+      background: #21262d; color: #8b949e;
+      border: 1px solid #30363d; border-radius: 8px;
+      font-size: 12px; padding: 4px 10px; cursor: pointer;
+      white-space: nowrap; transition: background .15s, color .15s;
+      flex-shrink: 0;
+    }
+    #btn-reset:active { background: #3d1a1a; color: #f85149; border-color: #6e3535; }
+
+    /* ── List ── */
+    #list {
+      overflow-y: auto; flex: 1; padding: 4px 10px 90px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* Category header */
+    .cat-header {
+      display: flex; align-items: center; gap: 8px;
+      padding: 14px 4px 6px; font-size: 13px; font-weight: 700;
+      color: #8b949e; letter-spacing: .02em; user-select: none;
+    }
+    .cat-header:first-child { padding-top: 8px; }
+    .cat-count {
+      background: #21262d; color: #484f58;
+      font-size: 11px; font-weight: 700;
+      padding: 2px 8px; border-radius: 20px;
+      transition: background .2s, color .2s;
+    }
+    .cat-count.has { background: #238636; color: #fff; }
+
+    /* Row */
+    .row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 8px; border-radius: 8px;
+      cursor: pointer; transition: background .12s;
+      user-select: none;
+    }
+    .row:active { background: #1c2128; }
+    .row.on { background: #0f2617; }
+    .flag { font-size: 20px; width: 26px; text-align: center; flex-shrink: 0; }
+    .info { flex: 1; min-width: 0; }
+    .name { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .row.on .name { color: #3fb950; }
+    .country { font-size: 11px; color: #484f58; margin-top: 1px; }
+    .row.on .country { color: #2ea043; }
+    .box {
+      width: 21px; height: 21px; border: 2px solid #30363d;
+      border-radius: 5px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .12s, border-color .12s;
+    }
+    .row.on .box { background: #238636; border-color: #238636; }
+    .tick { display: none; }
+    .row.on .tick { display: block; }
+    .empty { text-align: center; color: #484f58; font-size: 14px; padding: 36px 0; }
+
+    /* ── Bottom button ── */
+    #done-wrap {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      padding: 10px 12px 14px;
+      background: linear-gradient(transparent, #0d1117 38%);
+      pointer-events: none;
+    }
+    #btn-done {
+      width: 100%; padding: 13px;
+      background: linear-gradient(135deg, #238636, #2ea043);
+      color: #fff; border: none; border-radius: 10px;
+      font-size: 15px; font-weight: 700; cursor: pointer;
+      transition: opacity .15s; pointer-events: all;
+    }
+    #btn-done:disabled { background: #21262d; color: #484f58; cursor: default; }
+    #btn-done:not(:disabled):active { opacity: .8; }
+  </style>
+</head>
+<body>
+
+<div id="header">
+  <input id="search" type="text" placeholder="🔍 Поиск достопримечательности…"
+         autocomplete="off" oninput="filter(this.value)">
+</div>
+<div id="counter-bar">
+  <span id="counter-label">Посещено</span>
+  <span id="counter-badge">0 из 0</span>
+  <button id="btn-reset" onclick="resetAll()">Сбросить всё</button>
+</div>
+<div id="list"></div>
+<div id="done-wrap">
+  <button id="btn-done" disabled onclick="closeApp()">Закрыть</button>
+</div>
+
+<script>
+const tg = window.Telegram.WebApp;
+tg.ready(); tg.expand();
+if (tg.setHeaderColor)     tg.setHeaderColor('#161b22');
+if (tg.setBackgroundColor) tg.setBackgroundColor('#0d1117');
+
+/* ═══════════════════════════════════════════
+   ДАННЫЕ
+═══════════════════════════════════════════ */
+const CATEGORIES = [
+
+  {
+    id: "wonders",
+    title: "🌟 7 новых чудес света",
+    items: [
+      { flag: "🇨🇳", name: "Великая Китайская стена",        country: "Китай"    },
+      { flag: "🇮🇳", name: "Тадж-Махал",                     country: "Индия"    },
+      { flag: "🇧🇷", name: "Статуя Христа Искупителя",       country: "Бразилия" },
+      { flag: "🇲🇽", name: "Пирамида Чичен-Ица",             country: "Мексика"  },
+      { flag: "🇵🇪", name: "Мачу-Пикчу",                     country: "Перу"     },
+      { flag: "🇯🇴", name: "Петра",                           country: "Иордания" },
+      { flag: "🇮🇹", name: "Колизей",                         country: "Италия"   },
+    ]
+  },
+
+  {
+    id: "unesco",
+    title: "🏛 Объекты ЮНЕСКО — топ-50",
+    items: [
+      { flag: "🇬🇷", name: "Акрополь Афин",                       country: "Греция"          },
+      { flag: "🇫🇷", name: "Версальский дворец",                   country: "Франция"         },
+      { flag: "🇫🇷", name: "Берега Сены в Париже",                 country: "Франция"         },
+      { flag: "🇪🇸", name: "Сагра́да Фамилия",                     country: "Испания"         },
+      { flag: "🇪🇸", name: "Альгамбра",                            country: "Испания"         },
+      { flag: "🇮🇹", name: "Исторический центр Рима",              country: "Италия"          },
+      { flag: "🇮🇹", name: "Пизанская башня",                      country: "Италия"          },
+      { flag: "🇮🇹", name: "Исторический центр Флоренции",         country: "Италия"          },
+      { flag: "🇮🇹", name: "Венеция",                              country: "Италия"          },
+      { flag: "🇦🇹", name: "Исторический центр Вены",              country: "Австрия"         },
+      { flag: "🇦🇹", name: "Дворец Шёнбрунн",                     country: "Австрия"         },
+      { flag: "🇨🇿", name: "Исторический центр Праги",             country: "Чехия"           },
+      { flag: "🇵🇱", name: "Исторический центр Кракова",           country: "Польша"          },
+      { flag: "🇬🇧", name: "Стоунхендж",                          country: "Великобритания"  },
+      { flag: "🇬🇧", name: "Тауэр и Тауэрский мост",              country: "Великобритания"  },
+      { flag: "🇮🇸", name: "Тингвеллир",                          country: "Исландия"        },
+      { flag: "🇳🇴", name: "Фьорды Гейрангер и Нэрёй",            country: "Норвегия"        },
+      { flag: "🇭🇷", name: "Старый город Дубровника",              country: "Хорватия"        },
+      { flag: "🇵🇹", name: "Исторический центр Синтры",            country: "Португалия"      },
+      { flag: "🇲🇹", name: "Мегалитические храмы Мальты",          country: "Мальта"          },
+      { flag: "🇯🇵", name: "Исторические памятники Киото",         country: "Япония"          },
+      { flag: "🇯🇵", name: "Гора Фудзи",                          country: "Япония"          },
+      { flag: "🇨🇳", name: "Запретный город",                      country: "Китай"           },
+      { flag: "🇨🇳", name: "Терракотовая армия",                   country: "Китай"           },
+      { flag: "🇨🇳", name: "Карстовый ландшафт Южного Китая",      country: "Китай"           },
+      { flag: "🇰🇭", name: "Ангкор",                               country: "Камбоджа"        },
+      { flag: "🇻🇳", name: "Залив Халонг",                         country: "Вьетнам"         },
+      { flag: "🇮🇩", name: "Боробудур",                            country: "Индонезия"       },
+      { flag: "🇮🇩", name: "Прамбанан",                            country: "Индонезия"       },
+      { flag: "🇮🇳", name: "Храмы Кхаджурахо",                    country: "Индия"           },
+      { flag: "🇮🇳", name: "Красный форт",                         country: "Индия"           },
+      { flag: "🇹🇭", name: "Исторический город Аюттхая",           country: "Таиланд"         },
+      { flag: "🇱🇰", name: "Сигирия",                              country: "Шри-Ланка"       },
+      { flag: "🇳🇵", name: "Национальный парк Сагарматха",         country: "Непал"           },
+      { flag: "🇵🇰", name: "Мохенджо-Даро",                        country: "Пакистан"        },
+      { flag: "🇮🇱", name: "Старый город Иерусалима",              country: "Израиль"         },
+      { flag: "🇮🇷", name: "Персеполь",                            country: "Иран"            },
+      { flag: "🇸🇦", name: "Аль-Хиджр (Мадаин-Салих)",            country: "Саудовская Аравия" },
+      { flag: "🇲🇦", name: "Медина Феса",                          country: "Марокко"         },
+      { flag: "🇹🇳", name: "Карфаген",                             country: "Тунис"           },
+      { flag: "🇪🇬", name: "Пирамиды Гизы и Сфинкс",              country: "Египет"          },
+      { flag: "🇪🇹", name: "Скальные церкви Лалибэлы",             country: "Эфиопия"         },
+      { flag: "🇹🇿", name: "Нгоронгоро",                           country: "Танзания"        },
+      { flag: "🇿🇼", name: "Большой Зимбабве",                     country: "Зимбабве"        },
+      { flag: "🇺🇿", name: "Регистан, Самарканд",                  country: "Узбекистан"      },
+      { flag: "🇬🇪", name: "Исторические памятники Мцхеты",        country: "Грузия"          },
+      { flag: "🇷🇺", name: "Московский Кремль и Красная площадь",  country: "Россия"          },
+      { flag: "🇷🇺", name: "Исторический центр Санкт-Петербурга",  country: "Россия"          },
+      { flag: "🇺🇸", name: "Гранд-Каньон",                        country: "США"             },
+      { flag: "🇦🇷", name: "Водопады Игуасу",                      country: "Аргентина"       },
+    ]
+  },
+
+  {
+    id: "popular",
+    title: "🌍 Самые популярные места мира — топ-50",
+    items: [
+      { flag: "🇫🇷", name: "Эйфелева башня",                  country: "Франция"        },
+      { flag: "🇬🇧", name: "Биг-Бен",                         country: "Великобритания" },
+      { flag: "🇬🇷", name: "Акрополь",                         country: "Греция"         },
+      { flag: "🇰🇭", name: "Ангкор-Ват",                       country: "Камбоджа"       },
+      { flag: "🇺🇸", name: "Статуя Свободы",                   country: "США"            },
+      { flag: "🇦🇺", name: "Сиднейский оперный театр",         country: "Австралия"      },
+      { flag: "🇦🇪", name: "Бурдж Халифа",                     country: "ОАЭ"            },
+      { flag: "🇹🇿", name: "Сафари в Серенгети",               country: "Танзания"       },
+      { flag: "🇨🇦", name: "Ниагарский водопад",               country: "Канада"         },
+      { flag: "🇺🇸", name: "Большой Каньон",                   country: "США"            },
+      { flag: "🇮🇸", name: "Северное сияние",                  country: "Исландия"       },
+      { flag: "🇮🇩", name: "Бали",                             country: "Индонезия"      },
+      { flag: "🇹🇭", name: "Храм Ват Пхра Кэо",               country: "Таиланд"        },
+      { flag: "🇿🇦", name: "Столовая гора",                    country: "ЮАР"            },
+      { flag: "🇳🇵", name: "Базовый лагерь Эвереста",          country: "Непал"          },
+      { flag: "🇲🇻", name: "Мальдивские атоллы",               country: "Мальдивы"       },
+      { flag: "🇨🇺", name: "Старая Гавана",                    country: "Куба"           },
+      { flag: "🇫🇷", name: "Лувр",                             country: "Франция"        },
+      { flag: "🇮🇹", name: "Площадь Сан-Марко",               country: "Италия"         },
+      { flag: "🇺🇸", name: "Йеллоустоун",                      country: "США"            },
+      { flag: "🇨🇱", name: "Остров Пасхи",                     country: "Чили"           },
+      { flag: "🇵🇹", name: "Лиссабон",                         country: "Португалия"     },
+      { flag: "🇯🇵", name: "Арасияма, Киото",                  country: "Япония"         },
+      { flag: "🇮🇳", name: "Варанаси",                         country: "Индия"          },
+      { flag: "🇲🇦", name: "Медина Марракеша",                 country: "Марокко"        },
+      { flag: "🇸🇬", name: "Marina Bay Sands",                 country: "Сингапур"       },
+      { flag: "🇹🇷", name: "Каппадокия",                       country: "Турция"         },
+      { flag: "🇧🇦", name: "Старый Мостар",                    country: "Босния"         },
+      { flag: "🇦🇺", name: "Большой Барьерный риф",            country: "Австралия"      },
+      { flag: "🇿🇼", name: "Водопад Виктория",                 country: "Зимбабве"       },
+      { flag: "🇳🇿", name: "Фьорды Милфорд-Саунд",            country: "Новая Зеландия" },
+      { flag: "🇰🇷", name: "Дворец Кёнбоккун",                 country: "Южная Корея"    },
+      { flag: "🇮🇸", name: "Голубая лагуна",                   country: "Исландия"       },
+      { flag: "🇦🇪", name: "Пальмовый остров Джумейра",        country: "ОАЭ"            },
+      { flag: "🇪🇸", name: "Барселона",                        country: "Испания"        },
+      { flag: "🇲🇽", name: "Канкун",                           country: "Мексика"        },
+      { flag: "🇷🇺", name: "Озеро Байкал",                     country: "Россия"         },
+      { flag: "🇬🇪", name: "Тбилиси",                          country: "Грузия"         },
+      { flag: "🇻🇳", name: "Хойан",                            country: "Вьетнам"        },
+      { flag: "🇵🇭", name: "Острова Палаван",                  country: "Филиппины"      },
+      { flag: "🇮🇸", name: "Гейзер Гейсир",                   country: "Исландия"       },
+      { flag: "🇲🇾", name: "Башни Петронас",                   country: "Малайзия"       },
+      { flag: "🇵🇪", name: "Озеро Титикака",                   country: "Перу"           },
+      { flag: "🇨🇭", name: "Юнгфрауйох",                      country: "Швейцария"      },
+      { flag: "🇦🇲", name: "Монастырь Гегард",                 country: "Армения"        },
+      { flag: "🇲🇳", name: "Пустыня Гоби",                    country: "Монголия"       },
+      { flag: "🇹🇿", name: "Килиманджаро",                     country: "Танзания"       },
+      { flag: "🇧🇴", name: "Солончак Уюни",                   country: "Боливия"        },
+      { flag: "🇳🇴", name: "Язык Тролля",                     country: "Норвегия"       },
+      { flag: "🇺🇿", name: "Ичан-Кала (Хива)",                country: "Узбекистан"     },
+    ]
+  }
+
+];
+
+/* ═══════════════════════════════════════════
+   СОСТОЯНИЕ
+═══════════════════════════════════════════ */
+const STORAGE_KEY = "attractions_visited_v1";
+
+// visited: Set of "categoryId:itemIndex"
+let visited = new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"));
+let filterQuery = "";
+
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify([...visited]));
+}
+
+function itemKey(catId, idx) {
+  return catId + ":" + idx;
+}
+
+/* ═══════════════════════════════════════════
+   РЕНДЕР
+═══════════════════════════════════════════ */
+const listEl   = document.getElementById("list");
+const badgeEl  = document.getElementById("counter-badge");
+const btnDone  = document.getElementById("btn-done");
+
+// All rendered rows: [{catId, idx, el}]
+let renderedRows = [];
+
+function render() {
+  const q = filterQuery.trim().toLowerCase();
+  listEl.innerHTML = "";
+  renderedRows = [];
+
+  let totalVisible = 0;
+  let totalCount   = 0;
+
+  CATEGORIES.forEach(cat => {
+    const catKey = cat.id;
+    let catVisited = 0;
+    let catVisible = [];
+
+    cat.items.forEach((item, idx) => {
+      const key = itemKey(catKey, idx);
+      const isOn = visited.has(key);
+      if (isOn) catVisited++;
+
+      const matchesSearch = !q ||
+        item.name.toLowerCase().includes(q) ||
+        item.country.toLowerCase().includes(q);
+
+      if (matchesSearch) catVisible.push({ item, idx, isOn, key });
+    });
+
+    if (catVisible.length === 0) return;
+
+    // Category header
+    const hdr = document.createElement("div");
+    hdr.className = "cat-header";
+    hdr.innerHTML = `<span>${cat.title}</span>
+      <span class="cat-count${catVisited > 0 ? " has" : ""}" data-cat="${catKey}">
+        ${catVisited} / ${cat.items.length}
+      </span>`;
+    listEl.appendChild(hdr);
+
+    catVisible.forEach(({ item, idx, isOn, key }) => {
+      const row = document.createElement("div");
+      row.className = "row" + (isOn ? " on" : "");
+      row.innerHTML = `
+        <span class="flag">${item.flag}</span>
+        <div class="info">
+          <div class="name">${item.name}</div>
+          <div class="country">${item.country}</div>
+        </div>
+        <div class="box">
+          <svg class="tick" width="13" height="10" viewBox="0 0 13 10" fill="none">
+            <path d="M1.5 5L5 8.5L11.5 1.5" stroke="#fff" stroke-width="2.2"
+                  stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>`;
+      row.addEventListener("click", () => toggle(key));
+      listEl.appendChild(row);
+      renderedRows.push({ catId: catKey, idx, el: row, key });
+      totalVisible++;
+      if (isOn) totalCount++;
+    });
+  });
+
+  if (totalVisible === 0) {
+    listEl.innerHTML = '<div class="empty">Ничего не найдено</div>';
+  }
+
+  updateCounter();
+}
+
+function updateCounter() {
+  const total = CATEGORIES.reduce((s, c) => s + c.items.length, 0);
+  badgeEl.textContent = visited.size + " из " + total;
+  badgeEl.classList.toggle("has", visited.size > 0);
+  btnDone.disabled = false; // всегда активна (просто закрывает)
+
+  // Обновить счётчики категорий в DOM
+  CATEGORIES.forEach(cat => {
+    const el = listEl.querySelector(`.cat-count[data-cat="${cat.id}"]`);
+    if (!el) return;
+    const cnt = cat.items.filter((_, i) => visited.has(itemKey(cat.id, i))).length;
+    el.textContent = cnt + " / " + cat.items.length;
+    el.classList.toggle("has", cnt > 0);
+  });
+}
+
+/* ═══════════════════════════════════════════
+   TOGGLE
+═══════════════════════════════════════════ */
+function toggle(key) {
+  if (visited.has(key)) {
+    visited.delete(key);
+  } else {
+    visited.add(key);
+  }
+  save();
+
+  // Обновить конкретную строку без полного ре-рендера
+  const rowInfo = renderedRows.find(r => r.key === key);
+  if (rowInfo) {
+    rowInfo.el.classList.toggle("on", visited.has(key));
+  }
+  updateCounter();
+}
+
+/* ═══════════════════════════════════════════
+   ПОИСК
+═══════════════════════════════════════════ */
+function filter(val) {
+  filterQuery = val;
+  render();
+}
+
+/* ═══════════════════════════════════════════
+   СБРОС
+═══════════════════════════════════════════ */
+function resetAll() {
+  if (visited.size === 0) return;
+  if (!confirm("Сбросить все отметки?")) return;
+  visited.clear();
+  save();
+  render();
+}
+
+/* ═══════════════════════════════════════════
+   ЗАКРЫТЬ
+═══════════════════════════════════════════ */
+function closeApp() {
+  tg.close();
+}
+
+/* ═══════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════ */
+render();
+</script>
+</body>
+</html>

@@ -40,6 +40,7 @@ STATS_URL       = "https://andreev032.github.io/Travel-Bot/stats.html"
 CURRENCY_URL    = "https://andreev032.github.io/Travel-Bot/currency.html"
 SPLITWISE_URL   = "https://andreev032.github.io/Travel-Bot/splitwise.html"
 TIMEZONE_URL    = "https://andreev032.github.io/Travel-Bot/timezone.html"
+ATTRACTIONS_URL = "https://andreev032.github.io/Travel-Bot/attractions.html"
 CHANNEL_URL     = "https://t.me/like_a_local"
 
 
@@ -95,6 +96,7 @@ def get_folder_mytrips_kb():
              KeyboardButton("🗺 Карта мира", web_app=WebAppInfo(url=MAP_URL))],
             [KeyboardButton("✅ Чеклист", web_app=WebAppInfo(url=CHECKLIST_URL)),
              KeyboardButton("📊 Моя статистика", web_app=WebAppInfo(url=STATS_URL))],
+            [KeyboardButton("🏛 Мои достопримечательности", web_app=WebAppInfo(url=ATTRACTIONS_URL))],
             [KeyboardButton("◀️ Назад"),                  KeyboardButton(HOME_BTN)],
         ],
         resize_keyboard=True,
