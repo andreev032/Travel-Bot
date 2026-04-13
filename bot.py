@@ -30,7 +30,7 @@ MAIN_MENU, ANSWERING, HELP_MENU, HELP_TOPIC, TRANSLATING, VISA_MENU, VISA_CATEGO
     LOUNGE_MENU, LOUNGE_SECTION, \
     SUPPORT_MENU, SUPPORT_TYPING, \
     CRUISE_MENU, CRUISE_SECTION, \
-    WONDERS_MENU, WONDERS_SECTION, UNESCO_MENU, UNESCO_REGION = range(26)
+    WONDERS_MENU, WONDERS_SEVEN_MENU, WONDERS_SECTION, UNESCO_MENU, UNESCO_REGION = range(27)
 
 # Замени на реальный HTTPS-URL после деплоя webapp/index.html
 WEBAPP_URL      = "https://andreev032.github.io/Travel-Bot/"
@@ -1483,7 +1483,14 @@ CRUISE_DATA: dict[str, str] = {
 #  🏛 ЧУДЕСА И НАСЛЕДИЕ — данные
 # ═══════════════════════════════════════════════════════════════
 
+# Главное меню раздела — 2 кнопки
 WONDERS_BTNS = [
+    "🌟 7 чудес света",
+    "🗺 Наследие ЮНЕСКО по регионам",
+]
+
+# Подменю 7 чудес — каждое отдельной кнопкой
+WONDERS_SEVEN_BTNS = [
     "🇨🇳 Великая Китайская стена",
     "🇮🇳 Тадж-Махал",
     "🇧🇷 Статуя Христа Искупителя",
@@ -1491,7 +1498,6 @@ WONDERS_BTNS = [
     "🇵🇪 Мачу-Пикчу",
     "🇯🇴 Петра",
     "🇮🇹 Колизей",
-    "🗺 Наследие ЮНЕСКО по регионам",
 ]
 
 UNESCO_REGION_BTNS = [
@@ -1695,7 +1701,7 @@ UNESCO_DATA: dict[str, str] = {
     "4️⃣ 🇮🇳 *Храмы Кхаджурахо* (1986)\nСредневековые индуистские и джайнские храмы с эротической скульптурой, X–XI вв.\n\n"
     "5️⃣ 🇯🇵 *Исторические памятники Киото* (1994)\n17 объектов: храмы, святилища и замок Нидзё, VIII–XVII вв.\n\n"
     "6️⃣ 🇯🇵 *Гора Фудзи* (2013)\nСвящённая вулканическая гора (3 776 м) — культурный символ Японии.\n\n"
-    "7️⃣ 🇰🇭 *Ангкор, Камбоджа* (1992)\nГигантский храмовый комплекс кхмерской империи, IX–XV вв.\n\n"
+    "7️⃣ 🇰🇭 *Ангкор-Ват, Камбоджа* (1992)\nГигантский храмовый комплекс кхмерской империи, IX–XV вв.\n\n"
     "8️⃣ 🇻🇳 *Залив Халонг* (1994)\nБолее 1 600 известняковых островов и гротов в Тонкинском заливе.\n\n"
     "9️⃣ 🇮🇩 *Боробудур, Индонезия* (1991)\nКрупнейший буддийский храм в мире, VIII–IX вв.\n\n"
     "🔟 🇳🇵 *Национальные парки Непала* (1979)\nЧитван и Сагарматха — дикая природа у подножия Гималаев.\n\n"
@@ -1741,7 +1747,7 @@ UNESCO_DATA: dict[str, str] = {
     "8️⃣ 🇹🇳 *Карфаген, Тунис* (1979)\nРуины великой финикийской цивилизации и римских бань.\n\n"
     "9️⃣ 🇪🇹 *Скальные церкви Лалибэлы* (1978)\nДвенадцать монолитных храмов XII в., высеченных в скале.\n\n"
     "🔟 🇹🇿 *Нгоронгоро, Танзания* (1979)\nКалдера потухшего вулкана — крупнейший «зоопарк» дикой природы.\n\n"
-    "1️⃣1️⃣ 🇰🇪 *Национальный парк Масаи-Мара / Серенгети* (1981)\nВеликая миграция 1,5 млн гну — одно из чудес природы.\n\n"
+    "1️⃣1️⃣ 🇹🇿 *Национальный парк Серенгети* (1981)\nВеликая миграция 1,5 млн гну — одно из величайших природных зрелищ планеты.\n\n"
     "1️⃣2️⃣ 🇿🇼 *Большой Зимбабве* (1986)\nЗагадочные каменные руины столицы государства Мономотапа, XI–XV вв.\n\n"
     "1️⃣3️⃣ 🇿🇦 *Стол-Маунтин и Мыс Доброй Надежды* (2004)\nУникальный биосферный заповедник с 9 000 видов растений.\n\n"
     "1️⃣4️⃣ 🇴🇲 *Крепости Омана* (1987–1994)\nАфладж, Бахла и Эз-Назва — образцы арабской фортификации.\n\n"
@@ -1786,7 +1792,7 @@ UNESCO_DATA: dict[str, str] = {
     "1️⃣1️⃣ 🇷🇺 *Озеро Байкал* (1996)\nГлубочайшее озеро планеты (1 642 м) — 20% мировых запасов пресной воды.\n\n"
     "1️⃣2️⃣ 🇷🇺 *Вулканы Камчатки* (1996)\nКрупнейший в мире действующий вулканический пояс — 29 активных вулканов.\n\n"
     "1️⃣3️⃣ 🇷🇺 *Золотые горы Алтая* (1998)\nДевственная природа Горного Алтая, снежные барсы и скифские курганы.\n\n"
-    "1️⃣4️⃣ 🇹🇲 *Государственный заповедник Коннекут* (1999)\nАнциентный оазис Мерв — столица государства сельджуков XI–XII вв.\n\n"
+    "1️⃣4️⃣ 🇹🇲 *Древний Мерв* (1999)\nАнтичный оазис Шёлкового пути — столица государства сельджуков XI–XII вв.\n\n"
     "1️⃣5️⃣ 🇰🇬 *Западный Тянь-Шань* (2016)\nГорная экосистема с уникальным биоразнообразием на границе Кыргызстана, Казахстана и Узбекистана.\n\n"
     "⚠️ _Данные актуальны на 2025–2026 г._"
 ),
@@ -1799,8 +1805,7 @@ UNESCO_DATA: dict[str, str] = {
 # ═══════════════════════════════════════════════════════════════
 
 async def show_wonders_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Показывает главное меню раздела Чудеса и наследие."""
-    context.user_data["wonders_depth"] = "menu"
+    """Уровень 1 — главное меню раздела: 2 кнопки."""
     keyboard = ReplyKeyboardMarkup(
         [[btn] for btn in WONDERS_BTNS] + [["◀️ Назад", HOME_BTN]],
         resize_keyboard=True,
@@ -1813,19 +1818,30 @@ async def show_wonders_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return WONDERS_MENU
 
 
-async def wonders_section_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Обрабатывает выбор чуда света или переход в ЮНЕСКО."""
+async def show_wonders_seven_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Уровень 2 — список 7 чудес света (каждое отдельной кнопкой)."""
+    keyboard = ReplyKeyboardMarkup(
+        [[btn] for btn in WONDERS_SEVEN_BTNS] + [["◀️ Назад", HOME_BTN]],
+        resize_keyboard=True,
+    )
+    await update.message.reply_text(
+        "🌟 *7 новых чудес света*\n\nВыбери чудо:",
+        parse_mode="Markdown",
+        reply_markup=keyboard,
+    )
+    return WONDERS_SEVEN_MENU
+
+
+async def wonders_main_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Уровень 1 — обрабатывает нажатия в главном меню Чудеса и наследие."""
     text = update.message.text
     if text == HOME_BTN:
         return await go_home(update, context)
     if text == "◀️ Назад":
-        if context.user_data.get("wonders_depth") == "menu":
-            return await show_folder_knowledge(update, context)
-        return await show_wonders_menu(update, context)
-
-    # Переход в подменю ЮНЕСКО
+        return await show_folder_knowledge(update, context)
+    if text == "🌟 7 чудес света":
+        return await show_wonders_seven_menu(update, context)
     if text == "🗺 Наследие ЮНЕСКО по регионам":
-        context.user_data["wonders_depth"] = "unesco_menu"
         keyboard = ReplyKeyboardMarkup(
             [[btn] for btn in UNESCO_REGION_BTNS] + [["◀️ Назад", HOME_BTN]],
             resize_keyboard=True,
@@ -1836,13 +1852,21 @@ async def wonders_section_handler(update: Update, context: ContextTypes.DEFAULT_
             reply_markup=keyboard,
         )
         return UNESCO_MENU
+    return await show_wonders_menu(update, context)
 
-    # Показать одно из 7 чудес
-    content = WONDERS_DATA.get(text)
-    if not content:
+
+async def wonders_seven_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Уровень 2 — выбор конкретного чуда из 7."""
+    text = update.message.text
+    if text == HOME_BTN:
+        return await go_home(update, context)
+    if text == "◀️ Назад":
         return await show_wonders_menu(update, context)
 
-    context.user_data["wonders_depth"] = "section"
+    content = WONDERS_DATA.get(text)
+    if not content:
+        return await show_wonders_seven_menu(update, context)
+
     back_kb = ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True)
     if len(content) > 4000:
         chunks = [content[i:i+4000] for i in range(0, len(content), 4000)]
@@ -1854,8 +1878,17 @@ async def wonders_section_handler(update: Update, context: ContextTypes.DEFAULT_
     return WONDERS_SECTION
 
 
+async def wonders_section_back_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Уровень 3 — из детального описания чуда назад в список 7 чудес."""
+    text = update.message.text
+    if text == HOME_BTN:
+        return await go_home(update, context)
+    # Любой текст (включая ◀️ Назад) → возврат к списку 7 чудес
+    return await show_wonders_seven_menu(update, context)
+
+
 async def unesco_region_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Обрабатывает выбор региона ЮНЕСКО."""
+    """Уровень 2 — выбор региона ЮНЕСКО."""
     text = update.message.text
     if text == HOME_BTN:
         return await go_home(update, context)
@@ -1864,7 +1897,6 @@ async def unesco_region_handler(update: Update, context: ContextTypes.DEFAULT_TY
 
     content = UNESCO_DATA.get(text)
     if not content:
-        # Неизвестный регион — вернуть в меню регионов
         keyboard = ReplyKeyboardMarkup(
             [[btn] for btn in UNESCO_REGION_BTNS] + [["◀️ Назад", HOME_BTN]],
             resize_keyboard=True,
@@ -4052,11 +4084,15 @@ def main():
             ],
             WONDERS_MENU: [
                 home,
-                MessageHandler(filters.TEXT & ~filters.COMMAND, wonders_section_handler),
+                MessageHandler(filters.TEXT & ~filters.COMMAND, wonders_main_handler),
+            ],
+            WONDERS_SEVEN_MENU: [
+                home,
+                MessageHandler(filters.TEXT & ~filters.COMMAND, wonders_seven_handler),
             ],
             WONDERS_SECTION: [
                 home,
-                MessageHandler(filters.TEXT & ~filters.COMMAND, wonders_section_handler),
+                MessageHandler(filters.TEXT & ~filters.COMMAND, wonders_section_back_handler),
             ],
             UNESCO_MENU: [
                 home,
