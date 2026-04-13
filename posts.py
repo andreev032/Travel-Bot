@@ -2,7 +2,7 @@
 Список готовых постов для Telegram-канала @like_a_local.
 90 постов, 6 тематических блоков по 15 штук.
 Каждый пост — словарь {"keyword": "...", "text": "...", "photo_url": "..."}.
-photo_url — прямая ссылка на фото с Wikimedia Commons (заканчивается на .jpg/.png).
+photo_url — picsum.photos/seed/{keyword}/800/600, всегда возвращает 200, уникальное фото по seed.
 """
 
 CHANNEL_POSTS = [
@@ -11,7 +11,7 @@ CHANNEL_POSTS = [
 
     {
         "keyword": "socotra island yemen",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/Dracaena_cinnabari_Socotra_cropped.jpg/800px-Dracaena_cinnabari_Socotra_cropped.jpg",
+        "photo_url": "https://picsum.photos/seed/socotra-island-yemen/800/600",
         "text": (
             "🏔 *Сокотра — остров из другой вселенной*\n\n"
             "Йеменский архипелаг Сокотра называют «Галапагосами Индийского океана». "
@@ -23,7 +23,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "pink lake australia",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/LakeHillier.jpg/800px-LakeHillier.jpg",
+        "photo_url": "https://picsum.photos/seed/pink-lake-australia/800/600",
         "text": (
             "🌊 *Озеро Хилиер — розовая вода без фотошопа*\n\n"
             "В Австралии, на острове Мидл в архипелаге Recherche, лежит озеро цвета жевательной "
@@ -34,7 +34,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "matmata tunisia underground",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Matmata_Tunisia_troglodyte_house.jpg/800px-Matmata_Tunisia_troglodyte_house.jpg",
+        "photo_url": "https://picsum.photos/seed/matmata-tunisia-underground/800/600",
         "text": (
             "🏛 *Матмата — деревня, вырытая под землёй*\n\n"
             "В Тунисе живут берберы, дома которых уходят вглубь земли на 6–8 метров. "
@@ -45,7 +45,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "blue forest belgium bluebells",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d5/Hallerbos_2018.jpg/800px-Hallerbos_2018.jpg",
+        "photo_url": "https://picsum.photos/seed/blue-forest-belgium-bluebells/800/600",
         "text": (
             "🌿 *Лес Халлербос — голубой ковёр Бельгии*\n\n"
             "Два-три недели в апреле буковый лес под Брюсселем превращается в лиловое облако "
@@ -56,7 +56,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "chefchaouen blue city morocco",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Chefchaouen%2C_Morocco_%2810365687115%29.jpg/800px-Chefchaouen%2C_Morocco_%2810365687115%29.jpg",
+        "photo_url": "https://picsum.photos/seed/chefchaouen-blue-city-morocco/800/600",
         "text": (
             "🕌 *Чефшауэн — синий город Марокко*\n\n"
             "В горах Риф притаился город, где почти каждая стена, ступенька и цветочный горшок "
@@ -67,7 +67,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "kelimutu crater lake indonesia",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7f/Kelimutu_craters_2009.JPG/800px-Kelimutu_craters_2009.JPG",
+        "photo_url": "https://picsum.photos/seed/kelimutu-crater-lake-indonesia/800/600",
         "text": (
             "🌋 *Вулкан Кели Муту — три цветных озера Индонезии*\n\n"
             "На острове Флорес в Индонезии находится вулкан Кели Муту с тремя кратерными "
@@ -78,7 +78,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "white desert egypt",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/White_desert_egypt.jpg/800px-White_desert_egypt.jpg",
+        "photo_url": "https://picsum.photos/seed/white-desert-egypt/800/600",
         "text": (
             "🏜 *Белая пустыня Египта — не только пирамиды*\n\n"
             "В 45 км от Фарафры ветер тысячелетиями точил меловые скалы в фигуры, похожие "
@@ -89,7 +89,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "hampi ruins india",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Virupaksha_temple%2C_Hampi.jpg/800px-Virupaksha_temple%2C_Hampi.jpg",
+        "photo_url": "https://picsum.photos/seed/hampi-ruins-india/800/600",
         "text": (
             "🌺 *Долина Хампи — руины в джунглях Индии*\n\n"
             "Хампи — бывшая столица империи Виджаянагар, уничтоженной в 1565 году. "
@@ -101,7 +101,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "faroe islands waterfall",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/89/G%C3%A1saladur%2C_F%C3%A6r%C3%B8erne.jpg/800px-G%C3%A1saladur%2C_F%C3%A6r%C3%B8erne.jpg",
+        "photo_url": "https://picsum.photos/seed/faroe-islands-waterfall/800/600",
         "text": (
             "🌊 *Острова Фарер — туман, овцы и водопады в океан*\n\n"
             "Где-то между Норвегией и Исландией лежат 18 островов, где овец больше, чем людей. "
@@ -112,7 +112,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "bodie ghost town california",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/Bodie%2C_California.jpg/800px-Bodie%2C_California.jpg",
+        "photo_url": "https://picsum.photos/seed/bodie-ghost-town-california/800/600",
         "text": (
             "🏯 *Боди — призрак золотой лихорадки Калифорнии*\n\n"
             "В 1879 году здесь жили 10 000 человек; сейчас — ноль. Город-призрак Боди "
@@ -123,7 +123,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "plitvice lakes croatia autumn",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/13/Plitvice_jezera_2.jpg/800px-Plitvice_jezera_2.jpg",
+        "photo_url": "https://picsum.photos/seed/plitvice-lakes-croatia-autumn/800/600",
         "text": (
             "🌿 *Плитвицкие озёра без туристов — как это сделать*\n\n"
             "Знаменитые хорватские озёра ежегодно принимают 1,5 млн человек. "
@@ -134,7 +134,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "timanfaya volcano lanzarote",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/Lanzarote_Nationalpark_Timanfaya_2.jpg/800px-Lanzarote_Nationalpark_Timanfaya_2.jpg",
+        "photo_url": "https://picsum.photos/seed/timanfaya-volcano-lanzarote/800/600",
         "text": (
             "🌅 *Тиманфайя — лунный парк Лансароте*\n\n"
             "На испанском острове Лансароте находится парк, где под землёй на глубине "
@@ -145,7 +145,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "petra jordan ancient city",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Treasury_petra_crop.jpg/800px-Treasury_petra_crop.jpg",
+        "photo_url": "https://picsum.photos/seed/petra-jordan-ancient-city/800/600",
         "text": (
             "🇯🇴 *Петра — половина скалы, половина город*\n\n"
             "Набатейский город в Иордании высечен прямо в розовом песчанике. "
@@ -157,7 +157,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "mostar old bridge bosnia",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Stari_most_2004.jpg/800px-Stari_most_2004.jpg",
+        "photo_url": "https://picsum.photos/seed/mostar-old-bridge-bosnia/800/600",
         "text": (
             "🇧🇦 *Мостар — мост, разделивший и объединивший город*\n\n"
             "Старый мост Стари-Мост в Боснии разрушили в 1993-м и отстроили заново в 2004-м "
@@ -168,7 +168,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "cameron highlands tea plantation",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/aa/Tea_plantation_in_Cameron_Highlands.jpg/800px-Tea_plantation_in_Cameron_Highlands.jpg",
+        "photo_url": "https://picsum.photos/seed/cameron-highlands-tea-plantation/800/600",
         "text": (
             "🇲🇾 *Камерон Хайлендс — чай среди облаков*\n\n"
             "В Малайзии, на высоте 1500 м, раскинулись бесконечные чайные плантации. "
@@ -182,7 +182,7 @@ CHANNEL_POSTS = [
 
     {
         "keyword": "carry on luggage travel packing",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/Suitcase_at_airport.jpg/800px-Suitcase_at_airport.jpg",
+        "photo_url": "https://picsum.photos/seed/carry-on-luggage-travel-packing/800/600",
         "text": (
             "🎒 *Правило одного чемодана — как я перестал сдавать багаж*\n\n"
             "Ключ — многофункциональные вещи: футболки из мериносовой шерсти не пахнут "
@@ -193,7 +193,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "travel credit card payment",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/Credit_card_payment_terminal.jpg/800px-Credit_card_payment_terminal.jpg",
+        "photo_url": "https://picsum.photos/seed/travel-credit-card-payment/800/600",
         "text": (
             "💳 *Как не платить за конвертацию за рубежом*\n\n"
             "При оплате картой за границей всегда выбирай расчёт в местной валюте, "
@@ -204,7 +204,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "smartphone map navigation travel",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/Smartphone_map_navigation.jpg/800px-Smartphone_map_navigation.jpg",
+        "photo_url": "https://picsum.photos/seed/smartphone-map-navigation-travel/800/600",
         "text": (
             "📱 *Офлайн-карты: скачай перед вылетом*\n\n"
             "Google Maps позволяет скачать карту любого региона для работы без интернета. "
@@ -215,7 +215,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "hotel booking travel deal",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/Hotel_room_bed.jpg/800px-Hotel_room_bed.jpg",
+        "photo_url": "https://picsum.photos/seed/hotel-booking-travel-deal/800/600",
         "text": (
             "🛏 *Как найти жильё дешевле на Booking*\n\n"
             "Booking показывает разные цены в зависимости от истории браузера. "
@@ -227,7 +227,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "airplane flight booking",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/Passenger_aircraft_silhouette.jpg/800px-Passenger_aircraft_silhouette.jpg",
+        "photo_url": "https://picsum.photos/seed/airplane-flight-booking/800/600",
         "text": (
             "✈️ *Билеты дешевле: когда и как искать*\n\n"
             "Исследования показали: лучшая цена на авиабилеты — за 6–8 недель до вылета "
@@ -239,7 +239,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "vpn internet travel security",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/Cyber_security.jpg/800px-Cyber_security.jpg",
+        "photo_url": "https://picsum.photos/seed/vpn-internet-travel-security/800/600",
         "text": (
             "🌐 *VPN в путешествии: зачем и какой*\n\n"
             "В некоторых странах (Китай, ОАЭ, Турция) блокируют привычные сервисы. "
@@ -250,7 +250,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "packing suitcase organized travel",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/Packing_a_suitcase.jpg/800px-Packing_a_suitcase.jpg",
+        "photo_url": "https://picsum.photos/seed/packing-suitcase-organized-travel/800/600",
         "text": (
             "🧳 *Сбор чемодана по методу военных*\n\n"
             "Складывай одежду рулонами, а не стопками — экономит 30% места и не мнёт. "
@@ -261,7 +261,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "travel insurance documents",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Travel_insurance_documents.jpg/800px-Travel_insurance_documents.jpg",
+        "photo_url": "https://picsum.photos/seed/travel-insurance-documents/800/600",
         "text": (
             "📋 *Страховка путешественника: что брать*\n\n"
             "Стандартная страховка покрывает только экстренную медицину. "
@@ -273,7 +273,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "map navigation city travel",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/City_map_with_streets.jpg/800px-City_map_with_streets.jpg",
+        "photo_url": "https://picsum.photos/seed/map-navigation-city-travel/800/600",
         "text": (
             "🗺 *Как ориентироваться в незнакомом городе без интернета*\n\n"
             "Первым делом в отеле попроси бумажную карту — они часто бесплатные. "
@@ -285,7 +285,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "travel first aid kit medicine",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/First_Aid_Kit.jpg/800px-First_Aid_Kit.jpg",
+        "photo_url": "https://picsum.photos/seed/travel-first-aid-kit-medicine/800/600",
         "text": (
             "💊 *Аптечка путешественника: минимум в кармане*\n\n"
             "Обезболивающее, антигистаминное, таблетки от диареи, пластырь, "
@@ -297,7 +297,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "eurail train europe",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/ICE_3_deutsche_bahn.jpg/800px-ICE_3_deutsche_bahn.jpg",
+        "photo_url": "https://picsum.photos/seed/eurail-train-europe/800/600",
         "text": (
             "🚆 *Железнодорожные пассы — стоит ли покупать*\n\n"
             "Eurail Pass выгоден, если планируешь больше 5–6 длинных переездов за 2 недели. "
@@ -308,7 +308,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "hostel dormitory backpacker",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/Hostel_bunk_beds.jpg/800px-Hostel_bunk_beds.jpg",
+        "photo_url": "https://picsum.photos/seed/hostel-dormitory-backpacker/800/600",
         "text": (
             "🏨 *Хостел без ужасов — как выбрать хороший*\n\n"
             "Читай последние отзывы, а не рейтинг в целом — мнения устаревают. "
@@ -320,7 +320,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "travel adapter power plug",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/Universal_travel_adapter.jpg/800px-Universal_travel_adapter.jpg",
+        "photo_url": "https://picsum.photos/seed/travel-adapter-power-plug/800/600",
         "text": (
             "🔌 *Адаптеры и розетки: карта мирового хаоса*\n\n"
             "В мире используется 15 типов розеток. Купи универсальный адаптер "
@@ -332,7 +332,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "travel photography camera",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Camponotus_flavomarginatus_ant.jpg/800px-Camponotus_flavomarginatus_ant.jpg",
+        "photo_url": "https://picsum.photos/seed/travel-photography-camera/800/600",
         "text": (
             "🤳 *Как фотографировать путешествие, а не только смотреть в экран*\n\n"
             "Сначала проживи момент, потом снимай. Одна хорошая фотография лучше "
@@ -343,7 +343,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "airplane sleep travel night",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Boeing_787_first_flight_Everett_2009.jpg/800px-Boeing_787_first_flight_Everett_2009.jpg",
+        "photo_url": "https://picsum.photos/seed/airplane-sleep-travel-night/800/600",
         "text": (
             "🌙 *Как справиться с джетлагом*\n\n"
             "Сразу переведи часы на местное время — ещё в самолёте. "
@@ -358,7 +358,7 @@ CHANNEL_POSTS = [
 
     {
         "keyword": "japan tokyo street",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/Shibuya_Crossing%2C_Tokyo%2C_Japan_%282017%29.jpg/800px-Shibuya_Crossing%2C_Tokyo%2C_Japan_%282017%29.jpg",
+        "photo_url": "https://picsum.photos/seed/japan-tokyo-street/800/600",
         "text": (
             "🇯🇵 *Япония: страна, где опаздывать — грубость*\n\n"
             "Среднее отклонение поезда синкансэна от расписания — 54 секунды в год. "
@@ -370,7 +370,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "iceland landscape geothermal",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0e/Geysir_eruption_2000.jpg/800px-Geysir_eruption_2000.jpg",
+        "photo_url": "https://picsum.photos/seed/iceland-landscape-geothermal/800/600",
         "text": (
             "🇮🇸 *Исландия: страна без комаров и с вулканами под ногами*\n\n"
             "В Исландии нет комаров — климат не подходит. Зато есть 130 активных вулканов "
@@ -381,7 +381,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "norway scandinavian nature",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Geiranger_fjord%2C_western_Norway%2C_2013_June.jpg/800px-Geiranger_fjord%2C_western_Norway%2C_2013_June.jpg",
+        "photo_url": "https://picsum.photos/seed/norway-scandinavian-nature/800/600",
         "text": (
             "🇳🇴 *Норвегия: страна, где тюрьма — лучше, чем кажется*\n\n"
             "Тюрьма Бастой на острове — с теннисными кортами, лошадьми и пляжем. "
@@ -393,7 +393,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "bahrain desert middle east",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Tree_of_Life_Bahrain.jpg/800px-Tree_of_Life_Bahrain.jpg",
+        "photo_url": "https://picsum.photos/seed/bahrain-desert-middle-east/800/600",
         "text": (
             "🇧🇭 *Бахрейн: острова, где нефть закончилась первой*\n\n"
             "Бахрейн — первая страна Персидского залива, где нефть истощилась ещё в 1980-х. "
@@ -404,7 +404,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "switzerland mountains landscape",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Matterhorn_from_Domh%C3%BCtte_-_2012-08.jpg/800px-Matterhorn_from_Domh%C3%BCtte_-_2012-08.jpg",
+        "photo_url": "https://picsum.photos/seed/switzerland-mountains-landscape/800/600",
         "text": (
             "🇨🇭 *Швейцария: страна, где ядерные бункеры — норма*\n\n"
             "В Швейцарии хватит места в ядерных бункерах для 100% населения — закон обязывает "
@@ -415,7 +415,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "bhutan monastery himalaya",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/99/Paro_Taktsang%2C_Paro%2C_Bhutan.jpg/800px-Paro_Taktsang%2C_Paro%2C_Bhutan.jpg",
+        "photo_url": "https://picsum.photos/seed/bhutan-monastery-himalaya/800/600",
         "text": (
             "🇧🇹 *Бутан: страна, которая измеряет счастье вместо ВВП*\n\n"
             "Бутан единственная страна в мире, где Валовое Национальное Счастье "
@@ -427,7 +427,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "georgia caucasus wine",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/Vineyards_in_Kakheti%2C_Georgia.jpg/800px-Vineyards_in_Kakheti%2C_Georgia.jpg",
+        "photo_url": "https://picsum.photos/seed/georgia-caucasus-wine/800/600",
         "text": (
             "🇬🇪 *Грузия: страна, где вино изобрели 8000 лет назад*\n\n"
             "Именно в Грузии найдены древнейшие свидетельства виноделия. "
@@ -438,7 +438,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "new zealand nature landscape",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/Mitre_Peak%2C_Milford_Sound%2C_New_Zealand.jpg/800px-Mitre_Peak%2C_Milford_Sound%2C_New_Zealand.jpg",
+        "photo_url": "https://picsum.photos/seed/new-zealand-nature-landscape/800/600",
         "text": (
             "🇳🇿 *Новая Зеландия: страна без змей и с хоббитами*\n\n"
             "Новая Зеландия — единственная крупная территория в мире без наземных змей. "
@@ -450,7 +450,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "singapore skyline city",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Marina_Bay_Sands_in_the_evening_-_20101120.jpg/800px-Marina_Bay_Sands_in_the_evening_-_20101120.jpg",
+        "photo_url": "https://picsum.photos/seed/singapore-skyline-city/800/600",
         "text": (
             "🇸🇬 *Сингапур: страна, где жвачку нельзя, а штрафы огромны*\n\n"
             "Жевательная резинка запрещена к продаже с 1992 года — "
@@ -462,7 +462,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "lisbon portugal historic",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/Rua_Augusta%2C_Lisbon_%2836831688364%29.jpg/800px-Rua_Augusta%2C_Lisbon_%2836831688364%29.jpg",
+        "photo_url": "https://picsum.photos/seed/lisbon-portugal-historic/800/600",
         "text": (
             "🇵🇹 *Португалия: страна, открывшая полмира*\n\n"
             "Португальцы первыми обогнули Африку, добрались до Бразилии и Индии. "
@@ -474,7 +474,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "mexico food culture",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/A_small_cup_of_coffee.JPG/800px-A_small_cup_of_coffee.JPG",
+        "photo_url": "https://picsum.photos/seed/mexico-food-culture/800/600",
         "text": (
             "🇲🇽 *Мексика: где шоколад, авокадо и томат появились раньше Европы*\n\n"
             "Какао, авокадо, помидор, кукуруза, перец чили, ваниль — всё родом из Мексики. "
@@ -485,7 +485,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "india temple culture spices",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/Amber_Fort%2C_Rajasthan%2C_India.jpg/800px-Amber_Fort%2C_Rajasthan%2C_India.jpg",
+        "photo_url": "https://picsum.photos/seed/india-temple-culture-spices/800/600",
         "text": (
             "🇮🇳 *Индия: страна с тысячью языков и одним чаем*\n\n"
             "В Индии 22 официальных языка и более 1600 диалектов — лингвисты до сих пор спорят. "
@@ -496,7 +496,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "colombia south america nature",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f2/Valle_de_Cocora_Colombia.jpg/800px-Valle_de_Cocora_Colombia.jpg",
+        "photo_url": "https://picsum.photos/seed/colombia-south-america-nature/800/600",
         "text": (
             "🇨🇴 *Колумбия: страна, которую вы не знаете*\n\n"
             "Колумбия — единственная страна Южной Америки с выходом и к Тихому, "
@@ -507,7 +507,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "armenia monastery caucasus",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Geghard_monastery%2C_Armenia.jpg/800px-Geghard_monastery%2C_Armenia.jpg",
+        "photo_url": "https://picsum.photos/seed/armenia-monastery-caucasus/800/600",
         "text": (
             "🇦🇲 *Армения: страна с самым древним монастырём и коньяком*\n\n"
             "Армения была первой страной, принявшей христианство как государственную религию "
@@ -518,7 +518,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "thailand temple buddhism",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/Wat_Phra_Kaew%2C_Bangkok%2C_Thailand_2.jpg/800px-Wat_Phra_Kaew%2C_Bangkok%2C_Thailand_2.jpg",
+        "photo_url": "https://picsum.photos/seed/thailand-temple-buddhism/800/600",
         "text": (
             "🇹🇭 *Таиланд: страна улыбок с особыми правилами*\n\n"
             "В Таиланде незаконно критиковать королевскую семью — за это реальный срок. "
@@ -533,7 +533,7 @@ CHANNEL_POSTS = [
 
     {
         "keyword": "local food market street",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Street_food_Bangkok.jpg/800px-Street_food_Bangkok.jpg",
+        "photo_url": "https://picsum.photos/seed/local-food-market-street/800/600",
         "text": (
             "💰 *Как путешествовать дешевле: обедай там, где едят местные*\n\n"
             "Ресторан у туристической достопримечательности берёт 30–50% надбавки за вид. "
@@ -544,7 +544,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "airplane airport terminal",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/Airport_terminal_interior.jpg/800px-Airport_terminal_interior.jpg",
+        "photo_url": "https://picsum.photos/seed/airplane-airport-terminal/800/600",
         "text": (
             "🛫 *Хитрость со скрытыми городами на авиарейсах*\n\n"
             "Иногда билет до транзитного города стоит дешевле, чем до финального пункта. "
@@ -555,7 +555,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "camping tent nature europe",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/Tent_camping_in_mountains.jpg/800px-Tent_camping_in_mountains.jpg",
+        "photo_url": "https://picsum.photos/seed/camping-tent-nature-europe/800/600",
         "text": (
             "🏕 *Кемпинг вместо отеля — это не значит некомфортно*\n\n"
             "В Европе официальные кемпинги часто включают душ, кухню, Wi-Fi и магазин. "
@@ -566,7 +566,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "museum art gallery entrance",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/Louvre_Museum_Wikimedia_Commons.jpg/800px-Louvre_Museum_Wikimedia_Commons.jpg",
+        "photo_url": "https://picsum.photos/seed/museum-art-gallery-entrance/800/600",
         "text": (
             "🎟 *Музеи бесплатно — если знать когда приходить*\n\n"
             "Лувр: каждую первую пятницу месяца вечером — бесплатно. "
@@ -578,7 +578,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "night bus travel europe",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Flixbus_in_Germany.jpg/800px-Flixbus_in_Germany.jpg",
+        "photo_url": "https://picsum.photos/seed/night-bus-travel-europe/800/600",
         "text": (
             "🚌 *Ночные автобусы: двойная экономия*\n\n"
             "Ночной автобус из Праги в Вену стоит 8–15€ и занимает 5 часов. "
@@ -590,7 +590,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "supermarket food grocery travel",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/41/Supermarkt.jpg/800px-Supermarkt.jpg",
+        "photo_url": "https://picsum.photos/seed/supermarket-food-grocery-travel/800/600",
         "text": (
             "🍕 *Supermarkets — лучший ресторан для бюджетного путешественника*\n\n"
             "В европейских супермаркетах (Lidl, Aldi, Carrefour, Mercadona) "
@@ -601,7 +601,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "city tourist card museum",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Amsterdam_Canal_rings.jpg/800px-Amsterdam_Canal_rings.jpg",
+        "photo_url": "https://picsum.photos/seed/city-tourist-card-museum/800/600",
         "text": (
             "🎫 *CityPass и туристические карты — когда они выгодны*\n\n"
             "Amsterdam City Card за 65€ включает весь транспорт и 30+ музеев на 24 часа. "
@@ -613,7 +613,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "house sitting pet cat travel",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/Cat_on_sofa.jpg/800px-Cat_on_sofa.jpg",
+        "photo_url": "https://picsum.photos/seed/house-sitting-pet-cat-travel/800/600",
         "text": (
             "🏠 *Housesitting — жильё бесплатно в обмен на кота*\n\n"
             "Housesitting — это уход за домом и животными пока хозяева в отпуске. "
@@ -625,7 +625,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "luggage baggage airport suitcase",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/Baggage_claim_at_airport.jpg/800px-Baggage_claim_at_airport.jpg",
+        "photo_url": "https://picsum.photos/seed/luggage-baggage-airport-suitcase/800/600",
         "text": (
             "📦 *Как сдать лишний багаж дёшево*\n\n"
             "Если превысил норму, не плати в аэропорту — это самый дорогой вариант. "
@@ -636,7 +636,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "couchsurfing host travel sofa",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/Couch_living_room.jpg/800px-Couch_living_room.jpg",
+        "photo_url": "https://picsum.photos/seed/couchsurfing-host-travel-sofa/800/600",
         "text": (
             "🌐 *Couchsurfing — ночевать бесплатно у местных*\n\n"
             "Couchsurfing (couchsurfing.com) — платформа для бесплатных ночёвок у местных. "
@@ -647,7 +647,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "train europe interrail",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/European_Intercity_train.jpg/800px-European_Intercity_train.jpg",
+        "photo_url": "https://picsum.photos/seed/train-europe-interrail/800/600",
         "text": (
             "🚂 *Интеррейл в Европе: стоит ли?*\n\n"
             "Interrail Global Pass за 5 дней стоит от 211€. "
@@ -659,7 +659,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "laptop cafe digital nomad",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/70/Laptop_at_cafe.jpg/800px-Laptop_at_cafe.jpg",
+        "photo_url": "https://picsum.photos/seed/laptop-cafe-digital-nomad/800/600",
         "text": (
             "💻 *Remote work + travel: как совместить работу и путешествие*\n\n"
             "Страны с визами для цифровых кочевников: Грузия, Португалия, Бали, Таиланд, Колумбия. "
@@ -670,7 +670,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "usa travel work summer",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Grand_Canyon_view_from_Pima_Point_2010.jpg/800px-Grand_Canyon_view_from_Pima_Point_2010.jpg",
+        "photo_url": "https://picsum.photos/seed/usa-travel-work-summer/800/600",
         "text": (
             "🎒 *Work and Travel в США: как это работает*\n\n"
             "Программа J-1 позволяет студентам работать в США летом до 4 месяцев. "
@@ -682,7 +682,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "empty beach offseason travel",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/24701-nature-natural-beauty.jpg/800px-24701-nature-natural-beauty.jpg",
+        "photo_url": "https://picsum.photos/seed/empty-beach-offseason-travel/800/600",
         "text": (
             "🏖 *Несезон: почему это лучшее время для путешествия*\n\n"
             "Октябрь в Греции: пляжи пустые, температура +22°C, цены на 40% ниже. "
@@ -693,7 +693,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "smartphone apps travel",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f5/Smartphone_apps_screen.jpg/800px-Smartphone_apps_screen.jpg",
+        "photo_url": "https://picsum.photos/seed/smartphone-apps-travel/800/600",
         "text": (
             "📱 *Приложения, которые сэкономят деньги в путешествии*\n\n"
             "Google Trips (офлайн), TripIt (организация), XE Currency (конвертер валют), "
@@ -707,7 +707,7 @@ CHANNEL_POSTS = [
 
     {
         "keyword": "japanese tea ceremony",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/A_small_cup_of_Japanese_tea.jpg/800px-A_small_cup_of_Japanese_tea.jpg",
+        "photo_url": "https://picsum.photos/seed/japanese-tea-ceremony/800/600",
         "text": (
             "🎎 *Чайная церемония в Японии: 400 лет ритуала*\n\n"
             "Тядо — путь чая — не просто заваривание матча. "
@@ -719,7 +719,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "people greeting handshake world",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/71/Handshake_between_two_people.jpg/800px-Handshake_between_two_people.jpg",
+        "photo_url": "https://picsum.photos/seed/people-greeting-handshake-world/800/600",
         "text": (
             "🤝 *Рукопожатие, поцелуй или поклон: как приветствовать правильно*\n\n"
             "В Японии — лёгкий поклон. В Индии — «намасте» со сложенными руками. "
@@ -731,7 +731,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "food table dinner culture",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/60/A_table_of_food.jpg/800px-A_table_of_food.jpg",
+        "photo_url": "https://picsum.photos/seed/food-table-dinner-culture/800/600",
         "text": (
             "🍽 *Правила стола, которые удивляют*\n\n"
             "В Японии шумно есть лапшу — это комплимент повару. "
@@ -743,7 +743,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "day of dead mexico skulls",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/Calavera_Catrina.jpg/800px-Calavera_Catrina.jpg",
+        "photo_url": "https://picsum.photos/seed/day-of-dead-mexico-skulls/800/600",
         "text": (
             "⚰️ *Праздник мёртвых: как Мексика чтит предков*\n\n"
             "Día de los Muertos — не хэллоуин, а день радостного воссоединения с умершими. "
@@ -754,7 +754,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "lanterns sky thailand festival",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Yi_Peng_lanterns_Chiang_Mai_2009.jpg/800px-Yi_Peng_lanterns_Chiang_Mai_2009.jpg",
+        "photo_url": "https://picsum.photos/seed/lanterns-sky-thailand-festival/800/600",
         "text": (
             "🏮 *Фонарики в небо: Йи Пэн в Таиланде*\n\n"
             "Каждый ноябрь в Чиангмае тысячи людей одновременно запускают в небо "
@@ -766,7 +766,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "venice carnival mask festival",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Carnevale_di_Venezia_-_Maschera_-_Venezia.jpg/800px-Carnevale_di_Venezia_-_Maschera_-_Venezia.jpg",
+        "photo_url": "https://picsum.photos/seed/venice-carnival-mask-festival/800/600",
         "text": (
             "🎭 *Карнавал в Венеции: маски и 900 лет традиций*\n\n"
             "Венецианский карнавал — один из старейших в мире, упоминается с 1162 года. "
@@ -778,7 +778,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "tomatina tomato festival spain",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/41/La_Tomatina_Bunol_2013.jpg/800px-La_Tomatina_Bunol_2013.jpg",
+        "photo_url": "https://picsum.photos/seed/tomatina-tomato-festival-spain/800/600",
         "text": (
             "🏊 *Томатина в Буньоле: война помидорами*\n\n"
             "Каждый последний вторник августа испанский Буньоль превращается в поле "
@@ -790,7 +790,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "fireworks bonfire night uk",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Fireworks_over_the_Eiffel_Tower%2C_Bastille_Day_2009.jpg/800px-Fireworks_over_the_Eiffel_Tower%2C_Bastille_Day_2009.jpg",
+        "photo_url": "https://picsum.photos/seed/fireworks-bonfire-night-uk/800/600",
         "text": (
             "🔥 *Гай Фокс и фейерверки по всей Великобритании*\n\n"
             "5 ноября британцы сжигают чучела и запускают фейерверки в честь того, "
@@ -802,7 +802,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "tanabata japan festival bamboo",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2b/Tanabata_Sendai_2009.jpg/800px-Tanabata_Sendai_2009.jpg",
+        "photo_url": "https://picsum.photos/seed/tanabata-japan-festival-bamboo/800/600",
         "text": (
             "🎋 *Танабата: праздник желаний в Японии*\n\n"
             "Каждый 7 июля японцы пишут желания на полосках бумаги «тандзаку» "
@@ -813,7 +813,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "holi festival colors india",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Celebrating_Holi.jpg/800px-Celebrating_Holi.jpg",
+        "photo_url": "https://picsum.photos/seed/holi-festival-colors-india/800/600",
         "text": (
             "🌺 *Холи: фестиваль красок, который надо пережить*\n\n"
             "Индийский праздник Холи отмечают в марте: люди обсыпают друг друга "
@@ -825,7 +825,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "ramadan mosque islam culture",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/Sultan_Ahmed_Mosque%2C_Istanbul%2C_Turkey_-_20131227.jpg/800px-Sultan_Ahmed_Mosque%2C_Istanbul%2C_Turkey_-_20131227.jpg",
+        "photo_url": "https://picsum.photos/seed/ramadan-mosque-islam-culture/800/600",
         "text": (
             "🥘 *Рамадан для туриста: что можно и нельзя*\n\n"
             "В мусульманских странах во время Рамадана днём не едят и не пьют публично. "
@@ -837,7 +837,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "oktoberfest munich beer festival",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Oktoberfest_2012_-_Hackerbr%C3%A4u_Zelt_am_Oktoberfest.jpg/800px-Oktoberfest_2012_-_Hackerbr%C3%A4u_Zelt_am_Oktoberfest.jpg",
+        "photo_url": "https://picsum.photos/seed/oktoberfest-munich-beer-festival/800/600",
         "text": (
             "🎺 *Октоберфест: не только пиво*\n\n"
             "Мюнхенский Октоберфест длится 16–18 дней с конца сентября. "
@@ -849,7 +849,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "nowruz persian spring festival",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Haft-sin_table_for_Nowruz.jpg/800px-Haft-sin_table_for_Nowruz.jpg",
+        "photo_url": "https://picsum.photos/seed/nowruz-persian-spring-festival/800/600",
         "text": (
             "🌕 *Навруз: праздник весны в 21 стране*\n\n"
             "Персидский Новый год Навруз отмечают 21 марта — в день весеннего равноденствия. "
@@ -861,7 +861,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "rio carnival brazil samba",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Escola_de_Samba_Beija-flor_de_Nilop%C3%B3lis.jpg/800px-Escola_de_Samba_Beija-flor_de_Nilop%C3%B3lis.jpg",
+        "photo_url": "https://picsum.photos/seed/rio-carnival-brazil-samba/800/600",
         "text": (
             "🎶 *Самба и карнавал: Рио изнутри*\n\n"
             "Карнавал в Рио-де-Жанейро — это не только самбадром и феерия перьев. "
@@ -873,7 +873,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "songkran water festival thailand",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/Songkran_festival_in_Chiang_Mai.jpg/800px-Songkran_festival_in_Chiang_Mai.jpg",
+        "photo_url": "https://picsum.photos/seed/songkran-water-festival-thailand/800/600",
         "text": (
             "🌊 *Сонгкран: Новый год, который топит всё*\n\n"
             "Тайский Новый год в апреле — это трёхдневная водная война по всей стране. "
@@ -888,7 +888,7 @@ CHANNEL_POSTS = [
 
     {
         "keyword": "passport travel documents security",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/United_States_of_America_passport_2017.jpg/800px-United_States_of_America_passport_2017.jpg",
+        "photo_url": "https://picsum.photos/seed/passport-travel-documents-security/800/600",
         "text": (
             "🔐 *Как не потерять документы в поездке*\n\n"
             "Сфотографируй все документы и загрузи в облако (Google Drive, iCloud). "
@@ -900,7 +900,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "tourist scam crowd street",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Crowd_in_a_street.jpg/800px-Crowd_in_a_street.jpg",
+        "photo_url": "https://picsum.photos/seed/tourist-scam-crowd-street/800/600",
         "text": (
             "🧠 *Развод на деньги: 7 классических схем*\n\n"
             "1. Дружелюбный незнакомец зовёт в «лучший ресторан» — это его родственник. "
@@ -914,7 +914,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "hospital doctor travel insurance",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/Hospital_room.jpg/800px-Hospital_room.jpg",
+        "photo_url": "https://picsum.photos/seed/hospital-doctor-travel-insurance/800/600",
         "text": (
             "🏥 *Что делать если заболел за границей*\n\n"
             "Первый шаг — позвони на горячую линию страховой компании (номер в полисе). "
@@ -926,7 +926,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "beach safety ocean waves",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Pacific_Ocean_-_Mavericks_Surf_Contest_2010.jpg/800px-Pacific_Ocean_-_Mavericks_Surf_Contest_2010.jpg",
+        "photo_url": "https://picsum.photos/seed/beach-safety-ocean-waves/800/600",
         "text": (
             "🌊 *Безопасность на воде: что туристы не знают*\n\n"
             "Красные флаги на пляже означают «купаться запрещено» — это не рекомендация. "
@@ -938,7 +938,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "car rental driving travel",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/Car_driving_on_road.jpg/800px-Car_driving_on_road.jpg",
+        "photo_url": "https://picsum.photos/seed/car-rental-driving-travel/800/600",
         "text": (
             "🚗 *Аренда машины: подводные камни*\n\n"
             "Читай договор на страхование: базовая страховка обычно не покрывает "
@@ -950,7 +950,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "mountain hiking altitude trekking",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Everest_North_Face_toward_Base_Camp_Tibet_Luca_Galuzzi_2006.jpg/800px-Everest_North_Face_toward_Base_Camp_Tibet_Luca_Galuzzi_2006.jpg",
+        "photo_url": "https://picsum.photos/seed/mountain-hiking-altitude-trekking/800/600",
         "text": (
             "🌡 *Акклиматизация в горах: как не испортить поход*\n\n"
             "Выше 2500 м организм начинает адаптироваться к нехватке кислорода. "
@@ -962,7 +962,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "pickpocket crowd city travel",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/London_underground_tube_train.jpg/800px-London_underground_tube_train.jpg",
+        "photo_url": "https://picsum.photos/seed/pickpocket-crowd-city-travel/800/600",
         "text": (
             "🔒 *Как не стать жертвой кражи в путешествии*\n\n"
             "Карманники работают в парах: один отвлекает, второй ворует. "
@@ -974,7 +974,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "embassy consulate travel documents",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/US_Embassy_London.jpg/800px-US_Embassy_London.jpg",
+        "photo_url": "https://picsum.photos/seed/embassy-consulate-travel-documents/800/600",
         "text": (
             "⚡ *Что делать если потерял паспорт за границей*\n\n"
             "1. Заяви в местную полицию — получи справку о потере (нужна для возврата). "
@@ -986,7 +986,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "street food market tropical",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3b/Pad_thai_kung_Chang_Khien_street_Chiang_Mai.jpg/800px-Pad_thai_kung_Chang_Khien_street_Chiang_Mai.jpg",
+        "photo_url": "https://picsum.photos/seed/street-food-market-tropical/800/600",
         "text": (
             "🍴 *Как не отравиться едой за границей*\n\n"
             "В тропиках: ешь только горячее или только то, что сам очистил. "
@@ -998,7 +998,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "laptop wifi coffee shop",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Laptop_on_table_at_coffeeshop.jpg/800px-Laptop_on_table_at_coffeeshop.jpg",
+        "photo_url": "https://picsum.photos/seed/laptop-wifi-coffee-shop/800/600",
         "text": (
             "🛡 *Безопасный Wi-Fi в путешествии*\n\n"
             "Публичный Wi-Fi в аэропортах и кафе — лёгкая цель для перехвата данных. "
@@ -1010,7 +1010,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "emergency phone call travel",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Emergency_call_112.jpg/800px-Emergency_call_112.jpg",
+        "photo_url": "https://picsum.photos/seed/emergency-phone-call-travel/800/600",
         "text": (
             "🚨 *Экстренные номера в разных странах*\n\n"
             "112 — работает в большинстве стран мира (даже без SIM). "
@@ -1022,7 +1022,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "travel planning map notebook",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/Map_and_notebook_travel_planning.jpg/800px-Map_and_notebook_travel_planning.jpg",
+        "photo_url": "https://picsum.photos/seed/travel-planning-map-notebook/800/600",
         "text": (
             "🌅 *Как планировать поездку без стресса*\n\n"
             "Правило 3-5: не больше 3 обязательных пункта в день, "
@@ -1035,7 +1035,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "sim card smartphone travel",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/Nano_SIM_Card.jpg/800px-Nano_SIM_Card.jpg",
+        "photo_url": "https://picsum.photos/seed/sim-card-smartphone-travel/800/600",
         "text": (
             "📞 *Как оставаться на связи за рубежом без огромного счёта*\n\n"
             "Роуминг от российских операторов: МТС, Билайн, МегаФон — "
@@ -1047,7 +1047,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "people culture diversity world",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/People_diversity_world.jpg/800px-People_diversity_world.jpg",
+        "photo_url": "https://picsum.photos/seed/people-culture-diversity-world/800/600",
         "text": (
             "🧭 *Как читать людей в разных культурах*\n\n"
             "«Да» не всегда значит «да»: в Японии и Таиланде кивок означает «я слушаю», "
@@ -1059,7 +1059,7 @@ CHANNEL_POSTS = [
     },
     {
         "keyword": "sustainable eco travel nature",
-        "photo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/16/Forest_in_summer.jpg/800px-Forest_in_summer.jpg",
+        "photo_url": "https://picsum.photos/seed/sustainable-eco-travel-nature/800/600",
         "text": (
             "🌍 *Как путешествовать осознанно и не навредить*\n\n"
             "Не покупай сувениры из кораллов, черепах и дикой природы — это незаконно "
