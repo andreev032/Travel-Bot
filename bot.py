@@ -8,7 +8,7 @@ import urllib.parse
 import requests
 from datetime import datetime
 from zoneinfo import ZoneInfo
-from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton, WebAppInfo, InlineKeyboardMarkup, InlineKeyboardButton
+from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton, WebAppInfo, InlineKeyboardMarkup, InlineKeyboardButton, BotCommand
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler
 from posts import CHANNEL_POSTS
 
@@ -3511,7 +3511,15 @@ async def testpost_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
 
 async def post_init(app: Application) -> None:
-    """Called by PTB after initialize() — verify channel access, then launch scheduler."""
+    """Called by PTB after initialize() — set bot commands, verify channel, launch scheduler."""
+    # Register menu commands (visible via the '/' button next to the clip icon)
+    await app.bot.set_my_commands([
+        BotCommand("start",    "Главное меню"),
+        BotCommand("menu",     "Главное меню"),
+        BotCommand("testpost", "Тест автопостинга (только для админа)"),
+    ])
+    logger.info("Команды бота зарегистрированы ✓")
+
     # Startup channel check
     try:
         me   = await app.bot.get_me()
