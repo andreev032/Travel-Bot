@@ -973,10 +973,23 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await season_menu_handler(update, context)
     elif text == "🛋 Лаунджи аэропортов":
         return await lounge_menu_handler(update, context)
-    elif text in ("📚 Путеводители", "✈️ Авторские туры"):
+    elif text == "📚 Путеводители":
         await update.message.reply_text(
             "🚧 В разработке — скоро появится!",
             reply_markup=get_folder_services_kb(),
+        )
+        return MAIN_MENU
+    elif text == "✈️ Авторские туры":
+        await update.message.reply_text(
+            "✈️ *Авторские туры*\n\n"
+            "🚧 В разработке — скоро появится!\n"
+            "Готовы к сотрудничеству: [@andreev032](https://t.me/andreev032)",
+            parse_mode="Markdown",
+            reply_markup=ReplyKeyboardMarkup(
+                [[KeyboardButton(HOME_BTN)]],
+                resize_keyboard=True,
+                one_time_keyboard=True,
+            ),
         )
         return MAIN_MENU
     elif text == "🚢 Круизы":
