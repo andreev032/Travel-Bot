@@ -6,11 +6,12 @@ import asyncio
 import traceback
 import urllib.request
 import urllib.parse
+import sqlite3
 import threading
 import requests
 import psycopg2
 import psycopg2.extras
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton, WebAppInfo, InlineKeyboardMarkup, InlineKeyboardButton, BotCommand
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler
@@ -24,28 +25,33 @@ TOKEN            = "8701321387:AAHwb_WkmrimPtInwDftv8jb0d03gTkogqA"
 CHANNEL_ID       = -1003580791059   # ВРЕМЕННО: тестовый канал для проверки расписания
 TEST_CHANNEL_ID  = -1003580791059   # тестовый канал — команда /testpost
 MOSCOW_TZ        = ZoneInfo("Europe/Moscow")
-# ── PostgreSQL — статистика пользователей (psycopg2) ─────────────
-_db_conn: psycopg2.extensions.connection | None = None
-_db_lock = threading.Lock()
+# ── Хранилище статистики пользователей (PostgreSQL → SQLite → JSON) ─
+_db_backend: str = "none"          # "postgres" | "sqlite" | "json"
+_db_conn    = None                 # psycopg2 or sqlite3 connection
+_db_lock    = threading.Lock()
+_DATA_DIR   = "/app/data"
+_SQLITE_PATH = os.path.join(_DATA_DIR, "users.db")
+_JSON_PATH   = os.path.join(_DATA_DIR, "users.json")
 
-def _get_db_url() -> str | None:
-    """Читает DATABASE_URL и логирует первые 30 символов."""
+# ── helpers ──────────────────────────────────────────────────────────
+
+def _ensure_data_dir() -> bool:
+    try:
+        os.makedirs(_DATA_DIR, exist_ok=True)
+        return True
+    except OSError as e:
+        logger.warning("Не удалось создать %s: %s", _DATA_DIR, e)
+        return False
+
+def _try_postgres() -> bool:
+    global _db_conn, _db_backend
     raw = os.environ.get("DATABASE_URL")
     if not raw:
         logger.warning("DATABASE_URL отсутствует в os.environ")
-        logger.warning("Доступные переменные: %s", list(os.environ.keys()))
-        return None
+        return False
     logger.info("DATABASE_URL найден: %.30s…", raw)
-    return raw
-
-async def init_db(app) -> None:
-    """Подключается к PostgreSQL и создаёт таблицу users."""
-    global _db_conn
-    url = _get_db_url()
-    if not url:
-        return
     try:
-        conn = psycopg2.connect(url)
+        conn = psycopg2.connect(raw, connect_timeout=5)
         conn.autocommit = True
         with conn.cursor() as cur:
             cur.execute("""
@@ -57,31 +63,154 @@ async def init_db(app) -> None:
                     last_seen  TIMESTAMP DEFAULT NOW()
                 )
             """)
-        _db_conn = conn
-        logger.info("PostgreSQL подключён, таблица users готова ✓")
+        _db_conn    = conn
+        _db_backend = "postgres"
+        logger.info("Бэкенд: PostgreSQL ✓")
+        return True
     except Exception as e:
-        logger.error("Ошибка подключения к PostgreSQL: %s: %s", type(e).__name__, e)
+        logger.error("PostgreSQL недоступен: %s: %s", type(e).__name__, e)
         logger.error(traceback.format_exc())
+        return False
+
+def _try_sqlite() -> bool:
+    global _db_conn, _db_backend
+    if not _ensure_data_dir():
+        return False
+    try:
+        conn = sqlite3.connect(_SQLITE_PATH, check_same_thread=False)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                user_id    INTEGER PRIMARY KEY,
+                username   TEXT,
+                first_name TEXT,
+                first_seen TEXT DEFAULT (datetime('now')),
+                last_seen  TEXT DEFAULT (datetime('now'))
+            )
+        """)
+        conn.commit()
+        _db_conn    = conn
+        _db_backend = "sqlite"
+        logger.info("Бэкенд: SQLite (%s) ✓", _SQLITE_PATH)
+        return True
+    except Exception as e:
+        logger.error("SQLite недоступен: %s: %s", type(e).__name__, e)
+        return False
+
+def _init_json() -> None:
+    global _db_backend
+    _ensure_data_dir()
+    _db_backend = "json"
+    logger.info("Бэкенд: JSON (%s)", _JSON_PATH)
+
+def _load_json() -> dict:
+    try:
+        with open(_JSON_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+def _save_json(data: dict) -> None:
+    tmp = _JSON_PATH + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, _JSON_PATH)
+
+# ── public API ───────────────────────────────────────────────────────
+
+async def init_db(app) -> None:
+    """Пробует PostgreSQL, затем SQLite, затем JSON."""
+    if _try_postgres():
+        return
+    logger.warning("Переключаемся на SQLite…")
+    if _try_sqlite():
+        return
+    logger.warning("Переключаемся на JSON…")
+    _init_json()
 
 async def record_user(user_id: int, username: str | None, first_name: str | None) -> None:
-    """Сохраняет или обновляет запись пользователя в PostgreSQL."""
-    if _db_conn is None:
-        logger.debug("record_user: соединение недоступно, пропускаем user_id=%s", user_id)
-        return
+    """Сохраняет/обновляет пользователя в активном бэкенде."""
     try:
+        if _db_backend == "postgres":
+            with _db_lock:
+                with _db_conn.cursor() as cur:
+                    cur.execute("""
+                        INSERT INTO users (user_id, username, first_name)
+                        VALUES (%s, %s, %s)
+                        ON CONFLICT (user_id) DO UPDATE
+                            SET last_seen  = NOW(),
+                                username   = EXCLUDED.username,
+                                first_name = EXCLUDED.first_name
+                    """, (user_id, username, first_name))
+        elif _db_backend == "sqlite":
+            now = datetime.now(MOSCOW_TZ).strftime("%Y-%m-%d %H:%M:%S")
+            with _db_lock:
+                _db_conn.execute("""
+                    INSERT INTO users (user_id, username, first_name, first_seen, last_seen)
+                    VALUES (?, ?, ?, ?, ?)
+                    ON CONFLICT (user_id) DO UPDATE
+                        SET last_seen  = excluded.last_seen,
+                            username   = excluded.username,
+                            first_name = excluded.first_name
+                """, (user_id, username, first_name, now, now))
+                _db_conn.commit()
+        elif _db_backend == "json":
+            now = datetime.now(MOSCOW_TZ).strftime("%Y-%m-%d %H:%M:%S")
+            with _db_lock:
+                data = _load_json()
+                key  = str(user_id)
+                if key not in data:
+                    data[key] = {"username": username or "", "first_name": first_name or "",
+                                 "first_seen": now, "last_seen": now}
+                else:
+                    data[key].update({"username": username or "", "first_name": first_name or "",
+                                      "last_seen": now})
+                _save_json(data)
+        else:
+            return
+        logger.info("record_user: user_id=%s сохранён [%s] ✓", user_id, _db_backend)
+    except Exception as e:
+        logger.error("record_user: ошибка user_id=%s [%s]: %s: %s",
+                     user_id, _db_backend, type(e).__name__, e)
+
+def _get_stats() -> dict:
+    """Возвращает dict(total, new_7, new_30, active_today) из активного бэкенда."""
+    if _db_backend == "postgres":
         with _db_lock:
             with _db_conn.cursor() as cur:
-                cur.execute("""
-                    INSERT INTO users (user_id, username, first_name)
-                    VALUES (%s, %s, %s)
-                    ON CONFLICT (user_id) DO UPDATE
-                        SET last_seen  = NOW(),
-                            username   = EXCLUDED.username,
-                            first_name = EXCLUDED.first_name
-                """, (user_id, username, first_name))
-        logger.info("record_user: user_id=%s сохранён ✓", user_id)
-    except Exception as e:
-        logger.error("record_user: ошибка для user_id=%s: %s: %s", user_id, type(e).__name__, e)
+                cur.execute("SELECT COUNT(*) FROM users")
+                total = cur.fetchone()[0]
+                cur.execute("SELECT COUNT(*) FROM users WHERE first_seen >= NOW() - INTERVAL '7 days'")
+                new_7 = cur.fetchone()[0]
+                cur.execute("SELECT COUNT(*) FROM users WHERE first_seen >= NOW() - INTERVAL '30 days'")
+                new_30 = cur.fetchone()[0]
+                cur.execute("SELECT COUNT(*) FROM users WHERE last_seen >= CURRENT_DATE")
+                active_today = cur.fetchone()[0]
+    elif _db_backend == "sqlite":
+        with _db_lock:
+            cur = _db_conn.execute("SELECT COUNT(*) FROM users")
+            total = cur.fetchone()[0]
+            cur = _db_conn.execute(
+                "SELECT COUNT(*) FROM users WHERE first_seen >= datetime('now', '-7 days')")
+            new_7 = cur.fetchone()[0]
+            cur = _db_conn.execute(
+                "SELECT COUNT(*) FROM users WHERE first_seen >= datetime('now', '-30 days')")
+            new_30 = cur.fetchone()[0]
+            cur = _db_conn.execute(
+                "SELECT COUNT(*) FROM users WHERE last_seen >= date('now')")
+            active_today = cur.fetchone()[0]
+    elif _db_backend == "json":
+        data  = _load_json()
+        total = len(data)
+        now   = datetime.now(MOSCOW_TZ)
+        cut7  = (now - timedelta(days=7)).strftime("%Y-%m-%d %H:%M:%S")
+        cut30 = (now - timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
+        today = now.strftime("%Y-%m-%d")
+        new_7        = sum(1 for u in data.values() if u.get("first_seen", "") >= cut7)
+        new_30       = sum(1 for u in data.values() if u.get("first_seen", "") >= cut30)
+        active_today = sum(1 for u in data.values() if u.get("last_seen", "").startswith(today))
+    else:
+        total = new_7 = new_30 = active_today = 0
+    return {"total": total, "new_7": new_7, "new_30": new_30, "active_today": active_today}
 
 # ── Персистентный индекс поста (сохраняется между перезапусками) ─
 POST_INDEX_FILE = os.path.join(os.path.dirname(__file__), "post_index.json")
@@ -4318,32 +4447,25 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         await update.message.reply_text("⛔ Нет доступа.")
         return
 
-    if _db_conn is None:
-        await update.message.reply_text("⛔ База данных недоступна.")
+    if _db_backend == "none":
+        await update.message.reply_text("⛔ Хранилище недоступно.")
         return
 
     try:
-        with _db_lock:
-            with _db_conn.cursor() as cur:
-                cur.execute("SELECT COUNT(*) FROM users")
-                total = cur.fetchone()[0]
-                cur.execute("SELECT COUNT(*) FROM users WHERE first_seen >= NOW() - INTERVAL '7 days'")
-                new_7 = cur.fetchone()[0]
-                cur.execute("SELECT COUNT(*) FROM users WHERE first_seen >= NOW() - INTERVAL '30 days'")
-                new_30 = cur.fetchone()[0]
-                cur.execute("SELECT COUNT(*) FROM users WHERE last_seen >= CURRENT_DATE")
-                active_today = cur.fetchone()[0]
+        s = _get_stats()
     except Exception as e:
-        logger.error("stats_command: ошибка запроса: %s: %s", type(e).__name__, e)
+        logger.error("stats_command: %s: %s", type(e).__name__, e)
         await update.message.reply_text("⛔ Ошибка при получении статистики.")
         return
 
+    backend_label = {"postgres": "PostgreSQL", "sqlite": "SQLite", "json": "JSON"}.get(_db_backend, "?")
     text = (
         "📊 *Статистика пользователей*\n\n"
-        f"👥 Всего пользователей: *{total}*\n"
-        f"🆕 Новых за 7 дней: *{new_7}*\n"
-        f"📅 Новых за 30 дней: *{new_30}*\n"
-        f"✅ Активных сегодня: *{active_today}*"
+        f"👥 Всего пользователей: *{s['total']}*\n"
+        f"🆕 Новых за 7 дней: *{s['new_7']}*\n"
+        f"📅 Новых за 30 дней: *{s['new_30']}*\n"
+        f"✅ Активных сегодня: *{s['active_today']}*\n\n"
+        f"💾 Хранилище: {backend_label}"
     )
     await update.message.reply_text(text, parse_mode="Markdown")
 
