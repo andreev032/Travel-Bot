@@ -28,36 +28,73 @@ _db_pool: asyncpg.Pool | None = None
 async def init_db(app) -> None:
     """Создаёт пул подключений и таблицу users если не существует."""
     global _db_pool
-    database_url = os.environ.get("DATABASE_URL")
-    if not database_url:
-        logger.warning("DATABASE_URL не задан — статистика пользователей недоступна")
+
+    # ── 1. Проверяем наличие переменной ──────────────────────────────
+    raw_url = os.environ.get("DATABASE_URL")
+    if not raw_url:
+        logger.warning("DATABASE_URL отсутствует в os.environ — статистика пользователей недоступна")
+        logger.warning("Доступные переменные окружения: %s", list(os.environ.keys()))
         return
-    _db_pool = await asyncpg.create_pool(database_url, min_size=1, max_size=5)
-    async with _db_pool.acquire() as conn:
-        await conn.execute("""
-            CREATE TABLE IF NOT EXISTS users (
-                user_id    BIGINT PRIMARY KEY,
-                username   TEXT,
-                first_name TEXT,
-                first_seen TIMESTAMP DEFAULT NOW(),
-                last_seen  TIMESTAMP DEFAULT NOW()
-            )
-        """)
-    logger.info("Таблица users готова ✓")
+
+    logger.info("DATABASE_URL найден: %s", raw_url[:40] + "…" if len(raw_url) > 40 else raw_url)
+
+    # ── 2. Нормализуем схему URL ──────────────────────────────────────
+    # Railway даёт «postgres://…» — asyncpg требует «postgresql://…»
+    # SQLAlchemy-стиль «postgresql+asyncpg://…» тоже не нужен asyncpg
+    dsn = raw_url
+    if dsn.startswith("postgres://"):
+        dsn = "postgresql://" + dsn[len("postgres://"):]
+        logger.info("URL скорректирован: postgres:// → postgresql://")
+    elif dsn.startswith("postgresql+asyncpg://"):
+        dsn = "postgresql://" + dsn[len("postgresql+asyncpg://"):]
+        logger.info("URL скорректирован: postgresql+asyncpg:// → postgresql://")
+
+    logger.info("Итоговый DSN (первые 40 символов): %s", dsn[:40] + "…" if len(dsn) > 40 else dsn)
+
+    # ── 3. Подключаемся ──────────────────────────────────────────────
+    try:
+        _db_pool = await asyncpg.create_pool(dsn, min_size=1, max_size=5)
+        logger.info("Пул подключений PostgreSQL создан ✓")
+    except Exception as e:
+        logger.error("Ошибка создания пула asyncpg: %s: %s", type(e).__name__, e)
+        logger.error(traceback.format_exc())
+        return
+
+    # ── 4. Создаём таблицу ───────────────────────────────────────────
+    try:
+        async with _db_pool.acquire() as conn:
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS users (
+                    user_id    BIGINT PRIMARY KEY,
+                    username   TEXT,
+                    first_name TEXT,
+                    first_seen TIMESTAMP DEFAULT NOW(),
+                    last_seen  TIMESTAMP DEFAULT NOW()
+                )
+            """)
+        logger.info("Таблица users готова ✓")
+    except Exception as e:
+        logger.error("Ошибка создания таблицы users: %s: %s", type(e).__name__, e)
+        logger.error(traceback.format_exc())
 
 async def record_user(user_id: int, username: str | None, first_name: str | None) -> None:
     """Сохраняет или обновляет запись пользователя в PostgreSQL."""
     if _db_pool is None:
+        logger.debug("record_user: пул недоступен, пропускаем user_id=%s", user_id)
         return
-    async with _db_pool.acquire() as conn:
-        await conn.execute("""
-            INSERT INTO users (user_id, username, first_name)
-            VALUES ($1, $2, $3)
-            ON CONFLICT (user_id) DO UPDATE
-                SET last_seen  = NOW(),
-                    username   = EXCLUDED.username,
-                    first_name = EXCLUDED.first_name
-        """, user_id, username, first_name)
+    try:
+        async with _db_pool.acquire() as conn:
+            await conn.execute("""
+                INSERT INTO users (user_id, username, first_name)
+                VALUES ($1, $2, $3)
+                ON CONFLICT (user_id) DO UPDATE
+                    SET last_seen  = NOW(),
+                        username   = EXCLUDED.username,
+                        first_name = EXCLUDED.first_name
+            """, user_id, username, first_name)
+        logger.info("record_user: user_id=%s сохранён ✓", user_id)
+    except Exception as e:
+        logger.error("record_user: ошибка для user_id=%s: %s: %s", user_id, type(e).__name__, e)
 
 # ── Персистентный индекс поста (сохраняется между перезапусками) ─
 POST_INDEX_FILE = os.path.join(os.path.dirname(__file__), "post_index.json")
