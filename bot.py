@@ -6,8 +6,10 @@ import asyncio
 import traceback
 import urllib.request
 import urllib.parse
+import threading
 import requests
-import asyncpg
+import psycopg2
+import psycopg2.extras
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton, WebAppInfo, InlineKeyboardMarkup, InlineKeyboardButton, BotCommand
@@ -22,48 +24,31 @@ TOKEN            = "8701321387:AAHwb_WkmrimPtInwDftv8jb0d03gTkogqA"
 CHANNEL_ID       = -1003580791059   # ВРЕМЕННО: тестовый канал для проверки расписания
 TEST_CHANNEL_ID  = -1003580791059   # тестовый канал — команда /testpost
 MOSCOW_TZ        = ZoneInfo("Europe/Moscow")
-# ── PostgreSQL — статистика пользователей ────────────────────────
-_db_pool: asyncpg.Pool | None = None
+# ── PostgreSQL — статистика пользователей (psycopg2) ─────────────
+_db_conn: psycopg2.extensions.connection | None = None
+_db_lock = threading.Lock()
+
+def _get_db_url() -> str | None:
+    """Читает DATABASE_URL и логирует первые 30 символов."""
+    raw = os.environ.get("DATABASE_URL")
+    if not raw:
+        logger.warning("DATABASE_URL отсутствует в os.environ")
+        logger.warning("Доступные переменные: %s", list(os.environ.keys()))
+        return None
+    logger.info("DATABASE_URL найден: %.30s…", raw)
+    return raw
 
 async def init_db(app) -> None:
-    """Создаёт пул подключений и таблицу users если не существует."""
-    global _db_pool
-
-    # ── 1. Проверяем наличие переменной ──────────────────────────────
-    raw_url = os.environ.get("DATABASE_URL")
-    if not raw_url:
-        logger.warning("DATABASE_URL отсутствует в os.environ — статистика пользователей недоступна")
-        logger.warning("Доступные переменные окружения: %s", list(os.environ.keys()))
+    """Подключается к PostgreSQL и создаёт таблицу users."""
+    global _db_conn
+    url = _get_db_url()
+    if not url:
         return
-
-    logger.info("DATABASE_URL найден: %s", raw_url[:40] + "…" if len(raw_url) > 40 else raw_url)
-
-    # ── 2. Нормализуем схему URL ──────────────────────────────────────
-    # Railway даёт «postgres://…» — asyncpg требует «postgresql://…»
-    # SQLAlchemy-стиль «postgresql+asyncpg://…» тоже не нужен asyncpg
-    dsn = raw_url
-    if dsn.startswith("postgres://"):
-        dsn = "postgresql://" + dsn[len("postgres://"):]
-        logger.info("URL скорректирован: postgres:// → postgresql://")
-    elif dsn.startswith("postgresql+asyncpg://"):
-        dsn = "postgresql://" + dsn[len("postgresql+asyncpg://"):]
-        logger.info("URL скорректирован: postgresql+asyncpg:// → postgresql://")
-
-    logger.info("Итоговый DSN (первые 40 символов): %s", dsn[:40] + "…" if len(dsn) > 40 else dsn)
-
-    # ── 3. Подключаемся ──────────────────────────────────────────────
     try:
-        _db_pool = await asyncpg.create_pool(dsn, min_size=1, max_size=5)
-        logger.info("Пул подключений PostgreSQL создан ✓")
-    except Exception as e:
-        logger.error("Ошибка создания пула asyncpg: %s: %s", type(e).__name__, e)
-        logger.error(traceback.format_exc())
-        return
-
-    # ── 4. Создаём таблицу ───────────────────────────────────────────
-    try:
-        async with _db_pool.acquire() as conn:
-            await conn.execute("""
+        conn = psycopg2.connect(url)
+        conn.autocommit = True
+        with conn.cursor() as cur:
+            cur.execute("""
                 CREATE TABLE IF NOT EXISTS users (
                     user_id    BIGINT PRIMARY KEY,
                     username   TEXT,
@@ -72,26 +57,28 @@ async def init_db(app) -> None:
                     last_seen  TIMESTAMP DEFAULT NOW()
                 )
             """)
-        logger.info("Таблица users готова ✓")
+        _db_conn = conn
+        logger.info("PostgreSQL подключён, таблица users готова ✓")
     except Exception as e:
-        logger.error("Ошибка создания таблицы users: %s: %s", type(e).__name__, e)
+        logger.error("Ошибка подключения к PostgreSQL: %s: %s", type(e).__name__, e)
         logger.error(traceback.format_exc())
 
 async def record_user(user_id: int, username: str | None, first_name: str | None) -> None:
     """Сохраняет или обновляет запись пользователя в PostgreSQL."""
-    if _db_pool is None:
-        logger.debug("record_user: пул недоступен, пропускаем user_id=%s", user_id)
+    if _db_conn is None:
+        logger.debug("record_user: соединение недоступно, пропускаем user_id=%s", user_id)
         return
     try:
-        async with _db_pool.acquire() as conn:
-            await conn.execute("""
-                INSERT INTO users (user_id, username, first_name)
-                VALUES ($1, $2, $3)
-                ON CONFLICT (user_id) DO UPDATE
-                    SET last_seen  = NOW(),
-                        username   = EXCLUDED.username,
-                        first_name = EXCLUDED.first_name
-            """, user_id, username, first_name)
+        with _db_lock:
+            with _db_conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO users (user_id, username, first_name)
+                    VALUES (%s, %s, %s)
+                    ON CONFLICT (user_id) DO UPDATE
+                        SET last_seen  = NOW(),
+                            username   = EXCLUDED.username,
+                            first_name = EXCLUDED.first_name
+                """, (user_id, username, first_name))
         logger.info("record_user: user_id=%s сохранён ✓", user_id)
     except Exception as e:
         logger.error("record_user: ошибка для user_id=%s: %s: %s", user_id, type(e).__name__, e)
@@ -4331,21 +4318,25 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         await update.message.reply_text("⛔ Нет доступа.")
         return
 
-    if _db_pool is None:
+    if _db_conn is None:
         await update.message.reply_text("⛔ База данных недоступна.")
         return
 
-    async with _db_pool.acquire() as conn:
-        total    = await conn.fetchval("SELECT COUNT(*) FROM users")
-        new_7    = await conn.fetchval(
-            "SELECT COUNT(*) FROM users WHERE first_seen >= NOW() - INTERVAL '7 days'"
-        )
-        new_30   = await conn.fetchval(
-            "SELECT COUNT(*) FROM users WHERE first_seen >= NOW() - INTERVAL '30 days'"
-        )
-        active_today = await conn.fetchval(
-            "SELECT COUNT(*) FROM users WHERE last_seen >= CURRENT_DATE"
-        )
+    try:
+        with _db_lock:
+            with _db_conn.cursor() as cur:
+                cur.execute("SELECT COUNT(*) FROM users")
+                total = cur.fetchone()[0]
+                cur.execute("SELECT COUNT(*) FROM users WHERE first_seen >= NOW() - INTERVAL '7 days'")
+                new_7 = cur.fetchone()[0]
+                cur.execute("SELECT COUNT(*) FROM users WHERE first_seen >= NOW() - INTERVAL '30 days'")
+                new_30 = cur.fetchone()[0]
+                cur.execute("SELECT COUNT(*) FROM users WHERE last_seen >= CURRENT_DATE")
+                active_today = cur.fetchone()[0]
+    except Exception as e:
+        logger.error("stats_command: ошибка запроса: %s: %s", type(e).__name__, e)
+        await update.message.reply_text("⛔ Ошибка при получении статистики.")
+        return
 
     text = (
         "📊 *Статистика пользователей*\n\n"
