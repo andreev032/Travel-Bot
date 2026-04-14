@@ -7,6 +7,7 @@ import traceback
 import urllib.request
 import urllib.parse
 import requests
+import asyncpg
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton, WebAppInfo, InlineKeyboardMarkup, InlineKeyboardButton, BotCommand
@@ -21,44 +22,42 @@ TOKEN            = "8701321387:AAHwb_WkmrimPtInwDftv8jb0d03gTkogqA"
 CHANNEL_ID       = -1003580791059   # ВРЕМЕННО: тестовый канал для проверки расписания
 TEST_CHANNEL_ID  = -1003580791059   # тестовый канал — команда /testpost
 MOSCOW_TZ        = ZoneInfo("Europe/Moscow")
-# ── Файл статистики пользователей ────────────────────────────────
-USERS_FILE = os.path.join(os.path.dirname(__file__), "users.json")
+# ── PostgreSQL — статистика пользователей ────────────────────────
+_db_pool: asyncpg.Pool | None = None
 
-def _load_users() -> dict:
-    """Загружает users.json; возвращает пустой словарь если файл не существует."""
-    if not os.path.exists(USERS_FILE):
-        return {}
-    try:
-        with open(USERS_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except (json.JSONDecodeError, OSError):
-        return {}
+async def init_db(app) -> None:
+    """Создаёт пул подключений и таблицу users если не существует."""
+    global _db_pool
+    database_url = os.environ.get("DATABASE_URL")
+    if not database_url:
+        logger.warning("DATABASE_URL не задан — статистика пользователей недоступна")
+        return
+    _db_pool = await asyncpg.create_pool(database_url, min_size=1, max_size=5)
+    async with _db_pool.acquire() as conn:
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                user_id    BIGINT PRIMARY KEY,
+                username   TEXT,
+                first_name TEXT,
+                first_seen TIMESTAMP DEFAULT NOW(),
+                last_seen  TIMESTAMP DEFAULT NOW()
+            )
+        """)
+    logger.info("Таблица users готова ✓")
 
-def _save_users(data: dict) -> None:
-    """Сохраняет данные в users.json атомарно через временный файл."""
-    tmp = USERS_FILE + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-    os.replace(tmp, USERS_FILE)
-
-def record_user(user_id: int, username: str | None) -> None:
-    """Записывает визит пользователя. Первый визит фиксирует дату регистрации."""
-    data  = _load_users()
-    key   = str(user_id)
-    today = datetime.now(MOSCOW_TZ).date().isoformat()
-    if key not in data:
-        data[key] = {
-            "username":    username or "",
-            "first_visit": today,
-            "visits":      [today],
-        }
-    else:
-        # Обновляем username на случай смены
-        data[key]["username"] = username or data[key].get("username", "")
-        visits = data[key].setdefault("visits", [])
-        if today not in visits:
-            visits.append(today)
-    _save_users(data)
+async def record_user(user_id: int, username: str | None, first_name: str | None) -> None:
+    """Сохраняет или обновляет запись пользователя в PostgreSQL."""
+    if _db_pool is None:
+        return
+    async with _db_pool.acquire() as conn:
+        await conn.execute("""
+            INSERT INTO users (user_id, username, first_name)
+            VALUES ($1, $2, $3)
+            ON CONFLICT (user_id) DO UPDATE
+                SET last_seen  = NOW(),
+                    username   = EXCLUDED.username,
+                    first_name = EXCLUDED.first_name
+        """, user_id, username, first_name)
 
 # ── Персистентный индекс поста (сохраняется между перезапусками) ─
 POST_INDEX_FILE = os.path.join(os.path.dirname(__file__), "post_index.json")
@@ -986,7 +985,7 @@ def score_destination(dest, answers):
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data.clear()
     user = update.effective_user
-    record_user(user.id, user.username)
+    await record_user(user.id, user.username, user.first_name)
     await update.message.reply_text(
         "✈️ Привет! Я твой travel-помощник «Как местный» 🎒\n"
         "Всё что нужно для путешествия — в одном месте:\n\n"
@@ -4295,36 +4294,28 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         await update.message.reply_text("⛔ Нет доступа.")
         return
 
-    data = _load_users()
-    total = len(data)
+    if _db_pool is None:
+        await update.message.reply_text("⛔ База данных недоступна.")
+        return
 
-    from datetime import timedelta
-    today     = datetime.now(MOSCOW_TZ).date()
-    cutoff_7  = (today - timedelta(days=6)).isoformat()
-    cutoff_30 = (today - timedelta(days=29)).isoformat()
-
-    new_7  = sum(1 for u in data.values() if u.get("first_visit", "") >= cutoff_7)
-    new_30 = sum(1 for u in data.values() if u.get("first_visit", "") >= cutoff_30)
-
-    # Топ-5 самых активных дней по количеству визитов
-    day_counts: dict[str, int] = {}
-    for u in data.values():
-        for day in u.get("visits", []):
-            day_counts[day] = day_counts.get(day, 0) + 1
-    top5 = sorted(day_counts.items(), key=lambda x: x[1], reverse=True)[:5]
-    top5_lines = "\n".join(f"  {d}: {c} визит(ов)" for d, c in top5) or "  нет данных"
-
-    # Дата первой записи в файле
-    all_first = [u.get("first_visit", "") for u in data.values() if u.get("first_visit")]
-    since = min(all_first) if all_first else "нет данных"
+    async with _db_pool.acquire() as conn:
+        total    = await conn.fetchval("SELECT COUNT(*) FROM users")
+        new_7    = await conn.fetchval(
+            "SELECT COUNT(*) FROM users WHERE first_seen >= NOW() - INTERVAL '7 days'"
+        )
+        new_30   = await conn.fetchval(
+            "SELECT COUNT(*) FROM users WHERE first_seen >= NOW() - INTERVAL '30 days'"
+        )
+        active_today = await conn.fetchval(
+            "SELECT COUNT(*) FROM users WHERE last_seen >= CURRENT_DATE"
+        )
 
     text = (
         "📊 *Статистика пользователей*\n\n"
         f"👥 Всего пользователей: *{total}*\n"
         f"🆕 Новых за 7 дней: *{new_7}*\n"
-        f"📅 Новых за 30 дней: *{new_30}*\n\n"
-        f"🔥 *Топ-5 активных дней:*\n{top5_lines}\n\n"
-        f"📌 Статистика ведётся с {since}"
+        f"📅 Новых за 30 дней: *{new_30}*\n"
+        f"✅ Активных сегодня: *{active_today}*"
     )
     await update.message.reply_text(text, parse_mode="Markdown")
 
@@ -4414,6 +4405,9 @@ async def post_init(app: Application) -> None:
         BotCommand("start", "Главное меню"),
     ])
     logger.info("Команды бота зарегистрированы ✓")
+
+    # Init PostgreSQL
+    await init_db(app)
 
     # Startup channel check
     try:
