@@ -90,7 +90,8 @@ MAIN_MENU, ANSWERING, HELP_MENU, HELP_TOPIC, TRANSLATING, VISA_MENU, VISA_CATEGO
     SUPPORT_MENU, SUPPORT_TYPING, \
     CRUISE_MENU, CRUISE_SECTION, \
     WONDERS_MENU, WONDERS_SEVEN_MENU, WONDERS_SECTION, UNESCO_MENU, UNESCO_REGION, \
-    PARTNERS_MENU = range(28)
+    PARTNERS_MENU, \
+    TOURS_MENU, TOURS_TYPING = range(30)
 
 # Замени на реальный HTTPS-URL после деплоя webapp/index.html
 WEBAPP_URL      = "https://andreev032.github.io/Travel-Bot/"
@@ -980,24 +981,7 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return MAIN_MENU
     elif text == "✈️ Авторские туры":
-        await update.message.reply_text(
-            "✈️ *Авторские туры*\n\n"
-            "🚧 В разработке — скоро появится!",
-            parse_mode="Markdown",
-            reply_markup=InlineKeyboardMarkup([[
-                InlineKeyboardButton("✉️ Написать для сотрудничества",
-                                     url="https://t.me/andreev032"),
-            ]]),
-        )
-        await update.message.reply_text(
-            "Навигация:",
-            reply_markup=ReplyKeyboardMarkup(
-                [[KeyboardButton(HOME_BTN)]],
-                resize_keyboard=True,
-                one_time_keyboard=True,
-            ),
-        )
-        return MAIN_MENU
+        return await show_tours_menu(update, context)
     elif text == "🚢 Круизы":
         return await cruise_menu_handler(update, context)
     elif text == "🏛 Чудеса и наследие":
@@ -2112,6 +2096,84 @@ async def support_typing_handler(update: Update, context: ContextTypes.DEFAULT_T
         reply_markup=get_main_keyboard(),
     )
     context.user_data.pop("support_type", None)
+    return MAIN_MENU
+
+
+## ── TOURS ────────────────────────────────────────────────────────────────────
+
+_TOURS_TYPES = {
+    "🤝 Сотрудничество": "Сотрудничество по турам",
+    "✈️ Хочу в тур":     "Хочу в тур",
+}
+
+_TOURS_KB = ReplyKeyboardMarkup(
+    [[btn] for btn in _TOURS_TYPES] + [["◀️ Назад"], [HOME_BTN]],
+    resize_keyboard=True,
+    one_time_keyboard=True,
+)
+
+
+async def show_tours_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "✈️ *Авторские туры*\n\n"
+        "🚧 В разработке — скоро появится!\n"
+        "Пока готовы к сотрудничеству и рады ответить на вопросы 👇",
+        parse_mode="Markdown",
+        reply_markup=_TOURS_KB,
+    )
+    return TOURS_MENU
+
+
+async def tours_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text
+    if text == HOME_BTN:
+        return await go_home(update, context)
+    if text == "◀️ Назад":
+        return await go_home(update, context)
+    if text in _TOURS_TYPES:
+        context.user_data["tours_type"] = _TOURS_TYPES[text]
+        await update.message.reply_text(
+            "✏️ Напиши своё сообщение — мы обязательно его прочитаем:",
+            reply_markup=ReplyKeyboardMarkup([["◀️ Назад"], [HOME_BTN]], resize_keyboard=True),
+        )
+        return TOURS_TYPING
+    return await show_tours_menu(update, context)
+
+
+async def tours_typing_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text
+    if text == HOME_BTN:
+        return await go_home(update, context)
+    if text == "◀️ Назад":
+        return await show_tours_menu(update, context)
+
+    user = update.effective_user
+    tours_type = context.user_data.get("tours_type", "Не указан")
+    name = user.full_name or "Без имени"
+    username = f"@{user.username}" if user.username else "нет username"
+
+    admin_text = (
+        f"✈️ *Авторские туры — новое обращение*\n\n"
+        f"👤 Имя: {name}\n"
+        f"🔗 Username: {username}\n"
+        f"🆔 Telegram ID: `{user.id}`\n"
+        f"📋 Тип: {tours_type}\n\n"
+        f"💬 Сообщение:\n{text}"
+    )
+    try:
+        await context.bot.send_message(
+            chat_id=ADMIN_ID,
+            text=admin_text,
+            parse_mode="Markdown",
+        )
+    except Exception as e:
+        logger.warning(f"tours: не удалось отправить сообщение админу: {e}")
+
+    await update.message.reply_text(
+        "✅ Сообщение отправлено! Мы свяжемся с вами в ближайшее время.",
+        reply_markup=get_main_keyboard(),
+    )
+    context.user_data.pop("tours_type", None)
     return MAIN_MENU
 
 
@@ -4343,6 +4405,14 @@ def main():
             PARTNERS_MENU: [
                 home,
                 MessageHandler(filters.TEXT & ~filters.COMMAND, partners_menu_handler),
+            ],
+            TOURS_MENU: [
+                home,
+                MessageHandler(filters.TEXT & ~filters.COMMAND, tours_menu_handler),
+            ],
+            TOURS_TYPING: [
+                home,
+                MessageHandler(filters.TEXT & ~filters.COMMAND, tours_typing_handler),
             ],
         },
         fallbacks=[
