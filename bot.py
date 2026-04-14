@@ -72,6 +72,39 @@ def _try_postgres() -> bool:
         logger.error(traceback.format_exc())
         return False
 
+def _check_volume() -> None:
+    """Диагностика Railway Volume — вызывается при каждом старте."""
+    logger.info("── Диагностика /app/data ──────────────────────────")
+    logger.info("_DATA_DIR    : %s", _DATA_DIR)
+    logger.info("_SQLITE_PATH : %s", _SQLITE_PATH)
+    logger.info("SQLite существует: %s", os.path.exists(_SQLITE_PATH))
+
+    # Проверяем, смонтирован ли Volume: пишем тестовый файл и читаем его обратно
+    test_path = os.path.join(_DATA_DIR, "test.txt")
+    try:
+        os.makedirs(_DATA_DIR, exist_ok=True)
+        with open(test_path, "w", encoding="utf-8") as f:
+            f.write("railway-volume-ok")
+        with open(test_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        logger.info("Запись /app/data/test.txt: ✓ (содержимое: %r)", content)
+    except Exception as e:
+        logger.error("Запись /app/data/test.txt FAILED: %s: %s", type(e).__name__, e)
+
+    # Список файлов в /app/data
+    try:
+        files = os.listdir(_DATA_DIR)
+        logger.info("Файлы в %s: %s", _DATA_DIR, files)
+    except Exception as e:
+        logger.error("os.listdir(%s) FAILED: %s", _DATA_DIR, e)
+
+    # Размер SQLite файла если существует
+    if os.path.exists(_SQLITE_PATH):
+        size = os.path.getsize(_SQLITE_PATH)
+        logger.info("Размер users.db: %d байт", size)
+
+    logger.info("───────────────────────────────────────────────────")
+
 def _try_sqlite() -> bool:
     global _db_conn, _db_backend
     if not _ensure_data_dir():
@@ -94,6 +127,7 @@ def _try_sqlite() -> bool:
         return True
     except Exception as e:
         logger.error("SQLite недоступен: %s: %s", type(e).__name__, e)
+        logger.error(traceback.format_exc())
         return False
 
 def _init_json() -> None:
@@ -119,6 +153,7 @@ def _save_json(data: dict) -> None:
 
 async def init_db(app) -> None:
     """Пробует PostgreSQL, затем SQLite, затем JSON."""
+    _check_volume()
     if _try_postgres():
         return
     logger.warning("Переключаемся на SQLite…")
