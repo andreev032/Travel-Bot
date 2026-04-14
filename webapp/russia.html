@@ -92,12 +92,22 @@
       padding: 10px 12px 14px;
       background: linear-gradient(transparent, #0d1117 38%);
       pointer-events: none;
+      display: flex; gap: 8px;
     }
+    #btn-save {
+      flex: 1; padding: 13px;
+      background: linear-gradient(135deg, #238636, #2ea043);
+      color: #fff; border: none; border-radius: 10px;
+      font-size: 15px; font-weight: 700; cursor: pointer;
+      transition: opacity .15s; pointer-events: all;
+    }
+    #btn-save:disabled { background: #21262d; color: #484f58; cursor: default; }
+    #btn-save:not(:disabled):active { opacity: .8; }
     #btn-reset {
-      width: 100%; padding: 13px;
+      padding: 13px 16px;
       background: #21262d; color: #8b949e;
       border: 1px solid #30363d; border-radius: 10px;
-      font-size: 15px; font-weight: 600; cursor: pointer;
+      font-size: 15px; cursor: pointer;
       transition: background .15s, color .15s; pointer-events: all;
     }
     #btn-reset:active { background: #2d333b; color: #c9d1d9; }
@@ -119,7 +129,8 @@
 </div>
 <div id="list"></div>
 <div id="done-wrap">
-  <button id="btn-reset" onclick="resetAll()">Сбросить всё</button>
+  <button id="btn-save" disabled onclick="send()">💾 Сохранить</button>
+  <button id="btn-reset" onclick="resetAll()">🗑 Сбросить всё</button>
 </div>
 
 <script>
@@ -296,7 +307,18 @@ function updateCounter() {
   const n = visited.size;
   badgeEl.textContent = `${n} из ${TOTAL}`;
   badgeEl.classList.toggle("has", n > 0);
+  document.getElementById("btn-save").disabled = n === 0;
   resetBtn.classList.toggle("active", n > 0);
+}
+
+function send() {
+  if (!visited.size) return;
+  tg.sendData(JSON.stringify({
+    source: "regions",
+    count: visited.size,
+    total: TOTAL,
+    visited: [...visited].sort(),
+  }));
 }
 
 function buildList(query) {
