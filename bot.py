@@ -2390,24 +2390,31 @@ async def support_typing_handler(update: Update, context: ContextTypes.DEFAULT_T
     user = update.effective_user
     support_type = context.user_data.get("support_type", "Не указан")
     name = user.full_name or "Без имени"
-    username = f"@{user.username}" if user.username else "нет username"
+    username_str = f"@{user.username}" if user.username else "нет username"
 
+    logger.info(
+        "support: user_id=%s (%s) тип=%r текст=%r → отправляем ADMIN_ID=%s",
+        user.id, username_str, support_type, text[:120], ADMIN_ID,
+    )
+
+    # Без parse_mode — пользовательский текст может содержать спецсимволы Markdown
     admin_text = (
-        f"🆘 *Обращение в поддержку*\n\n"
+        f"🆘 Обращение в поддержку\n\n"
         f"👤 Имя: {name}\n"
-        f"🔗 Username: {username}\n"
-        f"🆔 Telegram ID: `{user.id}`\n"
+        f"🔗 Username: {username_str}\n"
+        f"🆔 Telegram ID: {user.id}\n"
         f"📋 Тип: {support_type}\n\n"
         f"💬 Сообщение:\n{text}"
     )
     try:
-        await context.bot.send_message(
-            chat_id=ADMIN_ID,
-            text=admin_text,
-            parse_mode="Markdown",
-        )
+        await context.bot.send_message(chat_id=ADMIN_ID, text=admin_text)
+        logger.info("support: доставлено ADMIN_ID=%s ✓", ADMIN_ID)
     except Exception as e:
-        logger.warning(f"support: не удалось отправить сообщение админу: {e}")
+        logger.error(
+            "support: НЕ ДОСТАВЛЕНО ADMIN_ID=%s — %s: %s",
+            ADMIN_ID, type(e).__name__, e,
+        )
+        logger.error(traceback.format_exc())
 
     await update.message.reply_text(
         "✅ Сообщение отправлено! Мы ответим в ближайшее время.",
@@ -2468,24 +2475,31 @@ async def tours_typing_handler(update: Update, context: ContextTypes.DEFAULT_TYP
     user = update.effective_user
     tours_type = context.user_data.get("tours_type", "Не указан")
     name = user.full_name or "Без имени"
-    username = f"@{user.username}" if user.username else "нет username"
+    username_str = f"@{user.username}" if user.username else "нет username"
 
+    logger.info(
+        "tours: user_id=%s (%s) тип=%r текст=%r → отправляем ADMIN_ID=%s",
+        user.id, username_str, tours_type, text[:120], ADMIN_ID,
+    )
+
+    # Без parse_mode — пользовательский текст может содержать спецсимволы Markdown
     admin_text = (
-        f"✈️ *Авторские туры — новое обращение*\n\n"
+        f"✈️ Авторские туры — новое обращение\n\n"
         f"👤 Имя: {name}\n"
-        f"🔗 Username: {username}\n"
-        f"🆔 Telegram ID: `{user.id}`\n"
+        f"🔗 Username: {username_str}\n"
+        f"🆔 Telegram ID: {user.id}\n"
         f"📋 Тип: {tours_type}\n\n"
         f"💬 Сообщение:\n{text}"
     )
     try:
-        await context.bot.send_message(
-            chat_id=ADMIN_ID,
-            text=admin_text,
-            parse_mode="Markdown",
-        )
+        await context.bot.send_message(chat_id=ADMIN_ID, text=admin_text)
+        logger.info("tours: доставлено ADMIN_ID=%s ✓", ADMIN_ID)
     except Exception as e:
-        logger.warning(f"tours: не удалось отправить сообщение админу: {e}")
+        logger.error(
+            "tours: НЕ ДОСТАВЛЕНО ADMIN_ID=%s — %s: %s",
+            ADMIN_ID, type(e).__name__, e,
+        )
+        logger.error(traceback.format_exc())
 
     await update.message.reply_text(
         "✅ Сообщение отправлено! Мы свяжемся с вами в ближайшее время.",
