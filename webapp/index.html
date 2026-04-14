@@ -69,22 +69,36 @@
     .row.on .tick { display: block; }
     .empty { text-align: center; color: #484f58; font-size: 14px; padding: 32px 0; }
 
-    /* ── Done button ── */
+    /* ── Bottom bar ── */
     #done-wrap {
       position: fixed; bottom: 0; left: 0; right: 0;
       padding: 10px 12px 14px;
       background: linear-gradient(transparent, #0d1117 38%);
       pointer-events: none;
+      display: flex; gap: 8px;
     }
-    #btn-done {
-      width: 100%; padding: 13px;
+    #btn-save {
+      flex: 1; padding: 13px;
       background: linear-gradient(135deg, #238636, #2ea043);
       color: #fff; border: none; border-radius: 10px;
       font-size: 15px; font-weight: 700; cursor: pointer;
       transition: opacity .15s; pointer-events: all;
     }
-    #btn-done:disabled { background: #21262d; color: #484f58; cursor: default; }
-    #btn-done:not(:disabled):active { opacity: .8; }
+    #btn-save:disabled { background: #21262d; color: #484f58; cursor: default; }
+    #btn-save:not(:disabled):active { opacity: .8; }
+    #btn-reset {
+      padding: 13px 16px;
+      background: #21262d; color: #8b949e;
+      border: 1px solid #30363d; border-radius: 10px;
+      font-size: 15px; cursor: pointer;
+      transition: background .15s, color .15s; pointer-events: all;
+    }
+    #btn-reset:active { background: #2d333b; color: #c9d1d9; }
+    #btn-reset.active {
+      background: linear-gradient(135deg, #da3633, #f85149);
+      color: #fff; border-color: transparent;
+    }
+    #btn-reset.active:active { opacity: .85; }
   </style>
 </head>
 <body>
@@ -98,7 +112,8 @@
 </div>
 <div id="list"></div>
 <div id="done-wrap">
-  <button id="btn-done" disabled onclick="send()">Готово — отправить в бот</button>
+  <button id="btn-save" disabled onclick="send()">💾 Сохранить</button>
+  <button id="btn-reset" onclick="resetAll()">🗑 Сбросить всё</button>
 </div>
 
 <script>
@@ -192,7 +207,8 @@ function updateCounter() {
   const badge = document.getElementById('counter-badge');
   badge.textContent = `${n} из ${TOTAL}`;
   badge.className = n ? 'has' : '';
-  document.getElementById('btn-done').disabled = !n;
+  document.getElementById('btn-save').disabled = !n;
+  document.getElementById('btn-reset').classList.toggle('active', n > 0);
 }
 
 function toggle(name) {
@@ -204,7 +220,19 @@ function filter(v) { query = v; render(); }
 
 function send() {
   if (!visited.size) return;
-  tg.sendData(JSON.stringify({ visited: [...visited].sort() }));
+  tg.sendData(JSON.stringify({
+    source: "countries",
+    count: visited.size,
+    total: TOTAL,
+    visited: [...visited].sort(),
+  }));
+}
+
+function resetAll() {
+  if (!visited.size) return;
+  if (!confirm("Сбросить все отметки?")) return;
+  visited.clear();
+  save(); render(); updateCounter();
 }
 
 render(); updateCounter();

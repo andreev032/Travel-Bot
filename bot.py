@@ -1111,32 +1111,47 @@ async def handle_webapp_data(update: Update, context: ContextTypes.DEFAULT_TYPE)
     except (json.JSONDecodeError, AttributeError):
         data = {}
 
-    # Splitwise WebApp just closes — no data to process
+    source = data.get("source", "")
+
+    # ── 🗺 Мои страны (index.html) ──────────────────────────────────────────
+    if source == "countries":
+        count = data.get("count", len(data.get("visited", [])))
+        total = data.get("total", 195)
+        await update.message.reply_text(
+            f"✅ Список стран сохранён! Посещено: *{count}* стран из {total}",
+            parse_mode="Markdown",
+            reply_markup=get_main_keyboard(),
+        )
+        return MAIN_MENU
+
+    # ── 🇷🇺 Путешествия по России (russia.html) ──────────────────────────────
+    if source == "regions":
+        count = data.get("count", len(data.get("visited", [])))
+        total = data.get("total", 89)
+        await update.message.reply_text(
+            f"✅ Список регионов сохранён! Посещено: *{count}* регионов из {total}",
+            parse_mode="Markdown",
+            reply_markup=get_main_keyboard(),
+        )
+        return MAIN_MENU
+
+    # ── Splitwise WebApp ─────────────────────────────────────────────────────
     if data.get("type") == "splitwise_export":
         await update.message.reply_text("✅ Данные сохранены!", reply_markup=get_main_keyboard())
         return MAIN_MENU
 
-    countries = data.get("countries", [])
-
-    if not countries:
-        await update.message.reply_text("Маршрут пустой. Попробуй ещё раз!", reply_markup=get_main_keyboard())
+    # ── Устаревший формат index.html (visited: [...]) ────────────────────────
+    countries = data.get("countries", data.get("visited", []))
+    if countries:
+        count = len(countries)
+        await update.message.reply_text(
+            f"✅ Список стран сохранён! Посещено: *{count}* стран из 195",
+            parse_mode="Markdown",
+            reply_markup=get_main_keyboard(),
+        )
         return MAIN_MENU
 
-    count = len(countries)
-    if count == 1:
-        word = "страна"
-    elif count < 5:
-        word = "страны"
-    else:
-        word = "стран"
-
-    route_text = "\n".join(f"{i + 1}. {c}" for i, c in enumerate(countries))
-    await update.message.reply_text(
-        f"🗺 *Твой маршрут — {count} {word}:*\n\n{route_text}\n\n"
-        f"Отличный выбор! Хочешь подобрать направление подробнее — нажми «Подобрать страну».",
-        parse_mode="Markdown",
-        reply_markup=get_main_keyboard(),
-    )
+    await update.message.reply_text("✅ Данные сохранены!", reply_markup=get_main_keyboard())
     return MAIN_MENU
 
 
