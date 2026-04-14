@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Путешествия по России</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; overflow: hidden; background: #0d1117; color: #c9d1d9;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      display: flex; flex-direction: column; }
+
+    /* ── Header ── */
+    #header {
+      background: #161b22;
+      border-bottom: 1px solid #30363d;
+      padding: 10px 12px 8px;
+      flex-shrink: 0;
+    }
+    #search {
+      width: 100%; background: #21262d; border: 1px solid #30363d;
+      border-radius: 8px; padding: 9px 12px; color: #c9d1d9;
+      font-size: 14px; outline: none;
+    }
+    #search::placeholder { color: #484f58; }
+    #search:focus { border-color: #58a6ff; }
+
+    /* ── Counter bar ── */
+    #counter-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 7px 14px; background: #0d1117;
+      border-bottom: 1px solid #21262d; flex-shrink: 0;
+    }
+    #counter-label { font-size: 13px; color: #8b949e; }
+    #counter-badge {
+      background: #21262d; color: #484f58;
+      font-size: 12px; font-weight: 700;
+      padding: 3px 11px; border-radius: 20px;
+      min-width: 60px; text-align: center;
+      transition: background .2s, color .2s;
+    }
+    #counter-badge.has { background: #238636; color: #fff; }
+
+    /* ── List ── */
+    #list {
+      overflow-y: auto; flex: 1; padding: 6px 10px 90px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* ── Section header ── */
+    .section-header {
+      font-size: 11px; font-weight: 700; letter-spacing: .6px;
+      text-transform: uppercase; color: #484f58;
+      padding: 14px 6px 5px;
+    }
+    .section-header:first-child { padding-top: 8px; }
+
+    /* ── Row ── */
+    .row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 10px; border-radius: 8px;
+      cursor: pointer; transition: background .12s;
+      user-select: none;
+    }
+    .row:active { background: #1c2128; }
+    .row.on { background: #0f2617; }
+
+    .region-icon { font-size: 18px; width: 26px; text-align: center; flex-shrink: 0; }
+
+    .info { flex: 1; min-width: 0; }
+    .name { font-size: 14px; line-height: 1.3; }
+    .row.on .name { color: #3fb950; }
+    .center { font-size: 11px; color: #484f58; margin-top: 1px; }
+    .row.on .center { color: #238636; }
+
+    .box {
+      width: 21px; height: 21px; border: 2px solid #30363d;
+      border-radius: 5px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .12s, border-color .12s;
+    }
+    .row.on .box { background: #238636; border-color: #238636; }
+    .tick { display: none; }
+    .row.on .tick { display: block; }
+
+    .empty { text-align: center; color: #484f58; font-size: 14px; padding: 32px 0; }
+
+    /* ── Bottom bar ── */
+    #done-wrap {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      padding: 10px 12px 14px;
+      background: linear-gradient(transparent, #0d1117 38%);
+      pointer-events: none;
+    }
+    #btn-reset {
+      width: 100%; padding: 13px;
+      background: #21262d; color: #8b949e;
+      border: 1px solid #30363d; border-radius: 10px;
+      font-size: 15px; font-weight: 600; cursor: pointer;
+      transition: background .15s, color .15s; pointer-events: all;
+    }
+    #btn-reset:active { background: #2d333b; color: #c9d1d9; }
+    #btn-reset.active {
+      background: linear-gradient(135deg, #da3633, #f85149);
+      color: #fff; border-color: transparent;
+    }
+    #btn-reset.active:active { opacity: .85; }
+  </style>
+</head>
+<body>
+
+<div id="header">
+  <input id="search" type="text" placeholder="🔍 Поиск региона…" autocomplete="off" oninput="filter(this.value)">
+</div>
+<div id="counter-bar">
+  <span id="counter-label">Посещено</span>
+  <span id="counter-badge">0 из 0</span>
+</div>
+<div id="list"></div>
+<div id="done-wrap">
+  <button id="btn-reset" onclick="resetAll()">Сбросить всё</button>
+</div>
+
+<script>
+const tg = window.Telegram.WebApp;
+tg.ready(); tg.expand();
+if (tg.setHeaderColor)     tg.setHeaderColor('#161b22');
+if (tg.setBackgroundColor) tg.setBackgroundColor('#0d1117');
+
+/* ── 85 субъектов по федеральным округам [название, адм.центр, иконка] ── */
+const DISTRICTS = [
+  {
+    name: "🏛 Центральный ФО",
+    items: [
+      ["Москва",                    "Москва",                  "🏙"],
+      ["Московская область",        "Москва",                  "🌲"],
+      ["Белгородская область",      "Белгород",                "🌾"],
+      ["Брянская область",          "Брянск",                  "🌲"],
+      ["Владимирская область",      "Владимир",                "⛪"],
+      ["Воронежская область",       "Воронеж",                 "🌻"],
+      ["Ивановская область",        "Иваново",                 "🧵"],
+      ["Калужская область",         "Калуга",                  "🌳"],
+      ["Костромская область",       "Кострома",                "🏺"],
+      ["Курская область",           "Курск",                   "🌾"],
+      ["Липецкая область",          "Липецк",                  "🏭"],
+      ["Орловская область",         "Орёл",                    "🦅"],
+      ["Рязанская область",         "Рязань",                  "🌾"],
+      ["Смоленская область",        "Смоленск",                "🏰"],
+      ["Тамбовская область",        "Тамбов",                  "🐻"],
+      ["Тверская область",          "Тверь",                   "🌊"],
+      ["Тульская область",          "Тула",                    "🥐"],
+      ["Ярославская область",       "Ярославль",               "🐻"],
+    ]
+  },
+  {
+    name: "🌊 Северо-Западный ФО",
+    items: [
+      ["Санкт-Петербург",           "Санкт-Петербург",         "🏛"],
+      ["Республика Карелия",        "Петрозаводск",            "🌲"],
+      ["Республика Коми",           "Сыктывкар",               "🌲"],
+      ["Архангельская область",     "Архангельск",             "❄️"],
+      ["Вологодская область",       "Вологда",                 "🧀"],
+      ["Калининградская область",   "Калининград",             "🌊"],
+      ["Ленинградская область",     "Санкт-Петербург",         "🌲"],
+      ["Мурманская область",        "Мурманск",                "🔆"],
+      ["Новгородская область",      "Великий Новгород",        "⛪"],
+      ["Псковская область",         "Псков",                   "🏰"],
+      ["Ненецкий АО",               "Нарьян-Мар",              "🦌"],
+    ]
+  },
+  {
+    name: "☀️ Южный ФО",
+    items: [
+      ["Республика Адыгея",         "Майкоп",                  "🏔"],
+      ["Республика Калмыкия",       "Элиста",                  "🐴"],
+      ["Республика Крым",           "Симферополь",             "🌊"],
+      ["Краснодарский край",        "Краснодар",               "🌴"],
+      ["Астраханская область",      "Астрахань",               "🐟"],
+      ["Волгоградская область",     "Волгоград",               "⚔️"],
+      ["Ростовская область",        "Ростов-на-Дону",          "🌾"],
+      ["Севастополь",               "Севастополь",             "⚓"],
+    ]
+  },
+  {
+    name: "⛰ Северо-Кавказский ФО",
+    items: [
+      ["Республика Дагестан",       "Махачкала",               "🏔"],
+      ["Республика Ингушетия",      "Магас",                   "🏔"],
+      ["Кабардино-Балкарская Респ.","Нальчик",                 "🏔"],
+      ["Карачаево-Черкесская Респ.","Черкесск",                "🏔"],
+      ["Республика Северная Осетия","Владикавказ",             "🏔"],
+      ["Чеченская Республика",      "Грозный",                 "🕌"],
+      ["Ставропольский край",       "Ставрополь",              "🌾"],
+    ]
+  },
+  {
+    name: "🌊 Приволжский ФО",
+    items: [
+      ["Республика Башкортостан",   "Уфа",                     "🐝"],
+      ["Республика Марий Эл",       "Йошкар-Ола",              "🌲"],
+      ["Республика Мордовия",       "Саранск",                 "🦔"],
+      ["Республика Татарстан",      "Казань",                  "🕌"],
+      ["Удмуртская Республика",     "Ижевск",                  "🔧"],
+      ["Чувашская Республика",      "Чебоксары",               "🌿"],
+      ["Пермский край",             "Пермь",                   "🐻"],
+      ["Кировская область",         "Киров",                   "🌲"],
+      ["Нижегородская область",     "Нижний Новгород",         "🏛"],
+      ["Оренбургская область",      "Оренбург",                "🌾"],
+      ["Пензенская область",        "Пенза",                   "🌻"],
+      ["Самарская область",         "Самара",                  "🚀"],
+      ["Саратовская область",       "Саратов",                 "🌊"],
+      ["Ульяновская область",       "Ульяновск",               "✈️"],
+    ]
+  },
+  {
+    name: "🏔 Уральский ФО",
+    items: [
+      ["Курганская область",        "Курган",                  "🌾"],
+      ["Свердловская область",      "Екатеринбург",            "🏭"],
+      ["Тюменская область",         "Тюмень",                  "🛢"],
+      ["Челябинская область",       "Челябинск",               "🏭"],
+      ["Ханты-Мансийский АО — Югра","Ханты-Мансийск",          "🛢"],
+      ["Ямало-Ненецкий АО",         "Салехард",                "🦌"],
+    ]
+  },
+  {
+    name: "🌲 Сибирский ФО",
+    items: [
+      ["Республика Алтай",          "Горно-Алтайск",           "🏔"],
+      ["Республика Бурятия",        "Улан-Удэ",                "🏕"],
+      ["Республика Тыва",           "Кызыл",                   "🏔"],
+      ["Республика Хакасия",        "Абакан",                  "🌲"],
+      ["Алтайский край",            "Барнаул",                 "🌾"],
+      ["Красноярский край",         "Красноярск",              "🌲"],
+      ["Иркутская область",         "Иркутск",                 "🏞"],
+      ["Кемеровская обл. — Кузбасс","Кемерово",                "⛏"],
+      ["Новосибирская область",     "Новосибирск",             "🔬"],
+      ["Омская область",            "Омск",                    "🌾"],
+      ["Томская область",           "Томск",                   "📚"],
+      ["Забайкальский край",        "Чита",                    "🌲"],
+    ]
+  },
+  {
+    name: "🌏 Дальневосточный ФО",
+    items: [
+      ["Республика Саха (Якутия)",  "Якутск",                  "❄️"],
+      ["Камчатский край",           "Петропавловск-Камчатский","🌋"],
+      ["Приморский край",           "Владивосток",             "🌊"],
+      ["Хабаровский край",          "Хабаровск",               "🌲"],
+      ["Амурская область",          "Благовещенск",            "🌾"],
+      ["Магаданская область",       "Магадан",                 "❄️"],
+      ["Сахалинская область",       "Южно-Сахалинск",          "🏝"],
+      ["Еврейская АО",              "Биробиджан",              "🌲"],
+      ["Чукотский АО",              "Анадырь",                 "🐋"],
+    ]
+  },
+];
+
+/* ── Flatten all items with district info ── */
+const ALL = [];
+for (const d of DISTRICTS) {
+  for (const item of d.items) {
+    ALL.push({ name: item[0], center: item[1], icon: item[2], district: d.name });
+  }
+}
+const TOTAL = ALL.length;
+
+/* ── localStorage ── */
+const LS_KEY = "russia_visited_v1";
+let visited = new Set(JSON.parse(localStorage.getItem(LS_KEY) || "[]"));
+
+function save() {
+  localStorage.setItem(LS_KEY, JSON.stringify([...visited]));
+}
+
+/* ── Render ── */
+const listEl    = document.getElementById("list");
+const badgeEl   = document.getElementById("counter-badge");
+const resetBtn  = document.getElementById("btn-reset");
+let   lastQuery = "";
+
+function updateCounter() {
+  const n = visited.size;
+  badgeEl.textContent = `${n} из ${TOTAL}`;
+  badgeEl.classList.toggle("has", n > 0);
+  resetBtn.classList.toggle("active", n > 0);
+}
+
+function buildList(query) {
+  const q = query.trim().toLowerCase();
+  listEl.innerHTML = "";
+
+  let anyVisible = false;
+  for (const d of DISTRICTS) {
+    const matchedItems = d.items.filter(([name]) => !q || name.toLowerCase().includes(q));
+    if (!matchedItems.length) continue;
+    anyVisible = true;
+
+    if (!q) {
+      const hdr = document.createElement("div");
+      hdr.className = "section-header";
+      hdr.textContent = d.name;
+      listEl.appendChild(hdr);
+    }
+
+    for (const [name, center, icon] of matchedItems) {
+      const on = visited.has(name);
+      const row = document.createElement("div");
+      row.className = "row" + (on ? " on" : "");
+      row.innerHTML = `
+        <span class="region-icon">${icon}</span>
+        <div class="info">
+          <div class="name">${name}</div>
+          <div class="center">${center}</div>
+        </div>
+        <div class="box">
+          <svg class="tick" width="13" height="10" viewBox="0 0 13 10" fill="none">
+            <path d="M1.5 5L5 8.5L11.5 1.5" stroke="#fff" stroke-width="2.2"
+              stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>`;
+      row.addEventListener("click", () => toggle(name, row));
+      listEl.appendChild(row);
+    }
+  }
+
+  if (!anyVisible) {
+    listEl.innerHTML = `<div class="empty">Ничего не найдено</div>`;
+  }
+}
+
+function toggle(name, row) {
+  if (visited.has(name)) {
+    visited.delete(name);
+    row.classList.remove("on");
+  } else {
+    visited.add(name);
+    row.classList.add("on");
+  }
+  save();
+  updateCounter();
+}
+
+function filter(q) {
+  lastQuery = q;
+  buildList(q);
+}
+
+function resetAll() {
+  if (!visited.size) return;
+  if (!confirm("Сбросить все отметки?")) return;
+  visited.clear();
+  save();
+  updateCounter();
+  buildList(lastQuery);
+}
+
+/* ── Init ── */
+buildList("");
+updateCounter();
+</script>
+</body>
+</html>
