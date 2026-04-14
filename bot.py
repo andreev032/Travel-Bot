@@ -982,9 +982,15 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == "✈️ Авторские туры":
         await update.message.reply_text(
             "✈️ *Авторские туры*\n\n"
-            "🚧 В разработке — скоро появится!\n"
-            "Готовы к сотрудничеству: [@andreev032](https://t.me/andreev032)",
+            "🚧 В разработке — скоро появится!",
             parse_mode="Markdown",
+            reply_markup=InlineKeyboardMarkup([[
+                InlineKeyboardButton("✉️ Написать для сотрудничества",
+                                     url="https://t.me/andreev032"),
+            ]]),
+        )
+        await update.message.reply_text(
+            "Навигация:",
             reply_markup=ReplyKeyboardMarkup(
                 [[KeyboardButton(HOME_BTN)]],
                 resize_keyboard=True,
