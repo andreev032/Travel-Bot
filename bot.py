@@ -238,10 +238,11 @@ def _get_stats() -> dict:
             active_today = cur.fetchone()[0]
             cur = _db_conn.execute("SELECT MIN(first_seen) FROM users")
             row = cur.fetchone()[0]
-            since = row[:10].replace("-", ".") if row else "нет данных"
-            if since != "нет данных":
-                d, m, y = since.split(".")
-                since = f"{y}.{m}.{d}"[2:] if False else f"{d}.{m}.{y[2:]}"  # DD.MM.YY → DD.MM.YY
+            if row:
+                y, m, d = row[:10].split("-")
+                since = f"{d}.{m}.{y}"
+            else:
+                since = "нет данных"
     elif _db_backend == "json":
         data  = _load_json()
         total = len(data)
@@ -255,7 +256,7 @@ def _get_stats() -> dict:
         all_first = [u["first_seen"][:10] for u in data.values() if u.get("first_seen")]
         if all_first:
             y, m, d = min(all_first).split("-")
-            since = f"{d}.{m}.{y[2:]}"
+            since = f"{d}.{m}.{y}"
         else:
             since = "нет данных"
     else:
