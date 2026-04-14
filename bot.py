@@ -173,7 +173,7 @@ async def record_user(user_id: int, username: str | None, first_name: str | None
                      user_id, _db_backend, type(e).__name__, e)
 
 def _get_stats() -> dict:
-    """Возвращает dict(total, new_7, new_30, active_today) из активного бэкенда."""
+    """Возвращает dict(total, new_7, new_30, active_today, since) из активного бэкенда."""
     if _db_backend == "postgres":
         with _db_lock:
             with _db_conn.cursor() as cur:
@@ -185,6 +185,9 @@ def _get_stats() -> dict:
                 new_30 = cur.fetchone()[0]
                 cur.execute("SELECT COUNT(*) FROM users WHERE last_seen >= CURRENT_DATE")
                 active_today = cur.fetchone()[0]
+                cur.execute("SELECT MIN(first_seen) FROM users")
+                row = cur.fetchone()[0]
+                since = row.strftime("%d.%m.%Y") if row else "нет данных"
     elif _db_backend == "sqlite":
         with _db_lock:
             cur = _db_conn.execute("SELECT COUNT(*) FROM users")
@@ -198,6 +201,12 @@ def _get_stats() -> dict:
             cur = _db_conn.execute(
                 "SELECT COUNT(*) FROM users WHERE last_seen >= date('now')")
             active_today = cur.fetchone()[0]
+            cur = _db_conn.execute("SELECT MIN(first_seen) FROM users")
+            row = cur.fetchone()[0]
+            since = row[:10].replace("-", ".") if row else "нет данных"
+            if since != "нет данных":
+                d, m, y = since.split(".")
+                since = f"{y}.{m}.{d}"[2:] if False else f"{d}.{m}.{y[2:]}"  # DD.MM.YY → DD.MM.YY
     elif _db_backend == "json":
         data  = _load_json()
         total = len(data)
@@ -208,9 +217,17 @@ def _get_stats() -> dict:
         new_7        = sum(1 for u in data.values() if u.get("first_seen", "") >= cut7)
         new_30       = sum(1 for u in data.values() if u.get("first_seen", "") >= cut30)
         active_today = sum(1 for u in data.values() if u.get("last_seen", "").startswith(today))
+        all_first = [u["first_seen"][:10] for u in data.values() if u.get("first_seen")]
+        if all_first:
+            y, m, d = min(all_first).split("-")
+            since = f"{d}.{m}.{y[2:]}"
+        else:
+            since = "нет данных"
     else:
         total = new_7 = new_30 = active_today = 0
-    return {"total": total, "new_7": new_7, "new_30": new_30, "active_today": active_today}
+        since = "нет данных"
+    return {"total": total, "new_7": new_7, "new_30": new_30, "active_today": active_today,
+            "since": since}
 
 # ── Персистентный индекс поста (сохраняется между перезапусками) ─
 POST_INDEX_FILE = os.path.join(os.path.dirname(__file__), "post_index.json")
@@ -4458,14 +4475,13 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         await update.message.reply_text("⛔ Ошибка при получении статистики.")
         return
 
-    backend_label = {"postgres": "PostgreSQL", "sqlite": "SQLite", "json": "JSON"}.get(_db_backend, "?")
     text = (
-        "📊 *Статистика пользователей*\n\n"
+        "📊 *Статистика «Как местный»*\n\n"
         f"👥 Всего пользователей: *{s['total']}*\n"
-        f"🆕 Новых за 7 дней: *{s['new_7']}*\n"
-        f"📅 Новых за 30 дней: *{s['new_30']}*\n"
-        f"✅ Активных сегодня: *{s['active_today']}*\n\n"
-        f"💾 Хранилище: {backend_label}"
+        f"✅ Активных сегодня: *{s['active_today']}*\n"
+        f"🆕 За 7 дней: *{s['new_7']}*\n"
+        f"📆 За 30 дней: *{s['new_30']}*\n\n"
+        f"📌 Статистика ведётся с {s['since']}"
     )
     await update.message.reply_text(text, parse_mode="Markdown")
 
