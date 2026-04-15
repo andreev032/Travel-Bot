@@ -334,11 +334,10 @@ def get_main_keyboard():
 def get_folder_planning_kb():
     return ReplyKeyboardMarkup(
         [
-            [KeyboardButton("🌍 Подобрать страну"),      KeyboardButton("🔮 Страна по судьбе")],
-            [KeyboardButton("🌤 Сезоны путешествий"),    KeyboardButton("🛂 Визы")],
-            [KeyboardButton("⛔ Несовместимые страны")],
-            [KeyboardButton("✅ Чеклист для путешествия", web_app=WebAppInfo(url=CHECKLIST_URL))],
-            [KeyboardButton("◀️ Назад"),                  KeyboardButton(HOME_BTN)],
+            [KeyboardButton("🌍 Подобрать страну"),       KeyboardButton("🔮 Страна по судьбе")],
+            [KeyboardButton("🌤 Сезоны путешествий"),     KeyboardButton("🛂 Визы")],
+            [KeyboardButton("⛔ Несовместимые страны"),    KeyboardButton("✅ Чеклист", web_app=WebAppInfo(url=CHECKLIST_URL))],
+            [KeyboardButton("◀️ Назад"),                   KeyboardButton(HOME_BTN)],
         ],
         resize_keyboard=True,
         one_time_keyboard=True,
