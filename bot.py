@@ -296,7 +296,8 @@ MAIN_MENU, ANSWERING, HELP_MENU, HELP_TOPIC, TRANSLATING, VISA_MENU, VISA_CATEGO
     CRUISE_MENU, CRUISE_SECTION, \
     WONDERS_MENU, WONDERS_SEVEN_MENU, WONDERS_SECTION, UNESCO_MENU, UNESCO_REGION, \
     PARTNERS_MENU, \
-    TOURS_MENU, TOURS_TYPING = range(30)
+    TOURS_MENU, TOURS_TYPING, \
+    DESTINY_TYPING = range(31)
 
 # Замени на реальный HTTPS-URL после деплоя webapp/index.html
 WEBAPP_URL      = "https://andreev032.github.io/Travel-Bot/"
@@ -333,8 +334,9 @@ def get_main_keyboard():
 def get_folder_planning_kb():
     return ReplyKeyboardMarkup(
         [
-            [KeyboardButton("🌍 Подобрать страну"),      KeyboardButton("🌤 Сезоны путешествий")],
-            [KeyboardButton("🛂 Визы"),                   KeyboardButton("⛔ Несовместимые страны")],
+            [KeyboardButton("🌍 Подобрать страну"),      KeyboardButton("🔮 Страна по судьбе")],
+            [KeyboardButton("🌤 Сезоны путешествий"),    KeyboardButton("🛂 Визы")],
+            [KeyboardButton("⛔ Несовместимые страны")],
             [KeyboardButton("✅ Чеклист для путешествия", web_app=WebAppInfo(url=CHECKLIST_URL))],
             [KeyboardButton("◀️ Назад"),                  KeyboardButton(HOME_BTN)],
         ],
@@ -403,6 +405,144 @@ async def go_home(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=get_main_keyboard(),
     )
     return MAIN_MENU
+
+
+# ── 🔮 Страна по судьбе — нумерология ───────────────────────────────────────
+
+_DESTINY_MAP = {
+    1: {
+        "meaning": "Лидерство, независимость, первопроходцы",
+        "main":    ("🇮🇸 Исландия", "Страна, где можно почувствовать себя первооткрывателем — гейзеры, лавовые поля и нетронутая природа на краю земли."),
+        "extra":   ["🇺🇸 США — свобода, масштаб, возможности", "🇦🇺 Австралия — континент для смелых и независимых"],
+    },
+    2: {
+        "meaning": "Гармония, красота, партнёрство",
+        "main":    ("🇯🇵 Япония", "Страна совершенного баланса — сакура и технологии, чайная церемония и неон Токио, красота в каждой детали."),
+        "extra":   ["🇨🇭 Швейцария — идеальная гармония Альп и озёр", "🇲🇻 Мальдивы — абсолютный покой над бирюзовой лагуной"],
+    },
+    3: {
+        "meaning": "Творчество, общение, искусство",
+        "main":    ("🇮🇹 Италия", "Родина Возрождения — Микеланджело, Да Винчи, пицца и оперный театр. Страна, где жизнь — это искусство."),
+        "extra":   ["🇧🇷 Бразилия — карнавал, самба и взрыв красок", "🇫🇷 Франция — мода, гастрономия и импрессионизм"],
+    },
+    4: {
+        "meaning": "Стабильность, история, традиции",
+        "main":    ("🇩🇪 Германия", "Страна порядка и глубокой истории — замки Баварии, Берлинская стена, Октоберфест и точность немецкой инженерии."),
+        "extra":   ["🇨🇳 Китай — 5000 лет цивилизации и Великая стена", "🇪🇬 Египет — пирамиды, фараоны и вечность"],
+    },
+    5: {
+        "meaning": "Свобода, приключения, перемены",
+        "main":    ("🇹🇭 Таиланд", "Страна бесконечных перемен — джунгли и пляжи, буддийские храмы и ночные рынки, и всё это по цене чашки кофе."),
+        "extra":   ["🇨🇴 Колумбия — вечная весна, кофе и карибский темперамент", "🇲🇦 Марокко — соuk, пустыня и берберские деревни"],
+    },
+    6: {
+        "meaning": "Забота, уют, семья",
+        "main":    ("🇦🇹 Австрия", "Страна уюта и семейных ценностей — венские кафе, Штраус, рождественские рынки и Альпы за окном."),
+        "extra":   ["🇳🇿 Новая Зеландия — самое безопасное и уютное место в южном полушарии", "🇬🇷 Греция — тепло, гостеприимство и средиземноморский образ жизни"],
+    },
+    7: {
+        "meaning": "Духовность, тайны, мудрость",
+        "main":    ("🇮🇳 Индия", "Страна духовных практик и вечных загадок — Варанаси, Тадж-Махал, аюрведа и мокша. Место, меняющее людей."),
+        "extra":   ["🇵🇪 Перу — Мачу-Пикчу и тайны цивилизации инков", "🇳🇵 Непал — Гималаи, буддийские монастыри и путь к себе"],
+    },
+    8: {
+        "meaning": "Сила, достаток, амбиции",
+        "main":    ("🇦🇪 ОАЭ", "Страна амбиций и возможностей — Бурдж-Халифа, острова из ничего, золотые унитазы и стремление быть первыми во всём."),
+        "extra":   ["🇸🇬 Сингапур — самый эффективный город-государство на планете", "🇭🇰 Гонконг — финансовая мощь и небоскрёбы над морем"],
+    },
+    9: {
+        "meaning": "Гуманизм, путешествия, весь мир",
+        "main":    ("🇪🇸 Испания", "Страна открытых людей и мирового масштаба — Гауди, фламенко, Камино-де-Сантьяго и вся палитра культур под одним солнцем."),
+        "extra":   ["🇦🇷 Аргентина — от ледников Патагонии до танго Буэнос-Айреса", "🇿🇦 ЮАР — мыс Доброй Надежды и радуга народов"],
+    },
+    11: {
+        "meaning": "Мастер-число: интуиция, вдохновение",
+        "main":    ("🇮🇪 Ирландия", "Страна интуиции и древних тайн — кельтские руны, скалы Мохер, пабы с живой музыкой и зелёные холмы, хранящие мифы."),
+        "extra":   ["🇳🇴 Норвегия — фьорды и северное сияние как медитация", "🇮🇸 Исландия — земля, где природа говорит с тобой"],
+    },
+    22: {
+        "meaning": "Мастер-число: великие свершения, мастерство",
+        "main":    ("🇨🇳 Китай", "Страна великих свершений — Великая стена, космическая программа, 5000 лет цивилизации и стремительный прыжок в будущее."),
+        "extra":   ["🇪🇬 Египет — монументальность пирамид и масштаб цивилизации", "🇬🇷 Греция — колыбель западной науки, философии и демократии"],
+    },
+    33: {
+        "meaning": "Мастер-число: служение, высшая мудрость",
+        "main":    ("🇮🇳 Индия", "Страна служения и духовного пути — мать Тереза, Ганди, ашрамы и миллиард историй о том, как маленький человек меняет мир."),
+        "extra":   ["🇯🇵 Япония — кодекс бусидо, мастерство ремесленника и служение красоте", "🏔 Тибет (Китай) — крыша мира и монастыри на высоте 4000 м"],
+    },
+}
+
+def _calc_destiny(dob: str) -> int | None:
+    """
+    Принимает строку ДД.ММ.ГГГГ, возвращает число судьбы (1–9, 11, 22, 33)
+    или None если формат неверный.
+    """
+    try:
+        digits = [int(c) for c in dob if c.isdigit()]
+        if len(digits) != 8:
+            return None
+        # Проверяем что дата реальная
+        d, m, y = int(dob[:2]), int(dob[3:5]), int(dob[6:])
+        datetime(y, m, d)  # бросит ValueError если дата невалидна
+    except (ValueError, IndexError):
+        return None
+
+    n = sum(digits)
+    while n > 9 and n not in (11, 22, 33):
+        n = sum(int(c) for c in str(n))
+    return n
+
+
+async def destiny_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Вход в раздел 🔮 Страна по судьбе."""
+    await update.message.reply_text(
+        "🔮 *Страна по судьбе*\n\n"
+        "Введи дату рождения в формате *ДД.ММ.ГГГГ*\n"
+        "_(например: 14.04.1990)_\n\n"
+        "Я посчитаю твоё число судьбы и найду страну, созданную специально для тебя ✨",
+        parse_mode="Markdown",
+        reply_markup=ReplyKeyboardMarkup(
+            [["◀️ Назад", HOME_BTN]], resize_keyboard=True
+        ),
+    )
+    return DESTINY_TYPING
+
+
+async def destiny_typing_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обрабатывает дату рождения и выдаёт результат."""
+    text = update.message.text.strip()
+    if text == HOME_BTN:
+        return await go_home(update, context)
+    if text == "◀️ Назад":
+        return await show_folder_planning(update, context)
+
+    number = _calc_destiny(text)
+    if number is None:
+        await update.message.reply_text(
+            "⚠️ Не могу распознать дату. Введи в формате *ДД.ММ.ГГГГ*, например: *14.04.1990*",
+            parse_mode="Markdown",
+        )
+        return DESTINY_TYPING
+
+    info = _DESTINY_MAP[number]
+    main_country, main_reason = info["main"]
+    extra_lines = "\n".join(f"✨ {c}" for c in info["extra"])
+
+    result = (
+        f"🔮 *Твоё число судьбы: {number}*\n"
+        f"_{info['meaning']}_\n\n"
+        f"🌟 *Твоя страна: {main_country}*\n"
+        f"{main_reason}\n\n"
+        f"*Также подойдут:*\n{extra_lines}"
+    )
+    await update.message.reply_text(
+        result,
+        parse_mode="Markdown",
+        reply_markup=ReplyKeyboardMarkup(
+            [["🔮 Другая дата"], ["◀️ Назад", HOME_BTN]], resize_keyboard=True
+        ),
+    )
+    return DESTINY_TYPING
 
 
 async def show_folder_planning(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -1330,6 +1470,8 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
         )
         return ANSWERING
+    elif text == "🔮 Страна по судьбе":
+        return await destiny_start(update, context)
     elif text == "📖 Инструкция для новичка":
         return await show_help_menu(update, context)
     elif text == "🔤 Переводчик":
@@ -4838,6 +4980,10 @@ def main():
             TOURS_TYPING: [
                 home,
                 MessageHandler(filters.TEXT & ~filters.COMMAND, tours_typing_handler),
+            ],
+            DESTINY_TYPING: [
+                home,
+                MessageHandler(filters.TEXT & ~filters.COMMAND, destiny_typing_handler),
             ],
         },
         fallbacks=[
