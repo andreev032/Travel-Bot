@@ -299,7 +299,8 @@ MAIN_MENU, ANSWERING, HELP_MENU, HELP_TOPIC, TRANSLATING, VISA_MENU, VISA_CATEGO
     PARTNERS_MENU, \
     TOURS_MENU, TOURS_TYPING, \
     DESTINY_TYPING, \
-    QUIZ_ACTIVE = range(32)
+    QUIZ_ACTIVE, \
+    SHOP_MENU, SHOP_TYPING = range(34)
 
 # Замени на реальный HTTPS-URL после деплоя webapp/index.html
 WEBAPP_URL      = "https://andreev032.github.io/Travel-Bot/"
@@ -1830,20 +1831,7 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Главное меню:", reply_markup=get_main_keyboard())
         return MAIN_MENU
     elif text == SHOP_BTN:
-        inline_kb = InlineKeyboardMarkup([[InlineKeyboardButton("✉️ Написать для сотрудничества", url="https://t.me/andreev032")]])
-        await update.message.reply_text(
-            "🛒 Магазин «Как местный»\n\n"
-            "🚧 В разработке — скоро появится!\n\n"
-            "Здесь будут уникальные вещи для путешественников:\n"
-            "🎨 Работы художников и дизайнеров\n"
-            "🧵 Изделия ручной работы\n"
-            "🗺 Антиквариат и винтаж\n"
-            "✈️ Всё в теме путешествий и культур мира\n\n"
-            "Готовы к сотрудничеству с местными производителями!",
-            reply_markup=inline_kb,
-        )
-        await update.message.reply_text("🏠 Главное меню:", reply_markup=get_main_keyboard())
-        return MAIN_MENU
+        return await show_shop_menu(update, context)
     else:
         await update.message.reply_text(
             "Выбери один из вариантов 👇",
@@ -3074,6 +3062,94 @@ async def tours_typing_handler(update: Update, context: ContextTypes.DEFAULT_TYP
         reply_markup=get_main_keyboard(),
     )
     context.user_data.pop("tours_type", None)
+    return MAIN_MENU
+
+
+## ── SHOP ─────────────────────────────────────────────────────────────────────
+
+_SHOP_KB = ReplyKeyboardMarkup(
+    [["🤝 Сотрудничество"], ["◀️ Назад"], [HOME_BTN]],
+    resize_keyboard=True,
+    one_time_keyboard=True,
+)
+
+_SHOP_TEXT = (
+    "🛒 *Магазин «Как местный»*\n\n"
+    "🚧 В разработке — скоро появится!\n\n"
+    "Здесь будут уникальные вещи для путешественников:\n"
+    "🎨 Работы художников и дизайнеров\n"
+    "🧵 Изделия ручной работы\n"
+    "🗺 Антиквариат и винтаж\n"
+    "✈️ Всё в теме путешествий и культур мира\n\n"
+    "Готовы к сотрудничеству! 👇"
+)
+
+
+async def show_shop_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        _SHOP_TEXT,
+        parse_mode="Markdown",
+        reply_markup=_SHOP_KB,
+    )
+    return SHOP_MENU
+
+
+async def shop_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text
+    if text == HOME_BTN:
+        return await go_home(update, context)
+    if text == "◀️ Назад":
+        return await go_home(update, context)
+    if text == "🤝 Сотрудничество":
+        context.user_data["shop_type"] = "Сотрудничество: Магазин"
+        await update.message.reply_text(
+            "✏️ Напиши своё сообщение — мы обязательно его прочитаем:",
+            reply_markup=ReplyKeyboardMarkup([["◀️ Назад"], [HOME_BTN]], resize_keyboard=True),
+        )
+        return SHOP_TYPING
+    return await show_shop_menu(update, context)
+
+
+async def shop_typing_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text
+    if text == HOME_BTN:
+        return await go_home(update, context)
+    if text == "◀️ Назад":
+        return await show_shop_menu(update, context)
+
+    user = update.effective_user
+    shop_type = context.user_data.get("shop_type", "Сотрудничество: Магазин")
+    name = user.full_name or "Без имени"
+    username_str = f"@{user.username}" if user.username else "нет username"
+
+    logger.info(
+        "shop: user_id=%s (%s) тип=%r текст=%r → отправляем ADMIN_ID=%s",
+        user.id, username_str, shop_type, text[:120], ADMIN_ID,
+    )
+
+    admin_text = (
+        f"🛒 Магазин — новое обращение\n\n"
+        f"👤 Имя: {name}\n"
+        f"🔗 Username: {username_str}\n"
+        f"🆔 Telegram ID: {user.id}\n"
+        f"📋 Тип: {shop_type}\n\n"
+        f"💬 Сообщение:\n{text}"
+    )
+    try:
+        await context.bot.send_message(chat_id=ADMIN_ID, text=admin_text)
+        logger.info("shop: доставлено ADMIN_ID=%s ✓", ADMIN_ID)
+    except Exception as e:
+        logger.error(
+            "shop: НЕ ДОСТАВЛЕНО ADMIN_ID=%s — %s: %s",
+            ADMIN_ID, type(e).__name__, e,
+        )
+        logger.error(traceback.format_exc())
+
+    await update.message.reply_text(
+        "✅ Сообщение отправлено! Мы свяжемся с вами в ближайшее время.",
+        reply_markup=get_main_keyboard(),
+    )
+    context.user_data.pop("shop_type", None)
     return MAIN_MENU
 
 
@@ -5313,6 +5389,14 @@ def main():
             QUIZ_ACTIVE: [
                 home,
                 MessageHandler(filters.TEXT & ~filters.COMMAND, quiz_handler),
+            ],
+            SHOP_MENU: [
+                home,
+                MessageHandler(filters.TEXT & ~filters.COMMAND, shop_menu_handler),
+            ],
+            SHOP_TYPING: [
+                home,
+                MessageHandler(filters.TEXT & ~filters.COMMAND, shop_typing_handler),
             ],
         },
         fallbacks=[
