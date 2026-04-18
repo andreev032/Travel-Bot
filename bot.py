@@ -328,8 +328,8 @@ def get_main_keyboard():
             [KeyboardButton("🧭 Планирование"),    KeyboardButton("🛠 Инструменты")],
             [KeyboardButton("🗺 Мои путешествия"), KeyboardButton("📚 Знания")],
             [KeyboardButton("✈️ Услуги"),           KeyboardButton("🤝 Партнёры")],
-            [KeyboardButton("⭐ Премиум"),          KeyboardButton("🆘 Поддержка")],
-            [KeyboardButton(CHANNEL_BTN),  KeyboardButton(SHOP_BTN)],
+            [KeyboardButton("⭐ Премиум"),          KeyboardButton(SHOP_BTN)],
+            [KeyboardButton(CHANNEL_BTN),  KeyboardButton("🆘 Поддержка")],
         ],
         resize_keyboard=True,
         one_time_keyboard=True,
@@ -372,7 +372,7 @@ def get_folder_mytrips_kb():
             [KeyboardButton("🏛 Мои достопримечательности",   web_app=WebAppInfo(url=ATTRACTIONS_URL)),
              KeyboardButton("📊 Моя статистика",              web_app=WebAppInfo(url=STATS_URL))],
             [KeyboardButton("📖 Дневник путешественника",     web_app=WebAppInfo(url=DIARY_URL))],
-            [KeyboardButton(HOME_BTN)],
+            [KeyboardButton("◀️ Назад"),                     KeyboardButton(HOME_BTN)],
         ],
         resize_keyboard=True,
         one_time_keyboard=True,
@@ -396,8 +396,9 @@ def get_folder_knowledge_kb():
 def get_folder_services_kb():
     return ReplyKeyboardMarkup(
         [
-            [KeyboardButton("📚 Путеводители"), KeyboardButton("✈️ Авторские туры")],
-            [KeyboardButton("◀️ Назад"),         KeyboardButton(HOME_BTN)],
+            [KeyboardButton("📚 Путеводители"),  KeyboardButton("✈️ Авторские туры")],
+            [KeyboardButton("🛃 Оформить визу")],
+            [KeyboardButton("◀️ Назад"),          KeyboardButton(HOME_BTN)],
         ],
         resize_keyboard=True,
         one_time_keyboard=True,
@@ -2003,6 +2004,12 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == "📚 Путеводители":
         await update.message.reply_text(
             "🚧 В разработке — скоро появится!",
+            reply_markup=get_folder_services_kb(),
+        )
+        return MAIN_MENU
+    elif text == "🛃 Оформить визу":
+        await update.message.reply_text(
+            "🛃 Оформить визу\n\n🚧 В разработке — скоро появится!",
             reply_markup=get_folder_services_kb(),
         )
         return MAIN_MENU
