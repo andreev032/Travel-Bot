@@ -1,6 +1,7 @@
 import os
 import re
 import json
+import random as _random
 import logging
 import asyncio
 import traceback
@@ -297,7 +298,8 @@ MAIN_MENU, ANSWERING, HELP_MENU, HELP_TOPIC, TRANSLATING, VISA_MENU, VISA_CATEGO
     WONDERS_MENU, WONDERS_SEVEN_MENU, WONDERS_SECTION, UNESCO_MENU, UNESCO_REGION, \
     PARTNERS_MENU, \
     TOURS_MENU, TOURS_TYPING, \
-    DESTINY_TYPING = range(31)
+    DESTINY_TYPING, \
+    QUIZ_ACTIVE = range(32)
 
 # Замени на реальный HTTPS-URL после деплоя webapp/index.html
 WEBAPP_URL      = "https://andreev032.github.io/Travel-Bot/"
@@ -379,6 +381,7 @@ def get_folder_knowledge_kb():
             [KeyboardButton("📖 Инструкция для новичка"), KeyboardButton("🚁 Дроны")],
             [KeyboardButton("🛋 Лаунджи аэропортов"),     KeyboardButton("🚢 Круизы")],
             [KeyboardButton("🎬 Фильмы о путешествиях"),  KeyboardButton("🏛 Чудеса и наследие")],
+            [KeyboardButton("🧠 Викторина о путешествиях")],
             [KeyboardButton("◀️ Назад"),                   KeyboardButton(HOME_BTN)],
         ],
         resize_keyboard=True,
@@ -542,6 +545,310 @@ async def destiny_typing_handler(update: Update, context: ContextTypes.DEFAULT_T
         ),
     )
     return DESTINY_TYPING
+
+
+# ── 🧠 Викторина о путешествиях ─────────────────────────────────────────────
+
+_QUIZ_QUESTIONS = [
+    {
+        "q": "Какая страна самая большая в мире?",
+        "options": ["а) Китай", "б) Россия", "в) США", "г) Канада"],
+        "correct": "б) Россия",
+        "explanation": "Россия занимает около 17,1 млн км² — больше любой другой страны.",
+    },
+    {
+        "q": "В какой стране находится Мачу-Пикчу?",
+        "options": ["а) Бразилия", "б) Колумбия", "в) Перу", "г) Чили"],
+        "correct": "в) Перу",
+        "explanation": "Мачу-Пикчу — древний город инков в Андах, Перу.",
+    },
+    {
+        "q": "Сколько стран в мире?",
+        "options": ["а) 157", "б) 175", "в) 195", "г) 210"],
+        "correct": "в) 195",
+        "explanation": "ООН признаёт 193 государства-члена + 2 наблюдателя = 195 стран.",
+    },
+    {
+        "q": "В какой стране самое большое население?",
+        "options": ["а) Индия", "б) Китай", "в) США", "г) Индонезия"],
+        "correct": "а) Индия",
+        "explanation": "С 2023 года Индия обогнала Китай и стала самой населённой страной.",
+    },
+    {
+        "q": "Где находится Эйфелева башня?",
+        "options": ["а) Лондон", "б) Рим", "в) Берлин", "г) Париж"],
+        "correct": "г) Париж",
+        "explanation": "Эйфелева башня построена в Париже в 1889 году к Всемирной выставке.",
+    },
+    {
+        "q": "Какая река самая длинная в мире?",
+        "options": ["а) Амазонка", "б) Нил", "в) Янцзы", "г) Миссисипи"],
+        "correct": "б) Нил",
+        "explanation": "Нил (около 6 650 км) считается самой длинной рекой мира.",
+    },
+    {
+        "q": "В какой стране находится Ангкор-Ват?",
+        "options": ["а) Таиланд", "б) Вьетнам", "в) Камбоджа", "г) Лаос"],
+        "correct": "в) Камбоджа",
+        "explanation": "Ангкор-Ват — крупнейший храмовый комплекс мира, построен в XII веке в Камбодже.",
+    },
+    {
+        "q": "Какой океан самый большой?",
+        "options": ["а) Атлантический", "б) Индийский", "в) Северный Ледовитый", "г) Тихий"],
+        "correct": "г) Тихий",
+        "explanation": "Тихий океан занимает около 165 млн км² — больше всей суши вместе взятой.",
+    },
+    {
+        "q": "В какой стране находится Петра?",
+        "options": ["а) Израиль", "б) Иордания", "в) Египет", "г) Ливан"],
+        "correct": "б) Иордания",
+        "explanation": "Петра — древний город, вырубленный в скалах, одно из 7 чудес света, находится в Иордании.",
+    },
+    {
+        "q": "Какая гора самая высокая?",
+        "options": ["а) К2", "б) Эверест", "в) Килиманджаро", "г) Монблан"],
+        "correct": "б) Эверест",
+        "explanation": "Эверест (8 849 м) — высочайшая вершина Земли на границе Непала и Китая.",
+    },
+    {
+        "q": "В какой стране изобрели пиццу?",
+        "options": ["а) Греция", "б) Испания", "в) Италия", "г) Франция"],
+        "correct": "в) Италия",
+        "explanation": "Пицца родом из Неаполя, Италия. Пицца маргарита создана в 1889 году.",
+    },
+    {
+        "q": "Сколько часовых поясов в России?",
+        "options": ["а) 9", "б) 11", "в) 13", "г) 15"],
+        "correct": "б) 11",
+        "explanation": "Россия охватывает 11 часовых поясов — от UTC+2 до UTC+12.",
+    },
+    {
+        "q": "Какая страна имеет больше всего островов?",
+        "options": ["а) Филиппины", "б) Индонезия", "в) Норвегия", "г) Швеция"],
+        "correct": "г) Швеция",
+        "explanation": "Швеция насчитывает около 220 000 островов — больше, чем любая другая страна.",
+    },
+    {
+        "q": "В какой стране находится Колизей?",
+        "options": ["а) Греция", "б) Испания", "в) Италия", "г) Португалия"],
+        "correct": "в) Италия",
+        "explanation": "Колизей — античный амфитеатр в Риме, построен в 70–80 году н.э.",
+    },
+    {
+        "q": "Какой город самый населённый в мире?",
+        "options": ["а) Пекин", "б) Шанхай", "в) Токио", "г) Дели"],
+        "correct": "в) Токио",
+        "explanation": "Токийская агломерация — крупнейшая в мире с населением около 37 млн человек.",
+    },
+    {
+        "q": "В какой стране находится Тадж-Махал?",
+        "options": ["а) Пакистан", "б) Бангладеш", "в) Индия", "г) Непал"],
+        "correct": "в) Индия",
+        "explanation": "Тадж-Махал — мавзолей в Агре, Индия, построен императором Шах-Джаханом.",
+    },
+    {
+        "q": "Какая страна производит больше всего чая?",
+        "options": ["а) Индия", "б) Китай", "в) Шри-Ланка", "г) Япония"],
+        "correct": "б) Китай",
+        "explanation": "Китай производит около 3 млн тонн чая в год — более половины мирового производства.",
+    },
+    {
+        "q": "В какой стране находится Саграда Фамилия?",
+        "options": ["а) Португалия", "б) Италия", "в) Франция", "г) Испания"],
+        "correct": "г) Испания",
+        "explanation": "Саграда Фамилия — базилика в Барселоне, строится с 1882 года по проекту Гауди.",
+    },
+    {
+        "q": "Какое море самое солёное?",
+        "options": ["а) Красное", "б) Мёртвое", "в) Каспийское", "г) Средиземное"],
+        "correct": "б) Мёртвое",
+        "explanation": "Солёность Мёртвого моря — около 34%, что в 10 раз выше обычного океана.",
+    },
+    {
+        "q": "В какой стране находится Большой Барьерный риф?",
+        "options": ["а) Новая Зеландия", "б) Индонезия", "в) Австралия", "г) Филиппины"],
+        "correct": "в) Австралия",
+        "explanation": "Большой Барьерный риф у берегов Австралии — крупнейшая коралловая система мира.",
+    },
+    {
+        "q": "Какая страна имеет самую длинную береговую линию?",
+        "options": ["а) Россия", "б) Норвегия", "в) Канада", "г) Австралия"],
+        "correct": "в) Канада",
+        "explanation": "Береговая линия Канады составляет около 202 080 км — первое место в мире.",
+    },
+    {
+        "q": "В какой стране находится Стоунхендж?",
+        "options": ["а) Ирландия", "б) Шотландия", "в) Англия", "г) Уэльс"],
+        "correct": "в) Англия",
+        "explanation": "Стоунхендж — доисторический мегалитический комплекс в графстве Уилтшир, Англия.",
+    },
+    {
+        "q": "Какой континент самый маленький?",
+        "options": ["а) Европа", "б) Австралия", "в) Антарктида", "г) Южная Америка"],
+        "correct": "б) Австралия",
+        "explanation": "Австралия — наименьший материк, занимающий около 7,7 млн км².",
+    },
+    {
+        "q": "В какой стране находится Килиманджаро?",
+        "options": ["а) Кения", "б) Танзания", "в) Эфиопия", "г) Уганда"],
+        "correct": "б) Танзания",
+        "explanation": "Килиманджаро (5 895 м) — высочайшая вершина Африки, расположена в Танзании.",
+    },
+    {
+        "q": "Какая страна имеет больше всего языков?",
+        "options": ["а) Индия", "б) Китай", "в) Папуа Новая Гвинея", "г) Россия"],
+        "correct": "в) Папуа Новая Гвинея",
+        "explanation": "В Папуа Новой Гвинее говорят более чем на 800 языках — абсолютный мировой рекорд.",
+    },
+    {
+        "q": "В какой стране находится Ниагарский водопад?",
+        "options": ["а) Только в США", "б) Только в Канаде", "в) На границе США и Канады", "г) В Мексике"],
+        "correct": "в) На границе США и Канады",
+        "explanation": "Ниагарский водопад находится на границе штата Нью-Йорк (США) и провинции Онтарио (Канада).",
+    },
+    {
+        "q": "Какой город является самым высокогорным столичным в мире?",
+        "options": ["а) Лхаса", "б) Куско", "в) Ла-Пас", "г) Кито"],
+        "correct": "в) Ла-Пас",
+        "explanation": "Ла-Пас (Боливия) расположен на высоте около 3 640 м — самая высокогорная столица мира.",
+    },
+    {
+        "q": "В какой стране находится Помпеи?",
+        "options": ["а) Греция", "б) Хорватия", "в) Италия", "г) Испания"],
+        "correct": "в) Италия",
+        "explanation": "Помпеи — древний римский город у подножия Везувия, погибший при извержении 79 года н.э.",
+    },
+    {
+        "q": "Какая страна имеет наибольшее количество объектов ЮНЕСКО?",
+        "options": ["а) Франция", "б) Германия", "в) Китай", "г) Италия"],
+        "correct": "г) Италия",
+        "explanation": "Италия занимает первое место по числу объектов Всемирного наследия ЮНЕСКО.",
+    },
+    {
+        "q": "В какой стране находится Дворец Потала?",
+        "options": ["а) Япония", "б) Монголия", "в) Тибет/Китай", "г) Непал"],
+        "correct": "в) Тибет/Китай",
+        "explanation": "Дворец Потала в Лхасе (Тибет, Китай) — зимняя резиденция Далай-ламы, объект ЮНЕСКО.",
+    },
+]
+
+
+def _quiz_question_kb(options: list[str]) -> ReplyKeyboardMarkup:
+    """Клавиатура с 4 вариантами ответа (2×2) + Назад."""
+    return ReplyKeyboardMarkup(
+        [
+            [options[0], options[1]],
+            [options[2], options[3]],
+            ["◀️ Назад"],
+        ],
+        resize_keyboard=True,
+        one_time_keyboard=True,
+    )
+
+
+def _quiz_next_kb() -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(
+        [["➡️ Следующий вопрос"], ["◀️ Назад"]],
+        resize_keyboard=True,
+        one_time_keyboard=True,
+    )
+
+
+def _quiz_restart_kb() -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(
+        [["🔄 Начать заново"], ["◀️ Назад"]],
+        resize_keyboard=True,
+        one_time_keyboard=True,
+    )
+
+
+async def quiz_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Начало викторины — перемешиваем вопросы и показываем первый."""
+    questions = _QUIZ_QUESTIONS.copy()
+    _random.shuffle(questions)
+    context.user_data["quiz_questions"] = questions
+    context.user_data["quiz_index"] = 0
+    context.user_data["quiz_score"] = 0
+    context.user_data["quiz_awaiting_next"] = False
+    return await _quiz_show_question(update, context)
+
+
+async def _quiz_show_question(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    ud = context.user_data
+    idx = ud["quiz_index"]
+    total = len(ud["quiz_questions"])
+    q = ud["quiz_questions"][idx]
+    ud["quiz_awaiting_next"] = False
+    await update.message.reply_text(
+        f"🧠 *Вопрос {idx + 1} из {total}*\n\n{q['q']}",
+        parse_mode="Markdown",
+        reply_markup=_quiz_question_kb(q["options"]),
+    )
+    return QUIZ_ACTIVE
+
+
+async def quiz_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text
+    ud = context.user_data
+
+    if text == "◀️ Назад":
+        return await show_folder_knowledge(update, context)
+
+    awaiting_next = ud.get("quiz_awaiting_next", False)
+
+    # Пользователь нажал "Следующий вопрос" или "Начать заново"
+    if awaiting_next:
+        if text == "🔄 Начать заново":
+            return await quiz_start(update, context)
+        if text == "➡️ Следующий вопрос":
+            ud["quiz_index"] += 1
+            return await _quiz_show_question(update, context)
+        # Любой другой текст — повторяем подсказку
+        return QUIZ_ACTIVE
+
+    # Пользователь отвечает на вопрос
+    idx = ud.get("quiz_index", 0)
+    questions = ud.get("quiz_questions", [])
+    if not questions:
+        return await quiz_start(update, context)
+
+    q = questions[idx]
+    is_correct = text == q["correct"]
+    if is_correct:
+        ud["quiz_score"] = ud.get("quiz_score", 0) + 1
+        verdict = "✅ Правильно!"
+    else:
+        verdict = f"❌ Неверно. Правильный ответ: *{q['correct']}*"
+
+    score = ud["quiz_score"]
+    total = len(questions)
+    is_last = (idx + 1) >= total
+
+    if is_last:
+        # Финальный экран
+        if score >= 25:
+            grade = "🏆 Отличный результат!"
+        elif score >= 15:
+            grade = "👍 Хороший результат!"
+        else:
+            grade = "📚 Есть куда расти!"
+        ud["quiz_awaiting_next"] = True
+        await update.message.reply_text(
+            f"{verdict}\n_{q['explanation']}_\n\n"
+            f"🎉 *Викторина завершена!*\n\n"
+            f"Твой результат: *{score} из {total}*\n{grade}",
+            parse_mode="Markdown",
+            reply_markup=_quiz_restart_kb(),
+        )
+        return QUIZ_ACTIVE
+    else:
+        ud["quiz_awaiting_next"] = True
+        await update.message.reply_text(
+            f"{verdict}\n_{q['explanation']}_",
+            parse_mode="Markdown",
+            reply_markup=_quiz_next_kb(),
+        )
+        return QUIZ_ACTIVE
 
 
 async def show_folder_planning(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -1471,6 +1778,8 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ANSWERING
     elif text == "🔮 Страна по судьбе":
         return await destiny_start(update, context)
+    elif text == "🧠 Викторина о путешествиях":
+        return await quiz_start(update, context)
     elif text == "📖 Инструкция для новичка":
         return await show_help_menu(update, context)
     elif text == "🔤 Переводчик":
@@ -4984,6 +5293,10 @@ def main():
             DESTINY_TYPING: [
                 home,
                 MessageHandler(filters.TEXT & ~filters.COMMAND, destiny_typing_handler),
+            ],
+            QUIZ_ACTIVE: [
+                home,
+                MessageHandler(filters.TEXT & ~filters.COMMAND, quiz_handler),
             ],
         },
         fallbacks=[
