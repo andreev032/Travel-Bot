@@ -316,6 +316,7 @@ CHANNEL_URL     = "https://t.me/like_a_local"
 
 HOME_BTN    = "🏠 Главное меню"
 CHANNEL_BTN = "📢 Наш канал"
+SHOP_BTN    = "🛒 Магазин"
 ADMIN_ID    = 462171750       # доступ к /stats и служебным командам
 
 
@@ -326,7 +327,7 @@ def get_main_keyboard():
             [KeyboardButton("🗺 Мои путешествия"), KeyboardButton("📚 Знания")],
             [KeyboardButton("✈️ Услуги"),           KeyboardButton("🤝 Партнёры")],
             [KeyboardButton("⭐ Премиум"),          KeyboardButton("🆘 Поддержка")],
-            [KeyboardButton(CHANNEL_BTN)],
+            [KeyboardButton(CHANNEL_BTN),  KeyboardButton(SHOP_BTN)],
         ],
         resize_keyboard=True,
         one_time_keyboard=True,
@@ -1827,6 +1828,21 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=inline_kb,
         )
         await update.message.reply_text("Главное меню:", reply_markup=get_main_keyboard())
+        return MAIN_MENU
+    elif text == SHOP_BTN:
+        inline_kb = InlineKeyboardMarkup([[InlineKeyboardButton("✉️ Написать для сотрудничества", url="https://t.me/andreev032")]])
+        await update.message.reply_text(
+            "🛒 Магазин «Как местный»\n\n"
+            "🚧 В разработке — скоро появится!\n\n"
+            "Здесь будут уникальные вещи для путешественников:\n"
+            "🎨 Работы художников и дизайнеров\n"
+            "🧵 Изделия ручной работы\n"
+            "🗺 Антиквариат и винтаж\n"
+            "✈️ Всё в теме путешествий и культур мира\n\n"
+            "Готовы к сотрудничеству с местными производителями!",
+            reply_markup=inline_kb,
+        )
+        await update.message.reply_text("🏠 Главное меню:", reply_markup=get_main_keyboard())
         return MAIN_MENU
     else:
         await update.message.reply_text(
