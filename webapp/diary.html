@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Дневник путешественника</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --bg:        #111827;
+      --surface:   #1f2937;
+      --surface2:  #253344;
+      --border:    #374151;
+      --text:      #f9fafb;
+      --muted:     #9ca3af;
+      --accent:    #818cf8;
+      --accent2:   #4f46e5;
+      --green:     #34d399;
+      --danger:    #f87171;
+      --yellow:    #fbbf24;
+      --radius:    14px;
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      min-height: 100%; background: var(--bg);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: var(--text); font-size: 15px;
+    }
+    body { padding-bottom: 80px; }
+
+    /* ── Views ── */
+    .view { display: none; }
+    .view.active { display: block; }
+
+    /* ── Header ── */
+    .header {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 16px 12px;
+    }
+    .header-row {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .back-btn {
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--text); border-radius: 10px;
+      padding: 6px 12px; font-size: 14px; cursor: pointer;
+      flex-shrink: 0;
+    }
+    .header h1 { font-size: 18px; font-weight: 700; }
+    .header-sub { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+    /* ── Search ── */
+    .search-wrap { padding: 12px 16px 0; }
+    .search-input {
+      width: 100%; background: var(--surface);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      color: var(--text); font-size: 15px;
+      padding: 10px 14px; outline: none;
+    }
+    .search-input::placeholder { color: var(--muted); }
+
+    /* ── Add button ── */
+    .fab {
+      position: fixed; bottom: 24px; right: 20px; z-index: 200;
+      background: linear-gradient(135deg, var(--accent2), var(--accent));
+      color: #fff; border: none; border-radius: 16px;
+      padding: 14px 22px; font-size: 15px; font-weight: 600;
+      cursor: pointer; box-shadow: 0 4px 20px rgba(79,70,229,.45);
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    /* ── Empty state ── */
+    .empty {
+      text-align: center; padding: 60px 24px;
+      color: var(--muted);
+    }
+    .empty .emoji { font-size: 56px; margin-bottom: 16px; }
+    .empty p { font-size: 15px; line-height: 1.6; }
+
+    /* ── Trip cards ── */
+    .trips-list { padding: 12px 16px 0; }
+    .trip-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); margin-bottom: 12px;
+      overflow: hidden; cursor: pointer;
+      transition: border-color .15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .trip-card:active { border-color: var(--accent); }
+    .trip-card-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 14px 10px;
+    }
+    .trip-flag { font-size: 32px; flex-shrink: 0; }
+    .trip-meta { flex: 1; min-width: 0; }
+    .trip-title {
+      font-size: 16px; font-weight: 600;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .trip-date { font-size: 13px; color: var(--muted); margin-top: 2px; }
+    .trip-stars { font-size: 13px; margin-top: 2px; }
+    .trip-tags {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      padding: 0 14px 12px;
+    }
+    .tag {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 3px 9px;
+      font-size: 12px; color: var(--muted);
+    }
+
+    /* ── Form ── */
+    .form-body { padding: 12px 16px; }
+    .form-section {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); margin-bottom: 14px; overflow: hidden;
+    }
+    .form-section-title {
+      font-size: 12px; font-weight: 600; color: var(--muted);
+      letter-spacing: .5px; text-transform: uppercase;
+      padding: 10px 14px 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .field {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .field:last-child { border-bottom: none; }
+    .field label {
+      display: block; font-size: 13px; color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .field input, .field textarea {
+      width: 100%; background: transparent;
+      border: none; outline: none;
+      color: var(--text); font-size: 15px;
+      font-family: inherit; resize: none;
+    }
+    .field textarea { min-height: 56px; }
+    .field input::placeholder, .field textarea::placeholder { color: #4b5563; }
+
+    /* ── Toggle buttons ── */
+    .toggle-group {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      padding: 12px 14px;
+    }
+    .toggle-btn {
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--muted); border-radius: 10px;
+      padding: 7px 14px; font-size: 14px; cursor: pointer;
+      transition: all .15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .toggle-btn.active {
+      background: var(--accent2); border-color: var(--accent);
+      color: #fff;
+    }
+
+    /* ── Slider ── */
+    .slider-wrap { padding: 12px 14px; }
+    .slider-row { display: flex; align-items: center; gap: 12px; }
+    .slider-val {
+      min-width: 36px; text-align: center;
+      font-size: 22px; font-weight: 700; color: var(--accent);
+    }
+    input[type=range] {
+      flex: 1; -webkit-appearance: none; appearance: none;
+      height: 6px; border-radius: 99px;
+      background: var(--border); outline: none;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none;
+      width: 22px; height: 22px; border-radius: 50%;
+      background: var(--accent); cursor: pointer;
+    }
+
+    /* ── Photo upload ── */
+    .photos-wrap { padding: 12px 14px; }
+    .photo-upload-btn {
+      display: flex; align-items: center; justify-content: center;
+      gap: 8px; width: 100%;
+      background: var(--surface2); border: 2px dashed var(--border);
+      border-radius: var(--radius); padding: 16px;
+      color: var(--muted); font-size: 14px; cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #photoFileInput { display: none; }
+    .photo-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 8px; margin-top: 10px;
+    }
+    .photo-thumb {
+      position: relative; aspect-ratio: 1;
+      border-radius: 10px; overflow: hidden;
+    }
+    .photo-thumb img {
+      width: 100%; height: 100%; object-fit: cover;
+    }
+    .photo-del {
+      position: absolute; top: 4px; right: 4px;
+      background: rgba(0,0,0,.65); color: #fff;
+      border: none; border-radius: 50%;
+      width: 22px; height: 22px; font-size: 13px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+
+    /* ── Form actions ── */
+    .form-actions {
+      display: flex; gap: 10px;
+      padding: 0 16px 20px;
+    }
+    .btn-save {
+      flex: 1; background: linear-gradient(135deg, var(--accent2), var(--accent));
+      color: #fff; border: none; border-radius: var(--radius);
+      padding: 14px; font-size: 15px; font-weight: 600; cursor: pointer;
+    }
+    .btn-cancel {
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--muted); border-radius: var(--radius);
+      padding: 14px 20px; font-size: 15px; cursor: pointer;
+    }
+
+    /* ── Detail view ── */
+    .detail-body { padding: 12px 16px; }
+    .detail-hero {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px 16px; margin-bottom: 14px;
+      text-align: center;
+    }
+    .detail-flag { font-size: 56px; margin-bottom: 8px; }
+    .detail-country { font-size: 22px; font-weight: 700; }
+    .detail-city { font-size: 15px; color: var(--muted); margin-top: 4px; }
+    .detail-date { font-size: 14px; color: var(--accent); margin-top: 8px; }
+    .detail-rating {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 99px; padding: 4px 14px; margin-top: 10px;
+      font-size: 14px; font-weight: 600;
+    }
+    .detail-section {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); margin-bottom: 14px; overflow: hidden;
+    }
+    .detail-section-title {
+      font-size: 12px; font-weight: 600; color: var(--muted);
+      letter-spacing: .5px; text-transform: uppercase;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .detail-row {
+      display: flex; gap: 10px;
+      padding: 11px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-icon { font-size: 18px; flex-shrink: 0; width: 24px; text-align: center; }
+    .detail-content { flex: 1; }
+    .detail-label { font-size: 12px; color: var(--muted); margin-bottom: 2px; }
+    .detail-value { font-size: 14px; line-height: 1.5; }
+
+    /* ── Gallery ── */
+    .gallery-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 6px; padding: 10px 14px 14px;
+    }
+    .gallery-img {
+      aspect-ratio: 1; border-radius: 10px; overflow: hidden;
+      cursor: pointer;
+    }
+    .gallery-img img { width: 100%; height: 100%; object-fit: cover; }
+
+    /* ── Lightbox ── */
+    #lightbox {
+      display: none; position: fixed; inset: 0; z-index: 999;
+      background: rgba(0,0,0,.92);
+      align-items: center; justify-content: center;
+    }
+    #lightbox.open { display: flex; }
+    #lightbox img {
+      max-width: 96vw; max-height: 90vh;
+      border-radius: 12px; object-fit: contain;
+    }
+    #lightbox-close {
+      position: fixed; top: 16px; right: 16px;
+      background: rgba(255,255,255,.15); border: none;
+      color: #fff; font-size: 22px; width: 40px; height: 40px;
+      border-radius: 50%; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* ── Detail actions ── */
+    .detail-actions {
+      display: flex; gap: 10px; padding: 0 16px 20px;
+    }
+    .btn-edit {
+      flex: 1; background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text); border-radius: var(--radius);
+      padding: 14px; font-size: 15px; font-weight: 600; cursor: pointer;
+    }
+    .btn-delete {
+      background: rgba(248,113,113,.15); border: 1px solid rgba(248,113,113,.4);
+      color: var(--danger); border-radius: var(--radius);
+      padding: 14px 18px; font-size: 15px; cursor: pointer;
+    }
+
+    /* ── Confirm modal ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; z-index: 500;
+      background: rgba(0,0,0,.7);
+      align-items: flex-end; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-sheet {
+      background: var(--surface); border-radius: 20px 20px 0 0;
+      padding: 24px 20px 32px; width: 100%; max-width: 480px;
+      text-align: center;
+    }
+    .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+    .modal-sub { font-size: 14px; color: var(--muted); margin-bottom: 24px; }
+    .modal-btns { display: flex; gap: 10px; }
+    .modal-btns button { flex: 1; padding: 13px; border-radius: var(--radius); font-size: 15px; font-weight: 600; cursor: pointer; border: none; }
+    .modal-btns .mcancel { background: var(--surface2); color: var(--text); }
+    .modal-btns .mconfirm { background: var(--danger); color: #fff; }
+
+    /* ── Stats bar ── */
+    .stats-bar {
+      display: flex; gap: 10px;
+      padding: 12px 16px 0;
+    }
+    .stat-pill {
+      flex: 1; background: var(--surface);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 10px 8px; text-align: center;
+    }
+    .stat-num { font-size: 22px; font-weight: 700; color: var(--accent); }
+    .stat-lbl { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════
+     VIEW: LIST
+════════════════════════════════════════ -->
+<div id="view-list" class="view active">
+  <div class="header">
+    <div class="header-row">
+      <h1>📖 Дневник</h1>
+    </div>
+    <div class="header-sub" id="list-subtitle">Загрузка…</div>
+  </div>
+
+  <div class="stats-bar" id="stats-bar" style="display:none">
+    <div class="stat-pill">
+      <div class="stat-num" id="stat-total">0</div>
+      <div class="stat-lbl">поездок</div>
+    </div>
+    <div class="stat-pill">
+      <div class="stat-num" id="stat-countries">0</div>
+      <div class="stat-lbl">стран</div>
+    </div>
+    <div class="stat-pill">
+      <div class="stat-num" id="stat-avgrating">—</div>
+      <div class="stat-lbl">средний балл</div>
+    </div>
+  </div>
+
+  <div class="search-wrap" id="search-wrap" style="display:none">
+    <input class="search-input" id="search-input" type="text"
+           placeholder="🔍 Поиск по стране или городу…" oninput="renderList()">
+  </div>
+
+  <div id="empty-state" class="empty">
+    <div class="emoji">✈️</div>
+    <p>Здесь будут записи о<br>твоих путешествиях</p>
+  </div>
+
+  <div class="trips-list" id="trips-container"></div>
+
+  <button class="fab" onclick="openForm()">✏️ Добавить поездку</button>
+</div>
+
+<!-- ════════════════════════════════════════
+     VIEW: FORM
+════════════════════════════════════════ -->
+<div id="view-form" class="view">
+  <div class="header">
+    <div class="header-row">
+      <button class="back-btn" onclick="closeForm()">◀ Назад</button>
+      <h1 id="form-title">Новая поездка</h1>
+    </div>
+  </div>
+
+  <div class="form-body">
+
+    <div class="form-section">
+      <div class="form-section-title">Основное</div>
+      <div class="field">
+        <label>🌍 Страна</label>
+        <input id="f-country" type="text" placeholder="Например: Таиланд">
+      </div>
+      <div class="field">
+        <label>🏙 Город</label>
+        <input id="f-city" type="text" placeholder="Например: Бангкок">
+      </div>
+      <div class="field">
+        <label>🔢 Какая по счёту поездка в жизни</label>
+        <input id="f-tripnum" type="number" min="1" placeholder="Например: 12">
+      </div>
+      <div class="field">
+        <label>📅 Дата поездки (месяц и год)</label>
+        <input id="f-date" type="month">
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title">👥 С кем ездил</div>
+      <div class="toggle-group" id="tg-with">
+        <button class="toggle-btn" data-val="Один" onclick="toggleSingle(this,'tg-with')">👤 Один</button>
+        <button class="toggle-btn" data-val="С партнёром" onclick="toggleSingle(this,'tg-with')">💑 С партнёром</button>
+        <button class="toggle-btn" data-val="С друзьями" onclick="toggleSingle(this,'tg-with')">👫 С друзьями</button>
+        <button class="toggle-btn" data-val="С семьёй" onclick="toggleSingle(this,'tg-with')">👨‍👩‍👧 С семьёй</button>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title">⭐ Оценка</div>
+      <div class="slider-wrap">
+        <div class="slider-row">
+          <input type="range" id="f-rating" min="1" max="10" value="7"
+                 oninput="document.getElementById('rating-val').textContent=this.value; updateSliderColor()">
+          <div class="slider-val" id="rating-val">7</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title">Впечатления</div>
+      <div class="field">
+        <label>🏛 Что посетил</label>
+        <textarea id="f-visited" placeholder="Храмы, музеи, рынки…"></textarea>
+      </div>
+      <div class="field">
+        <label>🍜 Что попробовал из еды</label>
+        <textarea id="f-food" placeholder="Местные блюда и напитки…"></textarea>
+      </div>
+      <div class="field">
+        <label>😍 Что больше всего понравилось</label>
+        <textarea id="f-liked" placeholder="Самое лучшее в поездке…"></textarea>
+      </div>
+      <div class="field">
+        <label>😕 Что не понравилось</label>
+        <textarea id="f-disliked" placeholder="Минусы или разочарования…"></textarea>
+      </div>
+      <div class="field">
+        <label>🤝 С кем познакомился</label>
+        <textarea id="f-met" placeholder="Интересные люди в пути…"></textarea>
+      </div>
+      <div class="field">
+        <label>💡 Главное впечатление</label>
+        <textarea id="f-impression" placeholder="Одна фраза о поездке…"></textarea>
+      </div>
+      <div class="field">
+        <label>📸 Любимый момент поездки</label>
+        <textarea id="f-moment" placeholder="Особый момент, который запомнится…"></textarea>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title">💰 Бюджет</div>
+      <div class="field">
+        <label>Примерный бюджет на человека</label>
+        <input id="f-budget" type="text" placeholder="Например: $500 / 50 000 руб.">
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title">🔄 Вернёшься ли сюда?</div>
+      <div class="toggle-group" id="tg-return">
+        <button class="toggle-btn" data-val="Да" onclick="toggleSingle(this,'tg-return')">✅ Да</button>
+        <button class="toggle-btn" data-val="Нет" onclick="toggleSingle(this,'tg-return')">❌ Нет</button>
+        <button class="toggle-btn" data-val="Возможно" onclick="toggleSingle(this,'tg-return')">🤔 Возможно</button>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title">🖼 Фотографии (до 10)</div>
+      <div class="photos-wrap">
+        <label class="photo-upload-btn" for="photoFileInput">
+          📷 Выбрать фотографии
+        </label>
+        <input type="file" id="photoFileInput" accept="image/*" multiple onchange="handlePhotos(event)">
+        <div class="photo-grid" id="photo-grid"></div>
+      </div>
+    </div>
+
+  </div><!-- /form-body -->
+
+  <div class="form-actions">
+    <button class="btn-save" onclick="saveTrip()">💾 Сохранить</button>
+    <button class="btn-cancel" onclick="closeForm()">❌ Отмена</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     VIEW: DETAIL
+════════════════════════════════════════ -->
+<div id="view-detail" class="view">
+  <div class="header">
+    <div class="header-row">
+      <button class="back-btn" onclick="showList()">◀ Назад</button>
+      <h1>Поездка</h1>
+    </div>
+  </div>
+
+  <div class="detail-body" id="detail-body"></div>
+
+  <div class="detail-actions">
+    <button class="btn-edit" onclick="editTrip()">✏️ Редактировать</button>
+    <button class="btn-delete" onclick="confirmDelete()">🗑</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     LIGHTBOX
+════════════════════════════════════════ -->
+<div id="lightbox" onclick="closeLightbox()">
+  <button id="lightbox-close" onclick="closeLightbox()">✕</button>
+  <img id="lightbox-img" src="" alt="">
+</div>
+
+<!-- ════════════════════════════════════════
+     DELETE CONFIRM MODAL
+════════════════════════════════════════ -->
+<div class="modal-overlay" id="delete-modal">
+  <div class="modal-sheet">
+    <div class="modal-title">🗑 Удалить поездку?</div>
+    <div class="modal-sub">Это действие нельзя отменить</div>
+    <div class="modal-btns">
+      <button class="mcancel" onclick="closeDeleteModal()">Отмена</button>
+      <button class="mconfirm" onclick="deleteTrip()">Удалить</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ──────────────────────────────────────────────
+//  State
+// ──────────────────────────────────────────────
+const STORAGE_KEY = 'diary_trips_v1';
+let trips = [];
+let editingId = null;
+let currentDetailId = null;
+let formPhotos = []; // base64 strings
+
+try { window.Telegram.WebApp.expand(); } catch(e) {}
+
+// ──────────────────────────────────────────────
+//  Persistence
+// ──────────────────────────────────────────────
+function loadTrips() {
+  try { trips = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+  catch(e) { trips = []; }
+}
+function saveTrips() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(trips));
+}
+
+// ──────────────────────────────────────────────
+//  Views
+// ──────────────────────────────────────────────
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+function showList() { renderList(); showView('view-list'); }
+
+// ──────────────────────────────────────────────
+//  List view
+// ──────────────────────────────────────────────
+function renderList() {
+  const q = (document.getElementById('search-input')?.value || '').toLowerCase();
+  const filtered = trips.filter(t =>
+    !q ||
+    (t.country || '').toLowerCase().includes(q) ||
+    (t.city || '').toLowerCase().includes(q)
+  );
+
+  const statsBar = document.getElementById('stats-bar');
+  const searchWrap = document.getElementById('search-wrap');
+  const empty = document.getElementById('empty-state');
+  const container = document.getElementById('trips-container');
+  const subtitle = document.getElementById('list-subtitle');
+
+  if (trips.length === 0) {
+    statsBar.style.display = 'none';
+    searchWrap.style.display = 'none';
+    empty.style.display = 'block';
+    container.innerHTML = '';
+    subtitle.textContent = 'Нет записей';
+    return;
+  }
+
+  statsBar.style.display = 'flex';
+  searchWrap.style.display = 'block';
+  empty.style.display = 'none';
+
+  document.getElementById('stat-total').textContent = trips.length;
+  const countries = new Set(trips.map(t => t.country).filter(Boolean));
+  document.getElementById('stat-countries').textContent = countries.size;
+  const ratings = trips.map(t => t.rating).filter(Boolean);
+  const avg = ratings.length ? (ratings.reduce((a,b) => a+b, 0) / ratings.length).toFixed(1) : '—';
+  document.getElementById('stat-avgrating').textContent = avg;
+  subtitle.textContent = `Всего поездок: ${trips.length}`;
+
+  container.innerHTML = filtered.map(t => {
+    const stars = '⭐'.repeat(Math.round((t.rating||0)/2));
+    const tags = [];
+    if (t.with) tags.push(t.with);
+    if (t.budget) tags.push('💰 ' + t.budget);
+    if (t.willReturn) tags.push(t.willReturn === 'Да' ? '🔄 Вернусь' : t.willReturn === 'Нет' ? '🚫 Не вернусь' : '🤔 Возможно');
+    return `
+      <div class="trip-card" onclick="openDetail('${t.id}')">
+        <div class="trip-card-header">
+          <div class="trip-flag">${t.flag || '🌍'}</div>
+          <div class="trip-meta">
+            <div class="trip-title">${esc(t.country)}${t.city ? ', ' + esc(t.city) : ''}</div>
+            <div class="trip-date">${formatDate(t.date)}${t.tripNum ? ' · Поездка #' + t.tripNum : ''}</div>
+            <div class="trip-stars">${stars} <span style="color:var(--muted);font-size:12px">${t.rating || '—'}/10</span></div>
+          </div>
+        </div>
+        ${tags.length ? `<div class="trip-tags">${tags.map(tg => `<span class="tag">${esc(tg)}</span>`).join('')}</div>` : ''}
+      </div>`;
+  }).join('');
+}
+
+// ──────────────────────────────────────────────
+//  Form
+// ──────────────────────────────────────────────
+function openForm(id) {
+  editingId = id || null;
+  formPhotos = [];
+  document.getElementById('form-title').textContent = id ? 'Редактировать' : 'Новая поездка';
+  clearForm();
+
+  if (id) {
+    const t = trips.find(x => x.id === id);
+    if (!t) return;
+    document.getElementById('f-country').value   = t.country   || '';
+    document.getElementById('f-city').value      = t.city      || '';
+    document.getElementById('f-tripnum').value   = t.tripNum   || '';
+    document.getElementById('f-date').value      = t.date      || '';
+    document.getElementById('f-visited').value   = t.visited   || '';
+    document.getElementById('f-food').value      = t.food      || '';
+    document.getElementById('f-liked').value     = t.liked     || '';
+    document.getElementById('f-disliked').value  = t.disliked  || '';
+    document.getElementById('f-met').value       = t.met       || '';
+    document.getElementById('f-impression').value= t.impression|| '';
+    document.getElementById('f-moment').value    = t.moment    || '';
+    document.getElementById('f-budget').value    = t.budget    || '';
+    document.getElementById('f-rating').value    = t.rating    || 7;
+    document.getElementById('rating-val').textContent = t.rating || 7;
+    updateSliderColor();
+    if (t.with)        setToggle('tg-with',    t.with);
+    if (t.willReturn)  setToggle('tg-return',  t.willReturn);
+    formPhotos = t.photos ? [...t.photos] : [];
+    renderFormPhotos();
+  }
+  showView('view-form');
+}
+
+function clearForm() {
+  ['f-country','f-city','f-tripnum','f-date','f-visited','f-food',
+   'f-liked','f-disliked','f-met','f-impression','f-moment','f-budget']
+    .forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  document.getElementById('f-rating').value = 7;
+  document.getElementById('rating-val').textContent = '7';
+  updateSliderColor();
+  document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('photo-grid').innerHTML = '';
+  document.getElementById('photoFileInput').value = '';
+}
+
+function closeForm() {
+  if (editingId) { openDetail(editingId); }
+  else { showList(); }
+}
+
+function saveTrip() {
+  const country = document.getElementById('f-country').value.trim();
+  if (!country) { alert('Введи название страны'); return; }
+
+  const data = {
+    id:         editingId || Date.now().toString(),
+    country,
+    city:       document.getElementById('f-city').value.trim(),
+    tripNum:    parseInt(document.getElementById('f-tripnum').value) || null,
+    date:       document.getElementById('f-date').value,
+    with:       getToggle('tg-with'),
+    rating:     parseInt(document.getElementById('f-rating').value),
+    visited:    document.getElementById('f-visited').value.trim(),
+    food:       document.getElementById('f-food').value.trim(),
+    liked:      document.getElementById('f-liked').value.trim(),
+    disliked:   document.getElementById('f-disliked').value.trim(),
+    met:        document.getElementById('f-met').value.trim(),
+    impression: document.getElementById('f-impression').value.trim(),
+    moment:     document.getElementById('f-moment').value.trim(),
+    budget:     document.getElementById('f-budget').value.trim(),
+    willReturn: getToggle('tg-return'),
+    flag:       countryToFlag(country),
+    photos:     formPhotos,
+    savedAt:    Date.now(),
+  };
+
+  if (editingId) {
+    const idx = trips.findIndex(t => t.id === editingId);
+    if (idx !== -1) trips[idx] = data;
+  } else {
+    trips.unshift(data);
+  }
+  saveTrips();
+  currentDetailId = data.id;
+  openDetail(data.id);
+}
+
+// ──────────────────────────────────────────────
+//  Detail view
+// ──────────────────────────────────────────────
+function openDetail(id) {
+  currentDetailId = id;
+  const t = trips.find(x => x.id === id);
+  if (!t) { showList(); return; }
+
+  const stars = '⭐'.repeat(Math.round((t.rating||0)/2));
+  const rows = [
+    t.visited    && ['🏛', 'Что посетил', t.visited],
+    t.food       && ['🍜', 'Что попробовал из еды', t.food],
+    t.liked      && ['😍', 'Что понравилось', t.liked],
+    t.disliked   && ['😕', 'Что не понравилось', t.disliked],
+    t.met        && ['🤝', 'С кем познакомился', t.met],
+    t.impression && ['💡', 'Главное впечатление', t.impression],
+    t.moment     && ['📸', 'Любимый момент', t.moment],
+    t.budget     && ['💰', 'Бюджет на человека', t.budget],
+    t.with       && ['👥', 'С кем ездил', t.with],
+    t.willReturn && ['🔄', 'Вернёшься ли сюда', t.willReturn],
+    t.tripNum    && ['🔢', 'Поездка по счёту', '#' + t.tripNum],
+  ].filter(Boolean);
+
+  const photos = (t.photos || []);
+
+  document.getElementById('detail-body').innerHTML = `
+    <div class="detail-hero">
+      <div class="detail-flag">${t.flag || '🌍'}</div>
+      <div class="detail-country">${esc(t.country)}</div>
+      ${t.city ? `<div class="detail-city">${esc(t.city)}</div>` : ''}
+      ${t.date ? `<div class="detail-date">📅 ${formatDate(t.date)}</div>` : ''}
+      <div class="detail-rating">${stars} <span>${t.rating || '—'}/10</span></div>
+    </div>
+
+    ${rows.length ? `
+    <div class="detail-section">
+      <div class="detail-section-title">Детали поездки</div>
+      ${rows.map(([icon, label, val]) => `
+        <div class="detail-row">
+          <div class="detail-icon">${icon}</div>
+          <div class="detail-content">
+            <div class="detail-label">${label}</div>
+            <div class="detail-value">${esc(val)}</div>
+          </div>
+        </div>`).join('')}
+    </div>` : ''}
+
+    ${photos.length ? `
+    <div class="detail-section">
+      <div class="detail-section-title">🖼 Фотографии (${photos.length})</div>
+      <div class="gallery-grid">
+        ${photos.map((src, i) => `
+          <div class="gallery-img" onclick="openLightbox('${id}',${i})">
+            <img src="${src}" alt="">
+          </div>`).join('')}
+      </div>
+    </div>` : ''}
+  `;
+
+  showView('view-detail');
+}
+
+function editTrip() { openForm(currentDetailId); }
+
+function confirmDelete() {
+  document.getElementById('delete-modal').classList.add('open');
+}
+function closeDeleteModal() {
+  document.getElementById('delete-modal').classList.remove('open');
+}
+function deleteTrip() {
+  trips = trips.filter(t => t.id !== currentDetailId);
+  saveTrips();
+  closeDeleteModal();
+  showList();
+}
+
+// ──────────────────────────────────────────────
+//  Photos
+// ──────────────────────────────────────────────
+function handlePhotos(e) {
+  const files = Array.from(e.target.files);
+  const remaining = 10 - formPhotos.length;
+  const toAdd = files.slice(0, remaining);
+  if (!toAdd.length) return;
+
+  let loaded = 0;
+  toAdd.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      formPhotos.push(ev.target.result);
+      loaded++;
+      if (loaded === toAdd.length) renderFormPhotos();
+    };
+    reader.readAsDataURL(file);
+  });
+  e.target.value = '';
+}
+
+function renderFormPhotos() {
+  const grid = document.getElementById('photo-grid');
+  grid.innerHTML = formPhotos.map((src, i) => `
+    <div class="photo-thumb">
+      <img src="${src}" alt="">
+      <button class="photo-del" onclick="removePhoto(${i})">✕</button>
+    </div>`).join('');
+}
+
+function removePhoto(idx) {
+  formPhotos.splice(idx, 1);
+  renderFormPhotos();
+}
+
+function openLightbox(tripId, idx) {
+  const t = trips.find(x => x.id === tripId);
+  if (!t || !t.photos) return;
+  document.getElementById('lightbox-img').src = t.photos[idx];
+  document.getElementById('lightbox').classList.add('open');
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+}
+
+// ──────────────────────────────────────────────
+//  Toggle buttons
+// ──────────────────────────────────────────────
+function toggleSingle(btn, groupId) {
+  const group = document.getElementById(groupId);
+  group.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+function getToggle(groupId) {
+  const active = document.getElementById(groupId).querySelector('.toggle-btn.active');
+  return active ? active.dataset.val : '';
+}
+function setToggle(groupId, val) {
+  const group = document.getElementById(groupId);
+  group.querySelectorAll('.toggle-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.val === val);
+  });
+}
+
+// ──────────────────────────────────────────────
+//  Helpers
+// ──────────────────────────────────────────────
+function esc(s) {
+  if (!s) return '';
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function formatDate(d) {
+  if (!d) return '';
+  const [y, m] = d.split('-');
+  const months = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+  return `${months[parseInt(m,10)-1] || m} ${y}`;
+}
+
+function updateSliderColor() {
+  const slider = document.getElementById('f-rating');
+  const val = parseInt(slider.value);
+  const pct = (val - 1) / 9 * 100;
+  slider.style.background = `linear-gradient(to right, var(--accent) ${pct}%, var(--border) ${pct}%)`;
+}
+
+// Map of country names (Russian) to flag emojis
+const FLAG_MAP = {
+  'россия':'🇷🇺','германия':'🇩🇪','франция':'🇫🇷','испания':'🇪🇸','италия':'🇮🇹',
+  'япония':'🇯🇵','китай':'🇨🇳','индия':'🇮🇳','сша':'🇺🇸','бразилия':'🇧🇷',
+  'таиланд':'🇹🇭','турция':'🇹🇷','греция':'🇬🇷','египет':'🇪🇬','мексика':'🇲🇽',
+  'австралия':'🇦🇺','канада':'🇨🇦','великобритания':'🇬🇧','португалия':'🇵🇹',
+  'нидерланды':'🇳🇱','голландия':'🇳🇱','бельгия':'🇧🇪','швейцария':'🇨🇭',
+  'австрия':'🇦🇹','чехия':'🇨🇿','польша':'🇵🇱','венгрия':'🇭🇺','румыния':'🇷🇴',
+  'болгария':'🇧🇬','хорватия':'🇭🇷','сербия':'🇷🇸','норвегия':'🇳🇴','швеция':'🇸🇪',
+  'финляндия':'🇫🇮','дания':'🇩🇰','ирландия':'🇮🇪','исландия':'🇮🇸',
+  'грузия':'🇬🇪','армения':'🇦🇲','азербайджан':'🇦🇿','казахстан':'🇰🇿',
+  'узбекистан':'🇺🇿','вьетнам':'🇻🇳','камбоджа':'🇰🇭','индонезия':'🇮🇩',
+  'малайзия':'🇲🇾','сингапур':'🇸🇬','филиппины':'🇵🇭','южная корея':'🇰🇷',
+  'израиль':'🇮🇱','оаэ':'🇦🇪','саудовская аравия':'🇸🇦','иордания':'🇯🇴',
+  'марокко':'🇲🇦','тунис':'🇹🇳','кения':'🇰🇪','танзания':'🇹🇿','юар':'🇿🇦',
+  'аргентина':'🇦🇷','чили':'🇨🇱','колумбия':'🇨🇴','перу':'🇵🇪','куба':'🇨🇺',
+  'новая зеландия':'🇳🇿','мальдивы':'🇲🇻','шри-ланка':'🇱🇰','непал':'🇳🇵',
+  'лаос':'🇱🇦','мьянма':'🇲🇲','монголия':'🇲🇳','иран':'🇮🇷','ирак':'🇮🇶',
+  'беларусь':'🇧🇾','украина':'🇺🇦','молдова':'🇲🇩','литва':'🇱🇹','латвия':'🇱🇻',
+  'эстония':'🇪🇪','словакия':'🇸🇰','словения':'🇸🇮','черногория':'🇲🇪',
+  'македония':'🇲🇰','албания':'🇦🇱','эфиопия':'🇪🇹','гана':'🇬🇭','нигерия':'🇳🇬',
+};
+function countryToFlag(name) {
+  return FLAG_MAP[(name || '').toLowerCase().trim()] || '🌍';
+}
+
+// ──────────────────────────────────────────────
+//  Init
+// ──────────────────────────────────────────────
+loadTrips();
+renderList();
+updateSliderColor();
+</script>
+</body>
+</html>
