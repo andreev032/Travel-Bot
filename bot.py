@@ -736,12 +736,12 @@ _QUIZ_QUESTIONS = [
 
 
 def _quiz_question_kb(options: list[str]) -> ReplyKeyboardMarkup:
-    """Клавиатура с 4 вариантами ответа (2×2) + Назад."""
+    """Клавиатура с 4 вариантами ответа (2×2) + Завершить + Назад."""
     return ReplyKeyboardMarkup(
         [
             [options[0], options[1]],
             [options[2], options[3]],
-            ["◀️ Назад"],
+            ["🏁 Завершить", "◀️ Назад"],
         ],
         resize_keyboard=True,
         one_time_keyboard=True,
@@ -750,15 +750,15 @@ def _quiz_question_kb(options: list[str]) -> ReplyKeyboardMarkup:
 
 def _quiz_next_kb() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
-        [["➡️ Следующий вопрос"], ["◀️ Назад"]],
+        [["➡️ Следующий вопрос"], ["🏁 Завершить", "◀️ Назад"]],
         resize_keyboard=True,
         one_time_keyboard=True,
     )
 
 
-def _quiz_restart_kb() -> ReplyKeyboardMarkup:
+def _quiz_finish_kb() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
-        [["🔄 Начать заново"], ["◀️ Назад"]],
+        [["🔄 Начать заново"], [HOME_BTN]],
         resize_keyboard=True,
         one_time_keyboard=True,
     )
@@ -796,12 +796,17 @@ async def quiz_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if text == "◀️ Назад":
         return await show_folder_knowledge(update, context)
 
+    if text == "🏁 Завершить":
+        return await _quiz_show_finish(update, context)
+
     awaiting_next = ud.get("quiz_awaiting_next", False)
 
     # Пользователь нажал "Следующий вопрос" или "Начать заново"
     if awaiting_next:
         if text == "🔄 Начать заново":
             return await quiz_start(update, context)
+        if text == HOME_BTN:
+            return await go_home(update, context)
         if text == "➡️ Следующий вопрос":
             ud["quiz_index"] += 1
             return await _quiz_show_question(update, context)
@@ -827,20 +832,14 @@ async def quiz_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     is_last = (idx + 1) >= total
 
     if is_last:
-        # Финальный экран
-        if score >= 25:
-            grade = "🏆 Отличный результат!"
-        elif score >= 15:
-            grade = "👍 Хороший результат!"
-        else:
-            grade = "📚 Есть куда расти!"
         ud["quiz_awaiting_next"] = True
         await update.message.reply_text(
             f"{verdict}\n_{q['explanation']}_\n\n"
-            f"🎉 *Викторина завершена!*\n\n"
-            f"Твой результат: *{score} из {total}*\n{grade}",
+            f"🏁 *Викторина завершена!*\n\n"
+            f"✅ Правильных: *{score} из {total}*\n\n"
+            f"Хочешь попробовать ещё раз?",
             parse_mode="Markdown",
-            reply_markup=_quiz_restart_kb(),
+            reply_markup=_quiz_finish_kb(),
         )
         return QUIZ_ACTIVE
     else:
@@ -851,6 +850,23 @@ async def quiz_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=_quiz_next_kb(),
         )
         return QUIZ_ACTIVE
+
+
+async def _quiz_show_finish(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Досрочное завершение викторины по кнопке 🏁 Завершить."""
+    ud = context.user_data
+    score = ud.get("quiz_score", 0)
+    answered = ud.get("quiz_index", 0)
+    total = len(ud.get("quiz_questions", _QUIZ_QUESTIONS))
+    ud["quiz_awaiting_next"] = True
+    await update.message.reply_text(
+        f"🏁 *Викторина завершена!*\n\n"
+        f"✅ Правильных: *{score} из {answered}*\n\n"
+        f"Хочешь попробовать ещё раз?",
+        parse_mode="Markdown",
+        reply_markup=_quiz_finish_kb(),
+    )
+    return QUIZ_ACTIVE
 
 
 async def show_folder_planning(update: Update, context: ContextTypes.DEFAULT_TYPE):
