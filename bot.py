@@ -963,11 +963,10 @@ async def quiz_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def _quiz_show_question(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ud = context.user_data
     idx = ud["quiz_index"]
-    total = len(ud["quiz_questions"])
     q = ud["quiz_questions"][idx]
     ud["quiz_awaiting_next"] = False
     await update.message.reply_text(
-        f"🧠 *Вопрос {idx + 1} из {total}*\n\n{q['q']}",
+        f"🧠 *Вопрос {idx + 1}*\n\n{q['q']}",
         parse_mode="Markdown",
         reply_markup=_quiz_question_kb(q["options"]),
     )
@@ -1021,7 +1020,7 @@ async def quiz_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(
             f"{verdict}\n_{q['explanation']}_\n\n"
             f"🏁 *Викторина завершена!*\n\n"
-            f"✅ Правильных: *{score} из {total}*\n\n"
+            f"✅ Правильных ответов: *{score} из {total}*\n\n"
             f"Хочешь попробовать ещё раз?",
             parse_mode="Markdown",
             reply_markup=_quiz_finish_kb(),
@@ -1041,12 +1040,14 @@ async def _quiz_show_finish(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Досрочное завершение викторины по кнопке 🏁 Завершить."""
     ud = context.user_data
     score = ud.get("quiz_score", 0)
-    answered = ud.get("quiz_index", 0)
-    total = len(ud.get("quiz_questions", _QUIZ_QUESTIONS))
+    # quiz_index = индекс текущего вопроса (ещё не отвечен).
+    # Если quiz_awaiting_next=True — пользователь уже ответил на этот вопрос,
+    # поэтому отвеченных вопросов на 1 больше.
+    answered = ud.get("quiz_index", 0) + (1 if ud.get("quiz_awaiting_next", False) else 0)
     ud["quiz_awaiting_next"] = True
     await update.message.reply_text(
         f"🏁 *Викторина завершена!*\n\n"
-        f"✅ Правильных: *{score} из {answered}*\n\n"
+        f"✅ Правильных ответов: *{score} из {answered}*\n\n"
         f"Хочешь попробовать ещё раз?",
         parse_mode="Markdown",
         reply_markup=_quiz_finish_kb(),
