@@ -4840,10 +4840,11 @@ async def post_init(app: Application) -> None:
     except Exception as e:
         logger.error(f"Стартовая проверка канала: {type(e).__name__}: {e}")
 
-    # Launch scheduler task with done-callback so crashes are visible
-    task = asyncio.create_task(scheduler(app.bot))
-    task.add_done_callback(_scheduler_done_cb)
-    logger.info("Задача планировщика создана и запущена")
+    # Автопостинг временно отключён
+    # task = asyncio.create_task(scheduler(app.bot))
+    # task.add_done_callback(_scheduler_done_cb)
+    # logger.info("Задача планировщика создана и запущена")
+    logger.info("Автопостинг отключён — /testpost доступен вручную")
 
 
 def main():
