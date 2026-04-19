@@ -64,6 +64,15 @@ def _try_postgres() -> bool:
                     last_seen  TIMESTAMP DEFAULT NOW()
                 )
             """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS user_countries (
+                    user_id        BIGINT PRIMARY KEY,
+                    username       TEXT,
+                    first_name     TEXT,
+                    countries_count INTEGER DEFAULT 0,
+                    updated_at     TIMESTAMP DEFAULT NOW()
+                )
+            """)
         _db_conn    = conn
         _db_backend = "postgres"
         logger.info("Бэкенд: PostgreSQL ✓")
@@ -119,6 +128,15 @@ def _try_sqlite() -> bool:
                 first_name TEXT,
                 first_seen TEXT DEFAULT (datetime('now')),
                 last_seen  TEXT DEFAULT (datetime('now'))
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS user_countries (
+                user_id         INTEGER PRIMARY KEY,
+                username        TEXT,
+                first_name      TEXT,
+                countries_count INTEGER DEFAULT 0,
+                updated_at      TEXT DEFAULT (datetime('now'))
             )
         """)
         conn.commit()
@@ -207,6 +225,79 @@ async def record_user(user_id: int, username: str | None, first_name: str | None
     except Exception as e:
         logger.error("record_user: ошибка user_id=%s [%s]: %s: %s",
                      user_id, _db_backend, type(e).__name__, e)
+
+def upsert_countries_count(user_id: int, username: str | None,
+                           first_name: str | None, count: int) -> None:
+    """Сохраняет количество отмеченных стран пользователя в user_countries."""
+    try:
+        if _db_backend == "postgres":
+            with _db_lock:
+                with _db_conn.cursor() as cur:
+                    cur.execute("""
+                        INSERT INTO user_countries (user_id, username, first_name, countries_count, updated_at)
+                        VALUES (%s, %s, %s, %s, NOW())
+                        ON CONFLICT (user_id) DO UPDATE SET
+                            username        = EXCLUDED.username,
+                            first_name      = EXCLUDED.first_name,
+                            countries_count = EXCLUDED.countries_count,
+                            updated_at      = NOW()
+                    """, (user_id, username, first_name, count))
+        elif _db_backend == "sqlite":
+            now = datetime.now(MOSCOW_TZ).strftime("%Y-%m-%d %H:%M:%S")
+            with _db_lock:
+                _db_conn.execute("""
+                    INSERT INTO user_countries (user_id, username, first_name, countries_count, updated_at)
+                    VALUES (?, ?, ?, ?, ?)
+                    ON CONFLICT(user_id) DO UPDATE SET
+                        username        = excluded.username,
+                        first_name      = excluded.first_name,
+                        countries_count = excluded.countries_count,
+                        updated_at      = excluded.updated_at
+                """, (user_id, username, first_name, count, now))
+                _db_conn.commit()
+        logger.info("upsert_countries_count: user_id=%s count=%s ✓", user_id, count)
+    except Exception as e:
+        logger.error("upsert_countries_count: ошибка user_id=%s: %s: %s", user_id, type(e).__name__, e)
+
+
+def get_countries_rating(user_id: int) -> tuple[list[dict], int]:
+    """Возвращает (топ-30 список, позиция текущего пользователя).
+    Каждый элемент: {"name": str, "count": int}.
+    Позиция — 1-based, 0 если пользователь не в рейтинге.
+    """
+    try:
+        if _db_backend in ("postgres", "sqlite"):
+            with _db_lock:
+                if _db_backend == "postgres":
+                    with _db_conn.cursor() as cur:
+                        cur.execute("""
+                            SELECT user_id, first_name, username, countries_count
+                            FROM user_countries
+                            WHERE countries_count > 0
+                            ORDER BY countries_count DESC, updated_at ASC
+                        """)
+                        rows = cur.fetchall()
+                else:
+                    cur = _db_conn.execute("""
+                        SELECT user_id, first_name, username, countries_count
+                        FROM user_countries
+                        WHERE countries_count > 0
+                        ORDER BY countries_count DESC, updated_at ASC
+                    """)
+                    rows = cur.fetchall()
+
+            top30, my_pos, my_count = [], 0, 0
+            for pos, (uid, fname, uname, cnt) in enumerate(rows, 1):
+                name = fname or (f"@{uname}" if uname else f"id{uid}")
+                if pos <= 30:
+                    top30.append({"name": name, "count": cnt})
+                if uid == user_id:
+                    my_pos, my_count = pos, cnt
+            return top30, my_pos, my_count
+    except Exception as e:
+        logger.error("get_countries_rating: %s: %s", type(e).__name__, e)
+    return [], 0, 0
+
 
 def _get_stats() -> dict:
     """Возвращает dict(total, new_7, new_30, active_today, since) из активного бэкенда."""
@@ -368,11 +459,12 @@ def get_folder_mytrips_kb():
     return ReplyKeyboardMarkup(
         [
             [KeyboardButton("🗺 Мои страны",                  web_app=WebAppInfo(url=WEBAPP_URL)),
-             KeyboardButton("🇷🇺 Путешествия по России",      web_app=WebAppInfo(url=RUSSIA_URL))],
-            [KeyboardButton("🏛 Мои достопримечательности",   web_app=WebAppInfo(url=ATTRACTIONS_URL)),
-             KeyboardButton("📊 Моя статистика",              web_app=WebAppInfo(url=STATS_URL))],
-            [KeyboardButton("📖 Дневник путешественника",     web_app=WebAppInfo(url=DIARY_URL))],
-            [KeyboardButton("◀️ Назад"),                     KeyboardButton(HOME_BTN)],
+             KeyboardButton("🏆 Рейтинг путешественников")],
+            [KeyboardButton("🇷🇺 Путешествия по России",      web_app=WebAppInfo(url=RUSSIA_URL)),
+             KeyboardButton("🏛 Мои достопримечательности",   web_app=WebAppInfo(url=ATTRACTIONS_URL))],
+            [KeyboardButton("📊 Моя статистика",              web_app=WebAppInfo(url=STATS_URL)),
+             KeyboardButton("📖 Дневник путешественника",     web_app=WebAppInfo(url=DIARY_URL))],
+            [KeyboardButton(HOME_BTN)],
         ],
         resize_keyboard=True,
         one_time_keyboard=True,
@@ -403,6 +495,41 @@ def get_folder_services_kb():
         resize_keyboard=True,
         one_time_keyboard=True,
     )
+
+
+async def show_rating(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Показывает топ-30 путешественников по количеству стран."""
+    user = update.effective_user
+    top30, my_pos, my_count = get_countries_rating(user.id)
+
+    if not top30:
+        await update.message.reply_text(
+            "🏆 *Рейтинг путешественников*\n\n"
+            "Рейтинг пока пуст. Отмечай страны в «Мои страны» чтобы появиться в рейтинге! 🌍",
+            parse_mode="Markdown",
+            reply_markup=get_folder_mytrips_kb(),
+        )
+        return MAIN_MENU
+
+    medals = {1: "🥇", 2: "🥈", 3: "🥉"}
+    lines = ["🏆 *Рейтинг путешественников*\n"]
+    for i, entry in enumerate(top30, 1):
+        medal = medals.get(i, f"{i}.")
+        lines.append(f"{medal} {entry['name']} — {entry['count']} стран")
+
+    if my_pos:
+        lines.append(f"\n*Твоё место:* #{my_pos} с {my_count} странами")
+    else:
+        lines.append("\nТебя пока нет в рейтинге")
+
+    lines.append("\nОтмечай страны в «Мои страны» чтобы подняться в рейтинге! 🌍")
+
+    await update.message.reply_text(
+        "\n".join(lines),
+        parse_mode="Markdown",
+        reply_markup=get_folder_mytrips_kb(),
+    )
+    return MAIN_MENU
 
 
 async def go_home(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -1955,6 +2082,8 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=get_folder_mytrips_kb(),
         )
         return MAIN_MENU
+    elif text == "🏆 Рейтинг путешественников":
+        return await show_rating(update, context)
     elif text == "📚 Знания":
         await update.message.reply_text(
             "📚 *Знания*\n\nВыбери раздел:",
@@ -2185,6 +2314,8 @@ async def handle_webapp_data(update: Update, context: ContextTypes.DEFAULT_TYPE)
     if source == "countries":
         count = data.get("count", len(data.get("visited", [])))
         total = data.get("total", 195)
+        user = update.effective_user
+        upsert_countries_count(user.id, user.username, user.first_name, count)
         await update.message.reply_text(
             f"✅ Список стран сохранён! Посещено: *{count}* стран из {total}",
             parse_mode="Markdown",
