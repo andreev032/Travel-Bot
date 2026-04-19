@@ -2204,7 +2204,8 @@ async def help_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 parse_mode="Markdown",
                 reply_markup=_BAGGAGE_MENU_KB,
             )
-            context.user_data["in_baggage"] = True
+            # depth=1: on the baggage submenu (list of subtopics)
+            context.user_data["baggage_depth"] = 1
             return HELP_TOPIC
         keyboard = [["◀️ Назад в меню", HOME_BTN]]
         await update.message.reply_text(
@@ -2218,8 +2219,11 @@ async def help_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def help_topic_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
-    # Baggage subtopic selected
+    baggage_depth = context.user_data.get("baggage_depth", 0)
+
+    # Baggage subtopic selected → depth 2 (reading subtopic content)
     if text in BAGGAGE_SUBTOPICS:
+        context.user_data["baggage_depth"] = 2
         await update.message.reply_text(
             BAGGAGE_SUBTOPICS[text],
             parse_mode="Markdown",
@@ -2228,19 +2232,24 @@ async def help_topic_handler(update: Update, context: ContextTypes.DEFAULT_TYPE)
             ),
         )
         return HELP_TOPIC
-    # Back from baggage subtopic → baggage submenu
-    if text == "◀️ Назад" and context.user_data.get("in_baggage"):
-        await update.message.reply_text(
-            "🧳 *Багаж и ручная кладь*\n\nВыбери раздел:",
-            parse_mode="Markdown",
-            reply_markup=_BAGGAGE_MENU_KB,
-        )
-        return HELP_TOPIC
-    # Back from baggage submenu → help menu
+
     if text == "◀️ Назад":
-        context.user_data.pop("in_baggage", None)
-        return await show_help_menu(update, context)
-    context.user_data.pop("in_baggage", None)
+        if baggage_depth == 2:
+            # Back from subtopic content → baggage submenu
+            context.user_data["baggage_depth"] = 1
+            await update.message.reply_text(
+                "🧳 *Багаж и ручная кладь*\n\nВыбери раздел:",
+                parse_mode="Markdown",
+                reply_markup=_BAGGAGE_MENU_KB,
+            )
+            return HELP_TOPIC
+        else:
+            # Back from baggage submenu (depth 1) or any other HELP_TOPIC screen
+            # → return to 📖 Инструкция для новичка
+            context.user_data.pop("baggage_depth", None)
+            return await show_help_menu(update, context)
+
+    context.user_data.pop("baggage_depth", None)
     if text == "◀️ Назад в меню":
         return await show_help_menu(update, context)
     return await show_help_menu(update, context)
