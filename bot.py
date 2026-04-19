@@ -408,8 +408,8 @@ MAIN_MENU, ANSWERING, HELP_MENU, HELP_TOPIC, TRANSLATING, VISA_MENU, VISA_CATEGO
     TOURS_MENU, TOURS_TYPING, \
     DESTINY_TYPING, \
     QUIZ_ACTIVE, \
-    GAMES_MENU, GUESS_ACTIVE, \
-    SHOP_MENU, SHOP_TYPING = range(36)
+    GAMES_MENU, GUESS_ACTIVE, PAIR_ACTIVE, \
+    SHOP_MENU, SHOP_TYPING = range(37)
 
 # Замени на реальный HTTPS-URL после деплоя webapp/index.html
 WEBAPP_URL      = "https://andreev032.github.io/Travel-Bot/"
@@ -436,9 +436,10 @@ def get_main_keyboard():
         [
             [KeyboardButton("🧭 Планирование"),    KeyboardButton("🛠 Инструменты")],
             [KeyboardButton("🗺 Мои путешествия"), KeyboardButton("📚 Знания")],
-            [KeyboardButton("✈️ Услуги"),           KeyboardButton("🤝 Партнёры")],
-            [KeyboardButton("⭐ Премиум"),          KeyboardButton(SHOP_BTN)],
-            [KeyboardButton(CHANNEL_BTN),  KeyboardButton("🆘 Поддержка")],
+            [KeyboardButton("🎮 Игры"),             KeyboardButton("✈️ Услуги")],
+            [KeyboardButton("🤝 Партнёры"),         KeyboardButton("⭐ Премиум")],
+            [KeyboardButton(SHOP_BTN),     KeyboardButton("🆘 Поддержка")],
+            [KeyboardButton(CHANNEL_BTN)],
         ],
         resize_keyboard=True,
         one_time_keyboard=True,
@@ -495,7 +496,6 @@ def get_folder_knowledge_kb():
             [KeyboardButton("📖 Инструкция для новичка"), KeyboardButton("🚁 Дроны")],
             [KeyboardButton("🛋 Лаунджи аэропортов"),     KeyboardButton("🚢 Круизы")],
             [KeyboardButton("🎬 Фильмы о путешествиях"),  KeyboardButton("🏛 Чудеса и наследие")],
-            [KeyboardButton("🎮 Игры")],
             [KeyboardButton("◀️ Назад"),                   KeyboardButton(HOME_BTN)],
         ],
         resize_keyboard=True,
@@ -1651,6 +1651,246 @@ async def guess_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return GUESS_ACTIVE
 
 
+## ── 🤝 Найди пару ────────────────────────────────────────────────────────────
+
+_PAIR_CAPITALS = [
+    {"country": "Франция",    "answer": "Париж"},
+    {"country": "Япония",     "answer": "Токио"},
+    {"country": "Бразилия",   "answer": "Бразилиа"},
+    {"country": "Австралия",  "answer": "Канберра"},
+    {"country": "Египет",     "answer": "Каир"},
+    {"country": "Таиланд",    "answer": "Бангкок"},
+    {"country": "Аргентина",  "answer": "Буэнос-Айрес"},
+    {"country": "Индия",      "answer": "Нью-Дели"},
+    {"country": "Китай",      "answer": "Пекин"},
+    {"country": "Марокко",    "answer": "Рабат"},
+    {"country": "Грузия",     "answer": "Тбилиси"},
+    {"country": "Армения",    "answer": "Ереван"},
+    {"country": "Куба",       "answer": "Гавана"},
+    {"country": "Иордания",   "answer": "Амман"},
+    {"country": "ОАЭ",        "answer": "Абу-Даби"},
+]
+
+_PAIR_CURRENCIES = [
+    {"country": "Таиланд",   "answer": "Бат"},
+    {"country": "Япония",    "answer": "Йена"},
+    {"country": "Индия",     "answer": "Рупия"},
+    {"country": "Грузия",    "answer": "Лари"},
+    {"country": "Армения",   "answer": "Драм"},
+    {"country": "Венгрия",   "answer": "Форинт"},
+    {"country": "Польша",    "answer": "Злотый"},
+    {"country": "Куба",      "answer": "Песо"},
+    {"country": "Вьетнам",   "answer": "Донг"},
+    {"country": "Камбоджа",  "answer": "Риель"},
+]
+
+_PAIR_DISHES = [
+    {"country": "Италия",   "answer": "Паста"},
+    {"country": "Япония",   "answer": "Суши"},
+    {"country": "Таиланд",  "answer": "Том ям"},
+    {"country": "Грузия",   "answer": "Хачапури"},
+    {"country": "Испания",  "answer": "Паэлья"},
+    {"country": "Марокко",  "answer": "Кускус"},
+    {"country": "Вьетнам",  "answer": "Фо бо"},
+    {"country": "Индия",    "answer": "Карри"},
+    {"country": "Венгрия",  "answer": "Гуляш"},
+    {"country": "Франция",  "answer": "Круассан"},
+]
+
+_PAIR_LANDMARKS = [
+    {"country": "Франция",   "answer": "Эйфелева башня"},
+    {"country": "Египет",    "answer": "Пирамиды Гизы"},
+    {"country": "Китай",     "answer": "Великая стена"},
+    {"country": "Индия",     "answer": "Тадж-Махал"},
+    {"country": "Перу",      "answer": "Мачу-Пикчу"},
+    {"country": "Иордания",  "answer": "Петра"},
+    {"country": "Италия",    "answer": "Колизей"},
+    {"country": "Греция",    "answer": "Акрополь"},
+    {"country": "Камбоджа",  "answer": "Ангкор-Ват"},
+    {"country": "ОАЭ",       "answer": "Бурдж Халифа"},
+]
+
+_PAIR_CATEGORIES = {
+    "столица":            ("🏛 Столица",             _PAIR_CAPITALS),
+    "валюта":             ("💰 Валюта",              _PAIR_CURRENCIES),
+    "блюдо":              ("🍽 Национальное блюдо",  _PAIR_DISHES),
+    "достопримечательность": ("🗺 Достопримечательность", _PAIR_LANDMARKS),
+}
+
+_rnd_pair = __import__("random")
+
+
+def _pair_build_questions() -> list[dict]:
+    """Собирает все вопросы из всех категорий, перемешивает."""
+    questions = []
+    for cat_key, (cat_label, items) in _PAIR_CATEGORIES.items():
+        for item in items:
+            questions.append({
+                "cat_key":   cat_key,
+                "cat_label": cat_label,
+                "country":   item["country"],
+                "answer":    item["answer"],
+                "pool":      [x["answer"] for x in items],  # all answers in category
+            })
+    _rnd_pair.shuffle(questions)
+    return questions
+
+
+def _pair_make_options(q: dict) -> list[str]:
+    """Возвращает 4 варианта ответа (1 правильный + 3 случайных неправильных)."""
+    wrong = [a for a in q["pool"] if a != q["answer"]]
+    _rnd_pair.shuffle(wrong)
+    options = [q["answer"]] + wrong[:3]
+    _rnd_pair.shuffle(options)
+    return options
+
+
+def _pair_question_kb(options: list[str]) -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(
+        [
+            [options[0], options[1]],
+            [options[2], options[3]],
+            ["🏁 Завершить"],
+        ],
+        resize_keyboard=True,
+        one_time_keyboard=True,
+    )
+
+
+def _pair_next_kb() -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(
+        [["➡️ Следующий вопрос"], ["🏁 Завершить"]],
+        resize_keyboard=True,
+        one_time_keyboard=True,
+    )
+
+
+def _pair_finish_kb() -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(
+        [["🔄 Начать заново"], [HOME_BTN]],
+        resize_keyboard=True,
+        one_time_keyboard=True,
+    )
+
+
+async def pair_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    questions = _pair_build_questions()
+    context.user_data["pair_questions"]      = questions
+    context.user_data["pair_index"]          = 0
+    context.user_data["pair_score"]          = 0
+    context.user_data["pair_awaiting_next"]  = False
+    context.user_data["pair_options"]        = []
+    await _pair_show_question(update, context)
+    return PAIR_ACTIVE
+
+
+async def _pair_show_question(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    ud  = context.user_data
+    idx = ud["pair_index"]
+    q   = ud["pair_questions"][idx]
+    options = _pair_make_options(q)
+    ud["pair_options"] = options
+    await update.message.reply_text(
+        f"🤝 *{q['cat_label']}*\n\n🌍 *{q['country']}* — это…?",
+        parse_mode="Markdown",
+        reply_markup=_pair_question_kb(options),
+    )
+
+
+async def _pair_finish(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    ud      = context.user_data
+    score   = ud.get("pair_score", 0)
+    answered = ud.get("pair_index", 0) + (1 if ud.get("pair_awaiting_next") else 0)
+    if score == answered:
+        emoji = "🏆"
+    elif score >= answered * 0.7:
+        emoji = "🥇"
+    elif score >= answered * 0.4:
+        emoji = "🥈"
+    else:
+        emoji = "📚"
+    await update.message.reply_text(
+        f"🏁 *Игра завершена!*\n\n"
+        f"{emoji} Правильных: *{score} из {answered}*\n\n"
+        f"Сыграть ещё раз?",
+        parse_mode="Markdown",
+        reply_markup=_pair_finish_kb(),
+    )
+    return PAIR_ACTIVE
+
+
+async def pair_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text
+    ud   = context.user_data
+
+    if text == HOME_BTN:
+        return await go_home(update, context)
+
+    if text == "◀️ Назад":
+        return await show_games_menu(update, context)
+
+    if text == "🏁 Завершить":
+        return await _pair_finish(update, context)
+
+    awaiting = ud.get("pair_awaiting_next", False)
+
+    if awaiting:
+        if text == "🔄 Начать заново":
+            return await pair_start(update, context)
+        if text == "➡️ Следующий вопрос":
+            ud["pair_index"] += 1
+            ud["pair_awaiting_next"] = False
+            questions = ud.get("pair_questions", [])
+            if ud["pair_index"] >= len(questions):
+                return await _pair_finish(update, context)
+            await _pair_show_question(update, context)
+            return PAIR_ACTIVE
+        return PAIR_ACTIVE
+
+    questions = ud.get("pair_questions", [])
+    if not questions:
+        return await pair_start(update, context)
+
+    idx     = ud.get("pair_index", 0)
+    q       = questions[idx]
+    options = ud.get("pair_options", [])
+
+    # Only accept one of the 4 displayed options as an answer
+    if text not in options:
+        await _pair_show_question(update, context)
+        return PAIR_ACTIVE
+
+    correct = (text == q["answer"])
+    if correct:
+        ud["pair_score"] = ud.get("pair_score", 0) + 1
+        verdict = "✅ *Правильно!*"
+    else:
+        verdict = f"❌ Неверно. Правильный ответ: *{q['answer']}*"
+
+    ud["pair_awaiting_next"] = True
+    is_last = (idx + 1) >= len(questions)
+
+    if is_last:
+        score    = ud["pair_score"]
+        answered = idx + 1
+        emoji    = "🏆" if score == answered else ("🥇" if score >= answered * 0.7 else "📚")
+        await update.message.reply_text(
+            f"{verdict}\n\n"
+            f"🏁 *Игра завершена!*\n\n"
+            f"{emoji} Правильных: *{score} из {answered}*\n\n"
+            f"Сыграть ещё раз?",
+            parse_mode="Markdown",
+            reply_markup=_pair_finish_kb(),
+        )
+    else:
+        await update.message.reply_text(
+            verdict,
+            parse_mode="Markdown",
+            reply_markup=_pair_next_kb(),
+        )
+    return PAIR_ACTIVE
+
+
 async def show_folder_planning(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Вернуться в папку 🧭 Планирование."""
     context.user_data.clear()
@@ -1678,6 +1918,7 @@ def _games_kb():
         [
             [KeyboardButton("🧠 Викторина о путешествиях")],
             [KeyboardButton("🎯 Угадай где я?")],
+            [KeyboardButton("🤝 Найди пару")],
             [KeyboardButton("◀️ Назад"), KeyboardButton(HOME_BTN)],
         ],
         resize_keyboard=True,
@@ -1698,11 +1939,13 @@ async def show_games_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def games_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
     if text == "◀️ Назад":
-        return await show_folder_knowledge(update, context)
+        return await go_home(update, context)
     if text == "🧠 Викторина о путешествиях":
         return await quiz_start(update, context)
     if text == "🎯 Угадай где я?":
         return await guess_start(update, context)
+    if text == "🤝 Найди пару":
+        return await pair_start(update, context)
     return await show_games_menu(update, context)
 
 
@@ -6527,6 +6770,10 @@ def main():
             GUESS_ACTIVE: [
                 home,
                 MessageHandler(filters.TEXT & ~filters.COMMAND, guess_handler),
+            ],
+            PAIR_ACTIVE: [
+                home,
+                MessageHandler(filters.TEXT & ~filters.COMMAND, pair_handler),
             ],
             SHOP_MENU: [
                 home,
