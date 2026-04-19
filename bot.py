@@ -75,7 +75,16 @@ def _try_postgres() -> bool:
             """)
         _db_conn    = conn
         _db_backend = "postgres"
-        logger.info("Бэкенд: PostgreSQL ✓")
+        # Логируем количество строк чтобы убедиться что данные сохранились
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT COUNT(*) FROM users")
+                n_users = cur.fetchone()[0]
+                cur.execute("SELECT COUNT(*) FROM user_countries")
+                n_countries = cur.fetchone()[0]
+            logger.info("Бэкенд: PostgreSQL ✓ | users=%d, user_countries=%d", n_users, n_countries)
+        except Exception:
+            logger.info("Бэкенд: PostgreSQL ✓")
         return True
     except Exception as e:
         logger.error("PostgreSQL недоступен: %s: %s", type(e).__name__, e)
@@ -85,11 +94,17 @@ def _try_postgres() -> bool:
 def _check_volume() -> None:
     """Диагностика Railway Volume — вызывается при каждом старте."""
     logger.info("── Диагностика /app/data ──────────────────────────")
-    logger.info("_DATA_DIR    : %s", _DATA_DIR)
-    logger.info("_SQLITE_PATH : %s", _SQLITE_PATH)
-    logger.info("SQLite существует: %s", os.path.exists(_SQLITE_PATH))
+    logger.info("DB путь : %s", _SQLITE_PATH)
 
-    # Проверяем, смонтирован ли Volume: пишем тестовый файл и читаем его обратно
+    # Существование и размер файла — главный признак того, сохранился ли Volume
+    db_exists = os.path.exists(_SQLITE_PATH)
+    db_size   = os.path.getsize(_SQLITE_PATH) if db_exists else 0
+    if db_exists:
+        logger.info("users.db : СУЩЕСТВУЕТ, размер %d байт", db_size)
+    else:
+        logger.warning("users.db : НЕ СУЩЕСТВУЕТ (новый деплой без Volume или Volume не подключён)")
+
+    # Проверяем запись в /app/data (Railway Volume должен это уметь)
     test_path = os.path.join(_DATA_DIR, "test.txt")
     try:
         os.makedirs(_DATA_DIR, exist_ok=True)
@@ -97,21 +112,16 @@ def _check_volume() -> None:
             f.write("railway-volume-ok")
         with open(test_path, "r", encoding="utf-8") as f:
             content = f.read()
-        logger.info("Запись /app/data/test.txt: ✓ (содержимое: %r)", content)
+        logger.info("Запись /app/data : ✓")
     except Exception as e:
-        logger.error("Запись /app/data/test.txt FAILED: %s: %s", type(e).__name__, e)
+        logger.error("Запись /app/data FAILED: %s: %s", type(e).__name__, e)
 
     # Список файлов в /app/data
     try:
         files = os.listdir(_DATA_DIR)
-        logger.info("Файлы в %s: %s", _DATA_DIR, files)
+        logger.info("Файлы в /app/data : %s", files)
     except Exception as e:
         logger.error("os.listdir(%s) FAILED: %s", _DATA_DIR, e)
-
-    # Размер SQLite файла если существует
-    if os.path.exists(_SQLITE_PATH):
-        size = os.path.getsize(_SQLITE_PATH)
-        logger.info("Размер users.db: %d байт", size)
 
     logger.info("───────────────────────────────────────────────────")
 
@@ -142,7 +152,14 @@ def _try_sqlite() -> bool:
         conn.commit()
         _db_conn    = conn
         _db_backend = "sqlite"
-        logger.info("Бэкенд: SQLite (%s) ✓", _SQLITE_PATH)
+        # Логируем количество строк чтобы убедиться что данные сохранились
+        try:
+            n_users     = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
+            n_countries = conn.execute("SELECT COUNT(*) FROM user_countries").fetchone()[0]
+            logger.info("Бэкенд: SQLite ✓  | users=%d, user_countries=%d | путь: %s",
+                        n_users, n_countries, _SQLITE_PATH)
+        except Exception:
+            logger.info("Бэкенд: SQLite (%s) ✓", _SQLITE_PATH)
         return True
     except Exception as e:
         logger.error("SQLite недоступен: %s: %s", type(e).__name__, e)
