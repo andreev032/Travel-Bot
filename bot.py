@@ -464,7 +464,7 @@ def get_folder_mytrips_kb():
              KeyboardButton("🏛 Мои достопримечательности",   web_app=WebAppInfo(url=ATTRACTIONS_URL))],
             [KeyboardButton("📊 Моя статистика",              web_app=WebAppInfo(url=STATS_URL)),
              KeyboardButton("📖 Дневник путешественника",     web_app=WebAppInfo(url=DIARY_URL))],
-            [KeyboardButton(HOME_BTN)],
+            [KeyboardButton("◀️ Назад"),                      KeyboardButton(HOME_BTN)],
         ],
         resize_keyboard=True,
         one_time_keyboard=True,
