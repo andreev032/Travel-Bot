@@ -1790,7 +1790,7 @@ def _pair_question_kb(options: list[str]) -> ReplyKeyboardMarkup:
             [options[0], options[1]],
             [options[2], options[3]],
             ["🏁 Завершить"],
-            [HOME_BTN, "◀️ Назад"],
+            ["◀️ Назад", HOME_BTN],
         ],
         resize_keyboard=True,
         one_time_keyboard=True,
@@ -1799,7 +1799,7 @@ def _pair_question_kb(options: list[str]) -> ReplyKeyboardMarkup:
 
 def _pair_next_kb() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
-        [["➡️ Следующий вопрос"], ["🏁 Завершить"], [HOME_BTN, "◀️ Назад"]],
+        [["➡️ Следующий вопрос"], ["🏁 Завершить"], ["◀️ Назад", HOME_BTN]],
         resize_keyboard=True,
         one_time_keyboard=True,
     )
