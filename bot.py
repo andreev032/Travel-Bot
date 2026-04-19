@@ -2155,9 +2155,15 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return MAIN_MENU
     elif text == "🛃 Оформить визу":
         await update.message.reply_text(
-            "🛃 Оформить визу\n\n🚧 В разработке — скоро появится!",
-            reply_markup=get_folder_services_kb(),
+            "🛃 *Оформить визу*\n\n"
+            "Помогаем с оформлением виз в любую страну мира 🌍\n"
+            "Опытный специалист подготовит документы и сопроводит весь процесс.",
+            parse_mode="Markdown",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("✉️ Написать специалисту", url="https://t.me/Maksim1387")],
+            ]),
         )
+        await update.message.reply_text("🏠 Главное меню:", reply_markup=get_main_keyboard())
         return MAIN_MENU
     elif text == "✈️ Авторские туры":
         return await show_tours_menu(update, context)
@@ -2451,7 +2457,16 @@ async def visa_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await show_folder_planning(update, context)
     if text == "🚧 Оформить визу":
         await update.message.reply_text(
-            "🚧 В разработке — скоро появится!",
+            "🛃 *Оформить визу*\n\n"
+            "Помогаем с оформлением виз в любую страну мира 🌍\n"
+            "Опытный специалист подготовит документы и сопроводит весь процесс.",
+            parse_mode="Markdown",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("✉️ Написать специалисту", url="https://t.me/Maksim1387")],
+            ]),
+        )
+        await update.message.reply_text(
+            "🏠 Главное меню:",
             reply_markup=ReplyKeyboardMarkup(_VISA_MAIN_KB, resize_keyboard=True),
         )
         return VISA_MENU
