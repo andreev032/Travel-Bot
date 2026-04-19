@@ -408,7 +408,8 @@ MAIN_MENU, ANSWERING, HELP_MENU, HELP_TOPIC, TRANSLATING, VISA_MENU, VISA_CATEGO
     TOURS_MENU, TOURS_TYPING, \
     DESTINY_TYPING, \
     QUIZ_ACTIVE, \
-    SHOP_MENU, SHOP_TYPING = range(34)
+    GAMES_MENU, GUESS_ACTIVE, \
+    SHOP_MENU, SHOP_TYPING = range(36)
 
 # Замени на реальный HTTPS-URL после деплоя webapp/index.html
 WEBAPP_URL      = "https://andreev032.github.io/Travel-Bot/"
@@ -494,7 +495,7 @@ def get_folder_knowledge_kb():
             [KeyboardButton("📖 Инструкция для новичка"), KeyboardButton("🚁 Дроны")],
             [KeyboardButton("🛋 Лаунджи аэропортов"),     KeyboardButton("🚢 Круизы")],
             [KeyboardButton("🎬 Фильмы о путешествиях"),  KeyboardButton("🏛 Чудеса и наследие")],
-            [KeyboardButton("🧠 Викторина о путешествиях")],
+            [KeyboardButton("🎮 Игры")],
             [KeyboardButton("◀️ Назад"),                   KeyboardButton(HOME_BTN)],
         ],
         resize_keyboard=True,
@@ -1123,7 +1124,7 @@ async def quiz_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ud = context.user_data
 
     if text == "◀️ Назад":
-        return await show_folder_knowledge(update, context)
+        return await show_games_menu(update, context)
 
     if text == "🏁 Завершить":
         return await _quiz_show_finish(update, context)
@@ -1200,6 +1201,281 @@ async def _quiz_show_finish(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return QUIZ_ACTIVE
 
 
+## ── 🎯 Угадай где я? ────────────────────────────────────────────────────────
+
+_GUESS_RIDDLES = [
+    {
+        "riddle": "Здесь стоит башня, которая немного наклонена. Каждый год миллионы туристов фотографируются рядом с ней.",
+        "answers": ["пиза", "pisa", "италия", "italy"],
+        "correct": "Пиза, Италия",
+        "fact": "Падающая башня Пизы наклонена на ~3.97° из-за мягкого грунта с одной стороны. Строительство длилось почти 200 лет.",
+    },
+    {
+        "riddle": "Розовый город, вырубленный прямо в скале и потерянный для мира на 500 лет. Попасть сюда можно только пешком через узкое ущелье.",
+        "answers": ["петра", "petra", "иордания", "jordan"],
+        "correct": "Петра, Иордания",
+        "fact": "Петра — столица древнего набатейского царства. О ней «забыли» в Европе и заново открыли в 1812 году швейцарский исследователь Буркхардт.",
+    },
+    {
+        "riddle": "Самое маленькое государство в мире — всего 44 гектара. Оно полностью окружено одной страной и имеет собственную армию из 110 человек.",
+        "answers": ["ватикан", "vatican"],
+        "correct": "Ватикан",
+        "fact": "Ватикан — государство-анклав внутри Рима. Здесь живут около 800 человек и расположен крупнейший христианский собор мира — Святого Петра.",
+    },
+    {
+        "riddle": "Город на воде, где вместо улиц — каналы, вместо машин — лодки. Здесь нет ни одного автомобиля.",
+        "answers": ["венеция", "venice", "venezia", "италия"],
+        "correct": "Венеция, Италия",
+        "fact": "Венеция стоит на 118 маленьких островах, соединённых 400 мостами. Город медленно погружается в лагуну примерно на 1–2 мм в год.",
+    },
+    {
+        "riddle": "Синий город в горах, где все стены домов покрашены в один и тот же цвет. Местные говорят, что синий цвет отпугивает комаров.",
+        "answers": ["шефшауэн", "шефшауэнь", "chefchaouen", "шауэн", "марокко", "morocco"],
+        "correct": "Шефшауэн, Марокко",
+        "fact": "Традиция красить стены в синий цвет появилась в 1930-х годах среди еврейских беженцев. Сегодня это один из самых фотографируемых городов мира.",
+    },
+    {
+        "riddle": "На этих островах пляжи розового цвета — из-за смеси белого кварца и красных кораллов. Острова находятся посреди Атлантического океана.",
+        "answers": ["бермуды", "bermuda", "bermudas"],
+        "correct": "Бермуды",
+        "fact": "Розовый цвет пляжам Бермуд придают раздробленные панцири морских существ — фораминифер. Острова также известны «Бермудским треугольником».",
+    },
+    {
+        "riddle": "В этом норвежском городе солнце не заходит за горизонт почти два месяца летом. Зато зимой здесь два месяца полярной ночи.",
+        "answers": ["тромсё", "тромсо", "tromsø", "tromso", "норвегия", "norway"],
+        "correct": "Тромсё, Норвегия",
+        "fact": "Тромсё называют «Воротами в Арктику». Это один из лучших городов мира для наблюдения за северным сиянием — с сентября по март.",
+    },
+    {
+        "riddle": "В этой стране овец в шесть раз больше, чем людей. Здесь снимали трилогию «Властелин колец» и страна считается одной из самых безопасных в мире.",
+        "answers": ["новая зеландия", "new zealand", "нз", "nz"],
+        "correct": "Новая Зеландия",
+        "fact": "В Новой Зеландии около 6 миллионов овец на 5 миллионов человек. Страна была последней крупной землёй, заселённой людьми — маори прибыли сюда лишь около 1300 года.",
+    },
+    {
+        "riddle": "На этой магнитной горе машины, поставленные на нейтральную передачу, кажется, катятся вверх. На самом деле это оптический обман рельефа.",
+        "answers": ["магнитная гора", "magnetic hill", "австралия", "australia", "мончтон", "moncton", "канада", "canada"],
+        "correct": "Магнитная гора (Magnetic Hill), Канада",
+        "fact": "Самая знаменитая «магнитная гора» находится в Монктоне, Канада. Подобные оптические иллюзии есть и в других странах — в Австралии, Индии, США.",
+    },
+    {
+        "riddle": "Этот город стоит одновременно на двух континентах — в Европе и в Азии. Его разделяет пролив, через который перекинуты мосты.",
+        "answers": ["стамбул", "istanbul", "турция", "turkey", "константинополь"],
+        "correct": "Стамбул, Турция",
+        "fact": "Стамбул — единственный город в мире, расположенный на двух континентах. Босфор делит его на европейскую и азиатскую части. Бывшие названия — Константинополь и Византий.",
+    },
+    {
+        "riddle": "Это самое высокогорное судоходное озеро в мире — на высоте 3812 метров. Две страны делят его между собой.",
+        "answers": ["титикака", "titicaca", "перу", "peru", "боливия", "bolivia"],
+        "correct": "Озеро Титикака, Перу/Боливия",
+        "fact": "На озере Титикака живут индейцы урос — на плавучих островах из тростника тотора. Озеро считается колыбелью цивилизации инков.",
+    },
+    {
+        "riddle": "Эта страна занимает первое место в мире по числу вулканов. Здесь более 130 активных вулканов — больше, чем где-либо ещё.",
+        "answers": ["индонезия", "indonesia"],
+        "correct": "Индонезия",
+        "fact": "В Индонезии 127 активных вулканов. Это часть Тихоокеанского «Огненного кольца». Самое известное извержение — Кракатау в 1883 году — было слышно за 5000 км.",
+    },
+    {
+        "riddle": "В этой стране нет ни одной постоянной реки — только сухие русла, которые наполняются водой лишь после редких дождей.",
+        "answers": ["саудовская аравия", "saudi arabia", "саудовская", "аравия", "сауди"],
+        "correct": "Саудовская Аравия",
+        "fact": "В Саудовской Аравии нет рек с постоянным течением. Пресную воду получают главным образом из опреснения морской воды — страна лидирует в мире по этому показателю.",
+    },
+    {
+        "riddle": "В этом норвежском посёлке на Шпицбергене официально запрещено умирать — если человек серьёзно заболел, его должны эвакуировать.",
+        "answers": ["лонгйир", "лонгьир", "longyearbyen", "норвегия", "norway", "шпицберген", "svalbard"],
+        "correct": "Лонгйир, Норвегия (Шпицберген)",
+        "fact": "Тела не разлагаются в вечной мерзлоте Шпицбергена, поэтому умерших хоронить здесь запрещено с 1950 года. Живых тоже стараются эвакуировать заранее.",
+    },
+    {
+        "riddle": "Этот знаменитый водопад в национальном парке исчезает каждую зиму — воды в горных ручьях слишком мало, чтобы питать его.",
+        "answers": ["йосемити", "yosemite", "сша", "usa", "калифорния", "california"],
+        "correct": "Водопад Йосемити, США",
+        "fact": "Йосемитский водопад — один из самых высоких в Северной Америке (739 м). Зимой он почти полностью пересыхает, а весной в период таяния снегов превращается в мощный поток.",
+    },
+    {
+        "riddle": "На этом острове в Кении есть деревня, где живут только женщины. Мужчинам вход запрещён — это правило действует с 1990 года.",
+        "answers": ["умодже", "umoja", "кения", "kenya"],
+        "correct": "Деревня Умодже, Кения",
+        "fact": "Умодже основали женщины, пережившие насилие. Деревня стала символом женской независимости. Жительницы зарабатывают продажей украшений туристам.",
+    },
+    {
+        "riddle": "В этой знаменитой точке у Рейнского водопада сходятся три страны. Ты можешь стоять в одной стране и одновременно касаться двух других.",
+        "answers": ["германия", "germany", "франция", "france", "швейцария", "switzerland", "базель", "basel", "три страны", "тройная граница"],
+        "correct": "Точка трёх стран — Германия, Франция, Швейцария (у Базеля)",
+        "fact": "Dreiländereck (Угол трёх стран) у Базеля — место, где сходятся границы Германии, Франции и Швейцарии. Здесь установлен памятный обелиск прямо на берегу Рейна.",
+    },
+    {
+        "riddle": "В этой стране можно увидеть огромные острова целиком из стекловидной соли. В сезон дождей они превращаются в идеальное зеркало, отражающее небо.",
+        "answers": ["боливия", "bolivia", "уюни", "uyuni"],
+        "correct": "Солончак Уюни, Боливия",
+        "fact": "Уюни — крупнейший солончак в мире (10 582 км²). Слой соли достигает 10 метров. Здесь сосредоточено около 50–70% мировых запасов лития.",
+    },
+    {
+        "riddle": "Этот город запрещён для автомобилей — ни одной машины, только лодки, пешеходы и велосипеды. Тем не менее здесь живут постоянные жители.",
+        "answers": ["венеция", "venice", "venezia", "италия", "italy"],
+        "correct": "Венеция, Италия",
+        "fact": "В Венеции нет ни одной дороги для автомобилей. Транспорт — вапоретто (водные автобусы), гондолы и частные лодки. Городу угрожает постепенное затопление.",
+    },
+    {
+        "riddle": "Это самое глубокое озеро в мире — глубина достигает 1642 метров. В нём содержится около 20% всей пресной воды на поверхности Земли.",
+        "answers": ["байкал", "baikal", "россия", "russia"],
+        "correct": "Озеро Байкал, Россия",
+        "fact": "Байкал — древнейшее озеро на Земле (25–30 миллионов лет). Здесь обитает около 3700 видов животных и растений, две трети из которых не встречаются нигде больше.",
+    },
+]
+
+_random_guess = __import__("random")
+
+
+def _check_guess_answer(user_input: str, riddle: dict) -> bool:
+    """Возвращает True если ответ засчитан (без учёта регистра, частичное совпадение)."""
+    user = user_input.strip().lower()
+    if not user:
+        return False
+    for ans in riddle["answers"]:
+        ans_l = ans.lower()
+        if ans_l in user or user in ans_l:
+            return True
+    return False
+
+
+def _guess_question_kb() -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(
+        [["🏁 Завершить", "◀️ Назад"]],
+        resize_keyboard=True,
+        one_time_keyboard=False,
+    )
+
+
+def _guess_next_kb() -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(
+        [["➡️ Следующий вопрос"], ["🏁 Завершить", "◀️ Назад"]],
+        resize_keyboard=True,
+        one_time_keyboard=True,
+    )
+
+
+def _guess_finish_kb() -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(
+        [["🔄 Начать заново"], [HOME_BTN]],
+        resize_keyboard=True,
+        one_time_keyboard=True,
+    )
+
+
+async def guess_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    riddles = _GUESS_RIDDLES.copy()
+    _random_guess.shuffle(riddles)
+    context.user_data["guess_riddles"]      = riddles
+    context.user_data["guess_index"]        = 0
+    context.user_data["guess_score"]        = 0
+    context.user_data["guess_awaiting_next"] = False
+    await _guess_show_question(update, context)
+    return GUESS_ACTIVE
+
+
+async def _guess_show_question(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    ud  = context.user_data
+    idx = ud["guess_index"]
+    riddles = ud["guess_riddles"]
+    total   = len(riddles)
+    q = riddles[idx]
+    await update.message.reply_text(
+        f"🎯 *Вопрос {idx + 1}*\n\n{q['riddle']}\n\n_Напиши страну или город:_",
+        parse_mode="Markdown",
+        reply_markup=_guess_question_kb(),
+    )
+
+
+async def _guess_show_finish(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    ud      = context.user_data
+    score   = ud.get("guess_score", 0)
+    answered = ud.get("guess_index", 0) + (1 if ud.get("guess_awaiting_next") else 0)
+    total   = len(ud.get("guess_riddles", _GUESS_RIDDLES))
+    if score == total:
+        emoji = "🏆"
+    elif score >= total * 0.7:
+        emoji = "🥇"
+    elif score >= total * 0.4:
+        emoji = "🥈"
+    else:
+        emoji = "🌍"
+    await update.message.reply_text(
+        f"🏁 *Игра завершена!*\n\n"
+        f"{emoji} Угадано: *{score} из {answered}*\n\n"
+        f"Хочешь сыграть ещё раз?",
+        parse_mode="Markdown",
+        reply_markup=_guess_finish_kb(),
+    )
+    return GUESS_ACTIVE
+
+
+async def guess_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text
+    ud   = context.user_data
+
+    if text == "◀️ Назад":
+        return await show_games_menu(update, context)
+
+    if text == "🏁 Завершить":
+        return await _guess_show_finish(update, context)
+
+    awaiting_next = ud.get("guess_awaiting_next", False)
+
+    if awaiting_next:
+        if text == "🔄 Начать заново":
+            return await guess_start(update, context)
+        if text == HOME_BTN:
+            return await go_home(update, context)
+        if text == "➡️ Следующий вопрос":
+            ud["guess_index"] += 1
+            ud["guess_awaiting_next"] = False
+            riddles = ud.get("guess_riddles", [])
+            if ud["guess_index"] >= len(riddles):
+                return await _guess_show_finish(update, context)
+            await _guess_show_question(update, context)
+            return GUESS_ACTIVE
+        return GUESS_ACTIVE
+
+    riddles = ud.get("guess_riddles", [])
+    if not riddles:
+        return await guess_start(update, context)
+
+    idx = ud.get("guess_index", 0)
+    q   = riddles[idx]
+
+    correct = _check_guess_answer(text, q)
+    if correct:
+        ud["guess_score"] = ud.get("guess_score", 0) + 1
+        verdict = "✅ *Правильно!*"
+    else:
+        verdict = f"❌ *Не угадал.* Правильный ответ: *{q['correct']}*"
+
+    is_last = (idx + 1) >= len(riddles)
+    ud["guess_awaiting_next"] = True
+
+    if is_last:
+        score = ud["guess_score"]
+        total = len(riddles)
+        await update.message.reply_text(
+            f"{verdict}\n\n_{q['fact']}_\n\n"
+            f"🏁 *Игра завершена!*\n\n"
+            f"{'🏆' if score == total else '🌍'} Угадано: *{score} из {total}*\n\n"
+            f"Хочешь сыграть ещё раз?",
+            parse_mode="Markdown",
+            reply_markup=_guess_finish_kb(),
+        )
+    else:
+        await update.message.reply_text(
+            f"{verdict}\n\n_{q['fact']}_",
+            parse_mode="Markdown",
+            reply_markup=_guess_next_kb(),
+        )
+    return GUESS_ACTIVE
+
+
 async def show_folder_planning(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Вернуться в папку 🧭 Планирование."""
     context.user_data.clear()
@@ -1220,6 +1496,39 @@ async def show_folder_knowledge(update: Update, context: ContextTypes.DEFAULT_TY
         reply_markup=get_folder_knowledge_kb(),
     )
     return MAIN_MENU
+
+
+def _games_kb():
+    return ReplyKeyboardMarkup(
+        [
+            [KeyboardButton("🧠 Викторина о путешествиях")],
+            [KeyboardButton("🎯 Угадай где я?")],
+            [KeyboardButton("◀️ Назад"), KeyboardButton(HOME_BTN)],
+        ],
+        resize_keyboard=True,
+        one_time_keyboard=True,
+    )
+
+
+async def show_games_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Подменю 🎮 Игры."""
+    await update.message.reply_text(
+        "🎮 *Игры*\n\nВыбери игру:",
+        parse_mode="Markdown",
+        reply_markup=_games_kb(),
+    )
+    return GAMES_MENU
+
+
+async def games_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text
+    if text == "◀️ Назад":
+        return await show_folder_knowledge(update, context)
+    if text == "🧠 Викторина о путешествиях":
+        return await quiz_start(update, context)
+    if text == "🎯 Угадай где я?":
+        return await guess_start(update, context)
+    return await show_games_menu(update, context)
 
 
 async def show_folder_tools(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -2139,8 +2448,8 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ANSWERING
     elif text == "🔮 Страна по судьбе":
         return await destiny_start(update, context)
-    elif text == "🧠 Викторина о путешествиях":
-        return await quiz_start(update, context)
+    elif text == "🎮 Игры":
+        return await show_games_menu(update, context)
     elif text == "📖 Инструкция для новичка":
         return await show_help_menu(update, context)
     elif text == "🔤 Переводчик":
@@ -6035,6 +6344,14 @@ def main():
             QUIZ_ACTIVE: [
                 home,
                 MessageHandler(filters.TEXT & ~filters.COMMAND, quiz_handler),
+            ],
+            GAMES_MENU: [
+                home,
+                MessageHandler(filters.TEXT & ~filters.COMMAND, games_menu_handler),
+            ],
+            GUESS_ACTIVE: [
+                home,
+                MessageHandler(filters.TEXT & ~filters.COMMAND, guess_handler),
             ],
             SHOP_MENU: [
                 home,
