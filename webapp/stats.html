@@ -270,8 +270,8 @@
     <div class="field-label">🌍 Страны</div>
     <div class="field-row">
       <div class="field-emoji">🌍</div>
-      <input id="f-countries" type="number" inputmode="numeric" placeholder="Посещённых стран" min="0" max="200">
-      <div class="field-unit">из 200</div>
+      <input id="f-countries" type="number" inputmode="numeric" placeholder="Посещённых стран" min="0" max="195">
+      <div class="field-unit">из 195</div>
     </div>
   </div>
 
@@ -380,10 +380,10 @@ function renderStats(d) {
   const flyKm      = Math.round(hours * 800);
   const earthLaps  = flyKm / 40_000;
   const moonWalk   = walk / 384_000;
-  const leftCountries = Math.max(0, 200 - countries);
+  const leftCountries = Math.max(0, 195 - countries);
   const avgTrip    = flights > 0 ? Math.round(budget / flights) : 0;
   const totalKm    = flyKm + car + train + walk;
-  const countriesPct = Math.min(100, Math.round(countries / 200 * 100));
+  const countriesPct = Math.min(100, Math.round(countries / 195 * 100));
 
   const hasData = flights || hours || car || train || walk || countries || cities || budget;
   document.getElementById('empty-state').style.display = hasData ? 'none' : '';
@@ -447,7 +447,7 @@ function renderStats(d) {
       <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px">
         <span style="font-size:28px">🌍</span>
         <div>
-          <div class="sc-value" style="font-size:26px">${countries} <span style="font-size:16px;font-weight:600;color:var(--muted)">из 200</span></div>
+          <div class="sc-value" style="font-size:26px">${countries} <span style="font-size:16px;font-weight:600;color:var(--muted)">из 195</span></div>
           <div class="sc-label">стран посещено</div>
         </div>
       </div>
