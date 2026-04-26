@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Калькулятор расстояний</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --bg:      #0d1117;
+      --surface: #161b22;
+      --card:    #1c2333;
+      --border:  #30363d;
+      --text:    #e6edf3;
+      --muted:   #7d8590;
+      --accent:  #58a6ff;
+      --green:   #3fb950;
+      --yellow:  #d29922;
+      --red:     #f85149;
+      --radius:  14px;
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      min-height: 100%; background: var(--bg);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: var(--text); font-size: 15px;
+    }
+    body { padding-bottom: 32px; }
+
+    /* ── Header ── */
+    #header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 16px 14px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    #header h1 { font-size: 18px; font-weight: 700; }
+    #status-badge {
+      font-size: 11px; color: var(--muted);
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 20px; padding: 4px 10px;
+      white-space: nowrap;
+    }
+    #status-badge.ok  { color: var(--green); border-color: #2ea04326; }
+    #status-badge.err { color: var(--red);   border-color: #f8514926; }
+
+    /* ── Quick pairs ── */
+    #quick-bar {
+      display: flex; gap: 8px; overflow-x: auto;
+      padding: 12px 16px; scrollbar-width: none;
+    }
+    #quick-bar::-webkit-scrollbar { display: none; }
+    .qbtn {
+      flex-shrink: 0;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 20px; padding: 7px 14px;
+      font-size: 13px; font-weight: 600; color: var(--muted);
+      cursor: pointer; transition: all .15s; white-space: nowrap;
+    }
+    .qbtn:active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    /* ── Main card ── */
+    #main-card {
+      margin: 0 12px; padding: 18px;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+
+    .field-label {
+      font-size: 11px; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px;
+    }
+
+    .city-wrap { margin-bottom: 14px; }
+    .city-input-row { display: flex; gap: 8px; align-items: center; }
+    .city-input {
+      flex: 1; background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: 10px; padding: 13px 14px;
+      font-size: 16px; font-weight: 600; color: var(--text);
+      outline: none; transition: border-color .2s;
+    }
+    .city-input:focus { border-color: var(--accent); }
+    .city-input::placeholder { color: var(--muted); font-weight: 400; }
+    .city-found {
+      font-size: 12px; color: var(--green); margin-top: 5px; min-height: 16px;
+      padding-left: 2px;
+    }
+    .city-found.err { color: var(--red); }
+
+    /* swap button */
+    #btn-swap {
+      width: 40px; height: 40px; flex-shrink: 0;
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: 50%; font-size: 20px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all .15s; margin: 8px auto 14px;
+    }
+    #btn-swap:active { background: var(--accent); border-color: var(--accent); transform: rotate(180deg); }
+
+    /* ── Transport selector ── */
+    .transport-label {
+      font-size: 11px; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px;
+    }
+    #transport-tabs {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+      margin-bottom: 16px;
+    }
+    .tab {
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: 10px; padding: 10px 4px;
+      text-align: center; cursor: pointer; transition: all .15s;
+    }
+    .tab .tab-icon { font-size: 20px; display: block; margin-bottom: 4px; }
+    .tab .tab-name { font-size: 11px; color: var(--muted); font-weight: 600; }
+    .tab.active {
+      background: rgba(88,166,255,.12); border-color: var(--accent);
+    }
+    .tab.active .tab-name { color: var(--accent); }
+
+    /* ── Calculate button ── */
+    #btn-calc {
+      width: 100%; padding: 15px;
+      background: var(--accent); border: none; border-radius: 10px;
+      font-size: 16px; font-weight: 700; color: #fff;
+      cursor: pointer; transition: opacity .15s;
+    }
+    #btn-calc:active { opacity: .8; }
+    #btn-calc:disabled { opacity: .4; cursor: default; }
+
+    /* ── Result card ── */
+    #result-card {
+      margin: 14px 12px 0;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+      display: none;
+    }
+    #result-card.show { display: block; }
+    #result-header {
+      padding: 14px 16px 12px;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .5px;
+    }
+    .result-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 13px 16px; border-bottom: 1px solid var(--border);
+    }
+    .result-row:last-child { border-bottom: none; }
+    .res-label { font-size: 14px; color: var(--muted); }
+    .res-value { font-size: 18px; font-weight: 800; color: var(--accent); }
+    .res-value.big { font-size: 28px; color: var(--green); }
+
+    /* ── Tips card ── */
+    #tips-card {
+      margin: 12px 12px 0;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+      display: none;
+    }
+    #tips-card.show { display: block; }
+    #tips-header {
+      padding: 12px 16px 10px;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .5px;
+    }
+    .tip-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 11px 16px; border-bottom: 1px solid var(--border);
+    }
+    .tip-row:last-child { border-bottom: none; }
+    .tip-transport { font-size: 14px; }
+    .tip-time { font-size: 13px; font-weight: 700; color: var(--text); }
+    .tip-km   { font-size: 12px; color: var(--muted); }
+  </style>
+</head>
+<body>
+
+<div id="header">
+  <h1>📏 Расстояния</h1>
+  <div id="status-badge">готов</div>
+</div>
+
+<div id="quick-bar">
+  <div class="qbtn" onclick="setQuick('Москва','Санкт-Петербург')">Мск → Спб</div>
+  <div class="qbtn" onclick="setQuick('Москва','Бангкок')">Мск → Бангкок</div>
+  <div class="qbtn" onclick="setQuick('Москва','Дубай')">Мск → Дубай</div>
+  <div class="qbtn" onclick="setQuick('Москва','Пхукет')">Мск → Пхукет</div>
+  <div class="qbtn" onclick="setQuick('Москва','Стамбул')">Мск → Стамбул</div>
+  <div class="qbtn" onclick="setQuick('Москва','Тбилиси')">Мск → Тбилиси</div>
+</div>
+
+<div id="main-card">
+  <div class="city-wrap">
+    <div class="field-label">Город А</div>
+    <div class="city-input-row">
+      <input id="city-a" class="city-input" type="text" placeholder="Например: Москва" autocomplete="off">
+    </div>
+    <div class="city-found" id="found-a"></div>
+  </div>
+
+  <button id="btn-swap" onclick="swapCities()" title="Поменять местами">⇄</button>
+
+  <div class="city-wrap">
+    <div class="field-label">Город Б</div>
+    <div class="city-input-row">
+      <input id="city-b" class="city-input" type="text" placeholder="Например: Бангкок" autocomplete="off">
+    </div>
+    <div class="city-found" id="found-b"></div>
+  </div>
+
+  <div class="transport-label">Вид транспорта</div>
+  <div id="transport-tabs">
+    <div class="tab active" data-mode="plane" onclick="selectTab(this)">
+      <span class="tab-icon">✈️</span>
+      <span class="tab-name">Самолёт</span>
+    </div>
+    <div class="tab" data-mode="car" onclick="selectTab(this)">
+      <span class="tab-icon">🚗</span>
+      <span class="tab-name">Авто</span>
+    </div>
+    <div class="tab" data-mode="train" onclick="selectTab(this)">
+      <span class="tab-icon">🚂</span>
+      <span class="tab-name">Поезд</span>
+    </div>
+    <div class="tab" data-mode="ship" onclick="selectTab(this)">
+      <span class="tab-icon">🚢</span>
+      <span class="tab-name">Корабль</span>
+    </div>
+  </div>
+
+  <button id="btn-calc" onclick="calculate()">Рассчитать</button>
+</div>
+
+<div id="result-card">
+  <div id="result-header">Результат</div>
+  <div class="result-row">
+    <span class="res-label">Расстояние</span>
+    <span class="res-value big" id="res-distance">—</span>
+  </div>
+  <div class="result-row">
+    <span class="res-label">Время в пути</span>
+    <span class="res-value" id="res-time">—</span>
+  </div>
+  <div class="result-row">
+    <span class="res-label" id="res-note-label">Скорость</span>
+    <span class="res-value" style="font-size:14px;color:var(--muted)" id="res-note">—</span>
+  </div>
+</div>
+
+<div id="tips-card">
+  <div id="tips-header">Все виды транспорта</div>
+  <div id="tips-body"></div>
+</div>
+
+<script>
+const tg = window.Telegram.WebApp;
+tg.ready(); tg.expand();
+
+const GEO_API = 'https://geocoding-api.open-meteo.com/v1/search';
+
+let cityA = null; // { name, country, lat, lon }
+let cityB = null;
+let mode  = 'plane';
+
+const TRANSPORT = {
+  plane: { icon: '✈️', label: 'Самолёт', speed: 850, factor: 1.0,  extra: 3,   note: '850 км/ч + ~3 ч на аэропорт' },
+  car:   { icon: '🚗', label: 'Авто',    speed: 80,  factor: 1.35, extra: 0,   note: '80 км/ч по дорогам (×1.35)' },
+  train: { icon: '🚂', label: 'Поезд',   speed: 120, factor: 1.2,  extra: 0,   note: '120 км/ч по ж/д (×1.2)' },
+  ship:  { icon: '🚢', label: 'Корабль', speed: 35,  factor: 1.1,  extra: 0,   note: '35 км/ч (морской маршрут)' },
+};
+
+/* ── Haversine ── */
+function haversine(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 +
+            Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) *
+            Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function formatTime(hours) {
+  if (hours < 1) return Math.round(hours * 60) + ' мин';
+  const h = Math.floor(hours);
+  const m = Math.round((hours - h) * 60);
+  if (m === 0) return h + ' ч';
+  return h + ' ч ' + m + ' мин';
+}
+
+function fmtKm(km) {
+  return Math.round(km).toLocaleString('ru-RU') + ' км';
+}
+
+/* ── Geocoding ── */
+async function geocode(query) {
+  const url = `${GEO_API}?name=${encodeURIComponent(query)}&count=3&language=ru&format=json`;
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error('HTTP ' + resp.status);
+  const data = await resp.json();
+  if (!data.results || data.results.length === 0) return null;
+  const r = data.results[0];
+  return {
+    name:    r.name,
+    country: r.country || '',
+    lat:     r.latitude,
+    lon:     r.longitude,
+  };
+}
+
+/* ── Resolve city with UI feedback ── */
+async function resolveCity(inputEl, foundEl) {
+  const query = inputEl.value.trim();
+  if (!query) { foundEl.textContent = ''; foundEl.className = 'city-found'; return null; }
+  foundEl.textContent = '⏳ Поиск...'; foundEl.className = 'city-found';
+  try {
+    const city = await geocode(query);
+    if (!city) {
+      foundEl.textContent = '❌ Город не найден';
+      foundEl.className = 'city-found err';
+      return null;
+    }
+    foundEl.textContent = `✓ ${city.name}, ${city.country}`;
+    foundEl.className = 'city-found ok';
+    return city;
+  } catch (e) {
+    foundEl.textContent = '❌ Ошибка геокодирования';
+    foundEl.className = 'city-found err';
+    return null;
+  }
+}
+
+/* ── Calculate ── */
+async function calculate() {
+  const badge  = document.getElementById('status-badge');
+  const btn    = document.getElementById('btn-calc');
+  btn.disabled = true;
+  btn.textContent = '⏳ Поиск городов...';
+  badge.className = ''; badge.textContent = 'поиск';
+
+  document.getElementById('result-card').classList.remove('show');
+  document.getElementById('tips-card').classList.remove('show');
+
+  cityA = await resolveCity(
+    document.getElementById('city-a'),
+    document.getElementById('found-a')
+  );
+  cityB = await resolveCity(
+    document.getElementById('city-b'),
+    document.getElementById('found-b')
+  );
+
+  btn.disabled = false;
+  btn.textContent = 'Рассчитать';
+
+  if (!cityA || !cityB) {
+    badge.className = 'err'; badge.textContent = 'ошибка';
+    return;
+  }
+
+  const distStraight = haversine(cityA.lat, cityA.lon, cityB.lat, cityB.lon);
+  const t = TRANSPORT[mode];
+  const dist = distStraight * t.factor;
+  const time = dist / t.speed + t.extra;
+
+  document.getElementById('res-distance').textContent = fmtKm(dist);
+  document.getElementById('res-time').textContent     = formatTime(time);
+  document.getElementById('res-note-label').textContent = 'Метод';
+  document.getElementById('res-note').textContent     = t.note;
+
+  const resultCard = document.getElementById('result-card');
+  resultCard.querySelector('#result-header').textContent =
+    `${cityA.name} → ${cityB.name}`;
+  resultCard.classList.add('show');
+
+  /* tips: all transports */
+  const tbody = document.getElementById('tips-body');
+  tbody.innerHTML = Object.entries(TRANSPORT).map(([key, tr]) => {
+    const d = distStraight * tr.factor;
+    const h = d / tr.speed + tr.extra;
+    return `<div class="tip-row">
+      <span class="tip-transport">${tr.icon} ${tr.label}</span>
+      <span>
+        <span class="tip-time">${formatTime(h)}</span>
+        <span class="tip-km"> · ${fmtKm(d)}</span>
+      </span>
+    </div>`;
+  }).join('');
+  document.getElementById('tips-card').classList.add('show');
+
+  badge.className = 'ok'; badge.textContent = 'готово';
+}
+
+/* ── UI helpers ── */
+function selectTab(el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  mode = el.dataset.mode;
+}
+
+function swapCities() {
+  const a = document.getElementById('city-a');
+  const b = document.getElementById('city-b');
+  const fa = document.getElementById('found-a');
+  const fb = document.getElementById('found-b');
+  const tmpVal  = a.value; a.value = b.value; b.value = tmpVal;
+  const tmpTxt  = fa.textContent; fa.textContent = fb.textContent; fb.textContent = tmpTxt;
+  const tmpCls  = fa.className;   fa.className   = fb.className;   fb.className   = tmpCls;
+  const tmpCity = cityA; cityA = cityB; cityB = tmpCity;
+}
+
+function setQuick(from, to) {
+  document.getElementById('city-a').value = from;
+  document.getElementById('city-b').value = to;
+  document.getElementById('found-a').textContent = '';
+  document.getElementById('found-b').textContent = '';
+  cityA = null; cityB = null;
+  document.getElementById('result-card').classList.remove('show');
+  document.getElementById('tips-card').classList.remove('show');
+}
+
+/* ── Enter key ── */
+document.getElementById('city-a').addEventListener('keydown', e => { if (e.key === 'Enter') calculate(); });
+document.getElementById('city-b').addEventListener('keydown', e => { if (e.key === 'Enter') calculate(); });
+</script>
+</body>
+</html>
