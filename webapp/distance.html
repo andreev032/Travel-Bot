@@ -71,7 +71,7 @@
       text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px;
     }
 
-    .city-wrap { margin-bottom: 14px; }
+    .city-wrap { margin-bottom: 14px; position: relative; }
     .city-input-row { display: flex; gap: 8px; align-items: center; }
     .city-input {
       flex: 1; background: var(--surface); border: 1.5px solid var(--border);
@@ -86,6 +86,27 @@
       padding-left: 2px;
     }
     .city-found.err { color: var(--red); }
+
+    /* ── Autocomplete dropdown ── */
+    .ac-dropdown {
+      position: absolute; left: 0; right: 0; top: 100%;
+      margin-top: 4px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; overflow: hidden;
+      z-index: 50;
+      box-shadow: 0 8px 24px rgba(0,0,0,.4);
+      display: none;
+    }
+    .ac-dropdown.show { display: block; }
+    .ac-item {
+      padding: 11px 14px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer; transition: background .12s;
+    }
+    .ac-item:last-child { border-bottom: none; }
+    .ac-item:active, .ac-item:hover { background: rgba(88,166,255,.12); }
+    .ac-name { font-size: 14px; font-weight: 600; color: var(--text); }
+    .ac-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
 
     /* swap button */
     #btn-swap {
@@ -150,29 +171,8 @@
     .res-label { font-size: 14px; color: var(--muted); }
     .res-value { font-size: 18px; font-weight: 800; color: var(--accent); }
     .res-value.big { font-size: 28px; color: var(--green); }
-
-    /* ── Tips card ── */
-    #tips-card {
-      margin: 12px 12px 0;
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: var(--radius); overflow: hidden;
-      display: none;
-    }
-    #tips-card.show { display: block; }
-    #tips-header {
-      padding: 12px 16px 10px;
-      border-bottom: 1px solid var(--border);
-      font-size: 12px; font-weight: 600; color: var(--muted);
-      text-transform: uppercase; letter-spacing: .5px;
-    }
-    .tip-row {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 11px 16px; border-bottom: 1px solid var(--border);
-    }
-    .tip-row:last-child { border-bottom: none; }
-    .tip-transport { font-size: 14px; }
-    .tip-time { font-size: 13px; font-weight: 700; color: var(--text); }
-    .tip-km   { font-size: 12px; color: var(--muted); }
+    .res-value.dash { color: var(--muted); }
+    #res-note.warn { color: var(--yellow); }
   </style>
 </head>
 <body>
@@ -197,6 +197,7 @@
     <div class="city-input-row">
       <input id="city-a" class="city-input" type="text" placeholder="Например: Москва" autocomplete="off">
     </div>
+    <div class="ac-dropdown" id="ac-a"></div>
     <div class="city-found" id="found-a"></div>
   </div>
 
@@ -207,6 +208,7 @@
     <div class="city-input-row">
       <input id="city-b" class="city-input" type="text" placeholder="Например: Бангкок" autocomplete="off">
     </div>
+    <div class="ac-dropdown" id="ac-b"></div>
     <div class="city-found" id="found-b"></div>
   </div>
 
@@ -249,18 +251,13 @@
   </div>
 </div>
 
-<div id="tips-card">
-  <div id="tips-header">Все виды транспорта</div>
-  <div id="tips-body"></div>
-</div>
-
 <script>
 const tg = window.Telegram.WebApp;
 tg.ready(); tg.expand();
 
 const GEO_API = 'https://geocoding-api.open-meteo.com/v1/search';
 
-let cityA = null; // { name, country, lat, lon }
+let cityA = null; // { name, country, country_code, lat, lon }
 let cityB = null;
 let mode  = 'plane';
 
@@ -271,6 +268,148 @@ const TRANSPORT = {
   ship:  { icon: '🚢', label: 'Корабль', speed: 35,  factor: 1.1,  extra: 0,   note: '35 км/ч (морской маршрут)' },
 };
 
+/* ── Country code → continent group ──
+   Group "AFEU" = Eurasia + Africa (соединены через Синайский перешеек) — есть сухопутная связь.
+   Group "AM"   = Северная + Южная Америка (соединены через Панаму).
+   Group "OC"   = Океания (острова, нет сухопутной связи).
+   Group "AN"   = Антарктида.
+*/
+const CONTINENT_GROUP = {
+  // Europe
+  AD:'AFEU', AL:'AFEU', AT:'AFEU', BA:'AFEU', BE:'AFEU', BG:'AFEU', BY:'AFEU',
+  CH:'AFEU', CY:'AFEU', CZ:'AFEU', DE:'AFEU', DK:'AFEU', EE:'AFEU', ES:'AFEU',
+  FI:'AFEU', FR:'AFEU', GB:'AFEU', GR:'AFEU', HR:'AFEU', HU:'AFEU', IE:'AFEU',
+  IS:'AFEU', IT:'AFEU', LI:'AFEU', LT:'AFEU', LU:'AFEU', LV:'AFEU', MC:'AFEU',
+  MD:'AFEU', ME:'AFEU', MK:'AFEU', MT:'AFEU', NL:'AFEU', NO:'AFEU', PL:'AFEU',
+  PT:'AFEU', RO:'AFEU', RS:'AFEU', RU:'AFEU', SE:'AFEU', SI:'AFEU', SK:'AFEU',
+  SM:'AFEU', UA:'AFEU', VA:'AFEU', XK:'AFEU',
+  // Asia
+  AE:'AFEU', AF:'AFEU', AM:'AFEU', AZ:'AFEU', BD:'AFEU', BH:'AFEU', BN:'AFEU',
+  BT:'AFEU', CN:'AFEU', GE:'AFEU', HK:'AFEU', ID:'AFEU', IL:'AFEU', IN:'AFEU',
+  IQ:'AFEU', IR:'AFEU', JO:'AFEU', JP:'AFEU', KG:'AFEU', KH:'AFEU', KP:'AFEU',
+  KR:'AFEU', KW:'AFEU', KZ:'AFEU', LA:'AFEU', LB:'AFEU', LK:'AFEU', MM:'AFEU',
+  MN:'AFEU', MO:'AFEU', MV:'AFEU', MY:'AFEU', NP:'AFEU', OM:'AFEU', PH:'AFEU',
+  PK:'AFEU', PS:'AFEU', QA:'AFEU', SA:'AFEU', SG:'AFEU', SY:'AFEU', TH:'AFEU',
+  TJ:'AFEU', TL:'AFEU', TM:'AFEU', TR:'AFEU', TW:'AFEU', UZ:'AFEU', VN:'AFEU',
+  YE:'AFEU',
+  // Africa
+  AO:'AFEU', BF:'AFEU', BI:'AFEU', BJ:'AFEU', BW:'AFEU', CD:'AFEU', CF:'AFEU',
+  CG:'AFEU', CI:'AFEU', CM:'AFEU', CV:'AFEU', DJ:'AFEU', DZ:'AFEU', EG:'AFEU',
+  EH:'AFEU', ER:'AFEU', ET:'AFEU', GA:'AFEU', GH:'AFEU', GM:'AFEU', GN:'AFEU',
+  GQ:'AFEU', GW:'AFEU', KE:'AFEU', KM:'AFEU', LR:'AFEU', LS:'AFEU', LY:'AFEU',
+  MA:'AFEU', MG:'AFEU', ML:'AFEU', MR:'AFEU', MU:'AFEU', MW:'AFEU', MZ:'AFEU',
+  NA:'AFEU', NE:'AFEU', NG:'AFEU', RW:'AFEU', SC:'AFEU', SD:'AFEU', SL:'AFEU',
+  SN:'AFEU', SO:'AFEU', SS:'AFEU', ST:'AFEU', SZ:'AFEU', TD:'AFEU', TG:'AFEU',
+  TN:'AFEU', TZ:'AFEU', UG:'AFEU', ZA:'AFEU', ZM:'AFEU', ZW:'AFEU',
+  // Americas
+  AG:'AM', BB:'AM', BS:'AM', BZ:'AM', CA:'AM', CR:'AM', CU:'AM', DM:'AM',
+  DO:'AM', GD:'AM', GT:'AM', HN:'AM', HT:'AM', JM:'AM', KN:'AM', LC:'AM',
+  MX:'AM', NI:'AM', PA:'AM', SV:'AM', TT:'AM', US:'AM', VC:'AM',
+  AR:'AM', BO:'AM', BR:'AM', CL:'AM', CO:'AM', EC:'AM', GY:'AM', PE:'AM',
+  PY:'AM', SR:'AM', UY:'AM', VE:'AM',
+  // Oceania
+  AU:'OC', FJ:'OC', FM:'OC', KI:'OC', MH:'OC', NR:'OC', NZ:'OC', PG:'OC',
+  PW:'OC', SB:'OC', TO:'OC', TV:'OC', VU:'OC', WS:'OC',
+};
+
+/* Между Северной/Южной Америкой и Eurasia/Africa нет сухопутной связи,
+   но Британия/Ирландия/Япония/Шри-Ланка и т.п. — острова, считаем их группу
+   AFEU чтобы упростить (мост или короткий пролив). Это допустимо для бытового
+   приближения. Для строгости поезд/авто всё равно ограничены океаном по
+   coastal-проверке (см. ниже). */
+
+/* ── Береговые точки мира (≈ морские порты + ключевые точки побережий) ── */
+const COASTAL_POINTS = [
+  // Atlantic East (Europe / West Africa)
+  [55.95, -3.20],  // Edinburgh
+  [51.51, -0.13],  // London
+  [38.72, -9.14],  // Lisbon
+  [33.59, -7.62],  // Casablanca
+  [14.69, -17.45], // Dakar
+  [6.46, 3.39],    // Lagos
+  [-8.84, 13.23],  // Luanda
+  [-33.92, 18.42], // Cape Town
+  // Atlantic West (Americas East)
+  [64.13, -21.94], // Reykjavik
+  [44.65, -63.58], // Halifax
+  [40.71, -74.01], // NYC
+  [25.78, -80.19], // Miami
+  [10.50, -66.92], // Caracas
+  [-22.91, -43.20],// Rio de Janeiro
+  [-34.61, -58.39],// Buenos Aires
+  // Mediterranean
+  [41.39, 2.17],   // Barcelona
+  [43.30, 5.37],   // Marseille
+  [41.90, 12.50],  // Rome
+  [40.85, 14.27],  // Naples
+  [37.97, 23.72],  // Athens
+  [45.65, 13.78],  // Trieste
+  [44.40, 8.95],   // Genoa
+  [41.01, 28.97],  // Istanbul
+  [31.20, 29.92],  // Alexandria
+  [32.09, 34.78],  // Tel Aviv
+  // Black Sea / Caspian
+  [46.48, 30.72],  // Odessa
+  [43.58, 39.72],  // Sochi
+  [44.62, 33.53],  // Sevastopol
+  [41.02, 28.97],  // (dup ok)
+  [40.41, 49.87],  // Baku (Caspian)
+  [43.20, 50.40],  // Aktau (Caspian)
+  // Baltic / North Sea
+  [59.33, 18.07],  // Stockholm
+  [60.17, 24.94],  // Helsinki
+  [59.44, 24.75],  // Tallinn
+  [56.95, 24.11],  // Riga
+  [54.35, 18.65],  // Gdansk
+  [59.93, 30.34],  // St Petersburg
+  [52.37, 4.90],   // Amsterdam
+  [53.55, 9.99],   // Hamburg
+  [60.39, 5.32],   // Bergen
+  // Arctic
+  [68.97, 33.08],  // Murmansk
+  [69.65, 18.96],  // Tromsø
+  // Red Sea
+  [29.97, 32.55],  // Suez
+  [21.49, 39.19],  // Jeddah
+  // Persian Gulf
+  [25.27, 55.30],  // Dubai
+  [24.47, 54.37],  // Abu Dhabi
+  [25.29, 51.53],  // Doha
+  [29.38, 47.99],  // Kuwait City
+  [26.23, 50.59],  // Manama
+  // Indian Ocean
+  [19.08, 72.88],  // Mumbai
+  [13.08, 80.27],  // Chennai
+  [6.93, 79.86],   // Colombo
+  [-4.04, 39.67],  // Mombasa
+  [-25.97, 32.58], // Maputo
+  [-20.16, 57.50], // Mauritius
+  // SE Asia / Pacific West
+  [13.74, 100.53], // Bangkok
+  [1.29, 103.85],  // Singapore
+  [22.30, 114.17], // Hong Kong
+  [31.23, 121.47], // Shanghai
+  [37.57, 126.98], // Seoul
+  [35.69, 139.69], // Tokyo
+  [14.60, 120.98], // Manila
+  [-6.20, 106.85], // Jakarta
+  [10.82, 106.63], // Ho Chi Minh
+  // Australia / NZ / Pacific
+  [-33.87, 151.21],// Sydney
+  [-37.81, 144.96],// Melbourne
+  [-31.95, 115.86],// Perth
+  [-36.85, 174.76],// Auckland
+  [-17.74, 168.31],// Port Vila
+  [-18.14, 178.44],// Suva
+  // Pacific East (Americas)
+  [49.28, -123.12],// Vancouver
+  [37.77, -122.42],// SF
+  [34.05, -118.24],// LA
+  [9.93, -84.08],  // San Jose CR (close enough)
+  [-12.05, -77.04],// Lima
+  [-33.05, -71.61],// Valparaiso
+];
+
 /* ── Haversine ── */
 function haversine(lat1, lon1, lat2, lon2) {
   const R = 6371;
@@ -280,6 +419,47 @@ function haversine(lat1, lon1, lat2, lon2) {
             Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) *
             Math.sin(dLon/2)**2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+/* Расстояние от города до ближайшей береговой точки (км). */
+function distanceToCoast(lat, lon) {
+  let min = Infinity;
+  for (const [clat, clon] of COASTAL_POINTS) {
+    const d = haversine(lat, lon, clat, clon);
+    if (d < min) min = d;
+  }
+  return min;
+}
+
+const COAST_THRESHOLD_KM = 500;
+
+/* ── Реалистичность транспорта для маршрута ──
+   Возвращает true если выбранный mode пригоден для этой пары городов.
+*/
+function isTransportRealistic(modeKey, a, b) {
+  if (modeKey === 'plane') return true;
+
+  const groupA = CONTINENT_GROUP[a.country_code] || null;
+  const groupB = CONTINENT_GROUP[b.country_code] || null;
+
+  if (modeKey === 'train') {
+    // Поезд: только в рамках одной супергруппы (есть сухопутная связь).
+    if (!groupA || !groupB) return false;
+    return groupA === groupB;
+  }
+  if (modeKey === 'car') {
+    // Авто: тоже только при сухопутной связи.
+    if (!groupA || !groupB) return false;
+    return groupA === groupB;
+  }
+  if (modeKey === 'ship') {
+    // Корабль: оба города должны быть достаточно близко к морю/океану.
+    const dA = distanceToCoast(a.lat, a.lon);
+    const dB = distanceToCoast(b.lat, b.lon);
+    if (dA > COAST_THRESHOLD_KM && dB > COAST_THRESHOLD_KM) return false;
+    return true;
+  }
+  return true;
 }
 
 function formatTime(hours) {
@@ -294,7 +474,7 @@ function fmtKm(km) {
   return Math.round(km).toLocaleString('ru-RU') + ' км';
 }
 
-/* ── Geocoding ── */
+/* ── Geocoding (single best match) ── */
 async function geocode(query) {
   const url = `${GEO_API}?name=${encodeURIComponent(query)}&count=3&language=ru&format=json`;
   const resp = await fetch(url);
@@ -303,11 +483,29 @@ async function geocode(query) {
   if (!data.results || data.results.length === 0) return null;
   const r = data.results[0];
   return {
-    name:    r.name,
-    country: r.country || '',
-    lat:     r.latitude,
-    lon:     r.longitude,
+    name:         r.name,
+    country:      r.country || '',
+    country_code: r.country_code || '',
+    lat:          r.latitude,
+    lon:          r.longitude,
   };
+}
+
+/* ── Geocoding (autocomplete suggestions) ── */
+async function geocodeMany(query) {
+  const url = `${GEO_API}?name=${encodeURIComponent(query)}&count=6&language=ru&format=json`;
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error('HTTP ' + resp.status);
+  const data = await resp.json();
+  if (!data.results) return [];
+  return data.results.map(r => ({
+    name:         r.name,
+    admin1:       r.admin1 || '',
+    country:      r.country || '',
+    country_code: r.country_code || '',
+    lat:          r.latitude,
+    lon:          r.longitude,
+  }));
 }
 
 /* ── Resolve city with UI feedback ── */
@@ -332,6 +530,74 @@ async function resolveCity(inputEl, foundEl) {
   }
 }
 
+/* ── Autocomplete ── */
+function setupAutocomplete(inputId, dropdownId, foundId, slot) {
+  const input = document.getElementById(inputId);
+  const drop  = document.getElementById(dropdownId);
+  const found = document.getElementById(foundId);
+  let timer = null;
+  let lastQuery = '';
+
+  function hide() { drop.classList.remove('show'); drop.innerHTML = ''; }
+
+  function render(items) {
+    if (!items.length) { hide(); return; }
+    drop.innerHTML = items.map((c, i) => {
+      const meta = [c.admin1, c.country].filter(Boolean).join(', ');
+      const safe = (c.name || '').replace(/"/g, '&quot;');
+      return `<div class="ac-item" data-idx="${i}">
+        <div class="ac-name">${safe}</div>
+        <div class="ac-meta">${meta}</div>
+      </div>`;
+    }).join('');
+    Array.from(drop.querySelectorAll('.ac-item')).forEach(el => {
+      el.addEventListener('mousedown', (ev) => {
+        ev.preventDefault();
+        const idx = +el.dataset.idx;
+        const c = items[idx];
+        input.value = c.name;
+        if (slot === 'a') cityA = c; else cityB = c;
+        found.textContent = `✓ ${c.name}, ${c.country}`;
+        found.className = 'city-found ok';
+        hide();
+      });
+    });
+    drop.classList.add('show');
+  }
+
+  input.addEventListener('input', () => {
+    // Любое ручное редактирование сбрасывает выбранный объект города.
+    if (slot === 'a') cityA = null; else cityB = null;
+    found.textContent = ''; found.className = 'city-found';
+
+    const q = input.value.trim();
+    lastQuery = q;
+    if (timer) clearTimeout(timer);
+    if (q.length < 2) { hide(); return; }
+    timer = setTimeout(async () => {
+      try {
+        const items = await geocodeMany(q);
+        if (input.value.trim() !== lastQuery) return; // input изменился
+        render(items);
+      } catch (_) {
+        hide();
+      }
+    }, 250);
+  });
+
+  input.addEventListener('blur', () => {
+    // Закрываем с задержкой, чтобы успел сработать mousedown по элементу.
+    setTimeout(hide, 120);
+  });
+
+  input.addEventListener('focus', () => {
+    if (drop.innerHTML) drop.classList.add('show');
+  });
+}
+
+setupAutocomplete('city-a', 'ac-a', 'found-a', 'a');
+setupAutocomplete('city-b', 'ac-b', 'found-b', 'b');
+
 /* ── Calculate ── */
 async function calculate() {
   const badge  = document.getElementById('status-badge');
@@ -341,16 +607,20 @@ async function calculate() {
   badge.className = ''; badge.textContent = 'поиск';
 
   document.getElementById('result-card').classList.remove('show');
-  document.getElementById('tips-card').classList.remove('show');
 
-  cityA = await resolveCity(
-    document.getElementById('city-a'),
-    document.getElementById('found-a')
-  );
-  cityB = await resolveCity(
-    document.getElementById('city-b'),
-    document.getElementById('found-b')
-  );
+  // Если пользователь не выбрал из списка — добираем по тексту.
+  if (!cityA) {
+    cityA = await resolveCity(
+      document.getElementById('city-a'),
+      document.getElementById('found-a')
+    );
+  }
+  if (!cityB) {
+    cityB = await resolveCity(
+      document.getElementById('city-b'),
+      document.getElementById('found-b')
+    );
+  }
 
   btn.disabled = false;
   btn.textContent = 'Рассчитать';
@@ -360,36 +630,50 @@ async function calculate() {
     return;
   }
 
-  const distStraight = haversine(cityA.lat, cityA.lon, cityB.lat, cityB.lon);
-  const t = TRANSPORT[mode];
-  const dist = distStraight * t.factor;
-  const time = dist / t.speed + t.extra;
-
-  document.getElementById('res-distance').textContent = fmtKm(dist);
-  document.getElementById('res-time').textContent     = formatTime(time);
-  document.getElementById('res-note-label').textContent = 'Метод';
-  document.getElementById('res-note').textContent     = t.note;
+  const distEl = document.getElementById('res-distance');
+  const timeEl = document.getElementById('res-time');
+  const noteLabelEl = document.getElementById('res-note-label');
+  const noteEl = document.getElementById('res-note');
 
   const resultCard = document.getElementById('result-card');
   resultCard.querySelector('#result-header').textContent =
     `${cityA.name} → ${cityB.name}`;
+
+  distEl.classList.remove('dash');
+  noteEl.classList.remove('warn');
+
+  const t = TRANSPORT[mode];
+
+  if (!isTransportRealistic(mode, cityA, cityB)) {
+    distEl.textContent = '—';
+    timeEl.textContent = '—';
+    distEl.classList.add('dash');
+    noteLabelEl.textContent = 'Маршрут';
+    noteEl.classList.add('warn');
+    if (mode === 'train') {
+      noteEl.textContent = `${t.icon} Поезд недоступен между разными континентами / через океаны`;
+    } else if (mode === 'car') {
+      noteEl.textContent = `${t.icon} Авто недоступен — нет сухопутной связи между регионами`;
+    } else if (mode === 'ship') {
+      noteEl.textContent = `${t.icon} Корабль недоступен — оба города далеко от моря/океана`;
+    } else {
+      noteEl.textContent = `${t.icon} Транспорт недоступен для этого маршрута`;
+    }
+    resultCard.classList.add('show');
+    badge.className = 'ok'; badge.textContent = 'готово';
+    return;
+  }
+
+  const distStraight = haversine(cityA.lat, cityA.lon, cityB.lat, cityB.lon);
+  const dist = distStraight * t.factor;
+  const time = dist / t.speed + t.extra;
+
+  distEl.textContent = fmtKm(dist);
+  timeEl.textContent = formatTime(time);
+  noteLabelEl.textContent = 'Метод';
+  noteEl.textContent = t.note;
+
   resultCard.classList.add('show');
-
-  /* tips: all transports */
-  const tbody = document.getElementById('tips-body');
-  tbody.innerHTML = Object.entries(TRANSPORT).map(([key, tr]) => {
-    const d = distStraight * tr.factor;
-    const h = d / tr.speed + tr.extra;
-    return `<div class="tip-row">
-      <span class="tip-transport">${tr.icon} ${tr.label}</span>
-      <span>
-        <span class="tip-time">${formatTime(h)}</span>
-        <span class="tip-km"> · ${fmtKm(d)}</span>
-      </span>
-    </div>`;
-  }).join('');
-  document.getElementById('tips-card').classList.add('show');
-
   badge.className = 'ok'; badge.textContent = 'готово';
 }
 
@@ -418,7 +702,6 @@ function setQuick(from, to) {
   document.getElementById('found-b').textContent = '';
   cityA = null; cityB = null;
   document.getElementById('result-card').classList.remove('show');
-  document.getElementById('tips-card').classList.remove('show');
 }
 
 /* ── Enter key ── */
