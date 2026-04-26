@@ -2293,7 +2293,7 @@ async def country_of_day_start(update: Update, context: ContextTypes.DEFAULT_TYP
         f"📖 {country['desc']}\n\n"
         f"💡 Интересный факт: {country['fact']}\n\n"
         f"{flag_line}\n"
-        f"🏳 Собрано флагов: *{count}* из 195\n\n"
+        f"🏳 Собрано флагов: *{count}* из 189\n\n"
         f"Возвращайся завтра за новым флагом! 🎒"
     )
     await update.message.reply_text(text, parse_mode="Markdown", reply_markup=_cod_kb())
@@ -2321,7 +2321,7 @@ async def country_of_day_handler(update: Update, context: ContextTypes.DEFAULT_T
         ) or "Пока никто не собрал флаги."
         msg = (
             f"🏆 *Твоя коллекция флагов*\n\n"
-            f"Собрано: *{count}* из 195\n\n"
+            f"Собрано: *{count}* из 189\n\n"
             f"{flags_line}\n\n"
             f"📊 *Топ коллекционеров:*\n{top_lines}"
         )
@@ -3522,7 +3522,7 @@ async def handle_webapp_data(update: Update, context: ContextTypes.DEFAULT_TYPE)
     # ── 🗺 Мои страны (index.html) ──────────────────────────────────────────
     if source == "countries":
         count = data.get("count", len(data.get("visited", [])))
-        total = data.get("total", 195)
+        total = data.get("total", 200)
         user = update.effective_user
         upsert_countries_count(user.id, user.username, user.first_name, count)
         await update.message.reply_text(
@@ -3553,7 +3553,7 @@ async def handle_webapp_data(update: Update, context: ContextTypes.DEFAULT_TYPE)
     if countries:
         count = len(countries)
         await update.message.reply_text(
-            f"✅ Список стран сохранён! Посещено: *{count}* стран из 195",
+            f"✅ Список стран сохранён! Посещено: *{count}* стран из 200",
             parse_mode="Markdown",
             reply_markup=get_main_keyboard(),
         )
