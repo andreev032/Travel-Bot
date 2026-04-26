@@ -439,6 +439,7 @@ TIMEZONE_URL    = "https://andreev032.github.io/Travel-Bot/timezone.html"
 ATTRACTIONS_URL = "https://andreev032.github.io/Travel-Bot/attractions.html"
 RUSSIA_URL      = "https://andreev032.github.io/Travel-Bot/russia.html"
 DIARY_URL       = "https://andreev032.github.io/Travel-Bot/diary.html"
+DISTANCE_URL    = "https://andreev032.github.io/Travel-Bot/distance.html"
 CHANNEL_URL     = "https://t.me/like_a_local"
 
 
@@ -499,7 +500,8 @@ def get_folder_mytrips_kb():
             [KeyboardButton("🇷🇺 Путешествия по России",      web_app=WebAppInfo(url=RUSSIA_URL)),
              KeyboardButton("🏛 Мои достопримечательности",   web_app=WebAppInfo(url=ATTRACTIONS_URL))],
             [KeyboardButton("📊 Моя статистика",              web_app=WebAppInfo(url=STATS_URL)),
-             KeyboardButton("📖 Дневник путешественника",     web_app=WebAppInfo(url=DIARY_URL))],
+             KeyboardButton("📏 Калькулятор расстояний",      web_app=WebAppInfo(url=DISTANCE_URL))],
+            [KeyboardButton("📖 Дневник путешественника",     web_app=WebAppInfo(url=DIARY_URL))],
             [KeyboardButton("◀️ Назад"),                      KeyboardButton(HOME_BTN)],
         ],
         resize_keyboard=True,
