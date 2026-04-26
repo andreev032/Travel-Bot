@@ -3528,7 +3528,7 @@ async def handle_webapp_data(update: Update, context: ContextTypes.DEFAULT_TYPE)
     # ── 🗺 Мои страны (index.html) ──────────────────────────────────────────
     if source == "countries":
         count = data.get("count", len(data.get("visited", [])))
-        total = data.get("total", 200)
+        total = data.get("total", 195)
         user = update.effective_user
         upsert_countries_count(user.id, user.username, user.first_name, count)
         await update.message.reply_text(
@@ -3559,7 +3559,7 @@ async def handle_webapp_data(update: Update, context: ContextTypes.DEFAULT_TYPE)
     if countries:
         count = len(countries)
         await update.message.reply_text(
-            f"✅ Список стран сохранён! Посещено: *{count}* стран из 200",
+            f"✅ Список стран сохранён! Посещено: *{count}* стран из 195",
             parse_mode="Markdown",
             reply_markup=get_main_keyboard(),
         )
