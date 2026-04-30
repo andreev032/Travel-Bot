@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Политика возврата — Как местный</title>
+  <meta name="description" content="Политика возврата денежных средств за подписку на Telegram-бот «Как местный»." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --accent: #7c3aed;
+      --bg-deep: #0a0a1a;
+      --text: #e8eaf0;
+      --muted: #8890a8;
+      --border: rgba(255,255,255,.07);
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg-deep);
+      color: var(--text);
+      line-height: 1.7;
+      padding: 40px 22px 80px;
+    }
+    .container { max-width: 760px; margin: 0 auto; }
+    .back {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: .9rem;
+      margin-bottom: 24px;
+      transition: color .2s;
+    }
+    .back:hover { color: var(--accent); }
+    h1 {
+      font-size: clamp(1.6rem, 4vw, 2.2rem);
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 8px;
+      line-height: 1.2;
+    }
+    .meta {
+      color: var(--muted);
+      font-size: .88rem;
+      margin-bottom: 32px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--border);
+    }
+    h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #fff;
+      margin: 28px 0 10px;
+    }
+    p, li {
+      font-size: .96rem;
+      color: #c4c8d4;
+      margin-bottom: 10px;
+    }
+    ul, ol { padding-left: 22px; margin-bottom: 12px; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    strong { color: #fff; }
+    .highlight {
+      background: rgba(124,58,237,.10);
+      border: 1px solid rgba(124,58,237,.30);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin: 18px 0;
+      color: #d6dae6;
+    }
+    .req {
+      background: rgba(255,255,255,.03);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-top: 28px;
+      font-size: .92rem;
+      color: var(--muted);
+    }
+    .req strong { color: var(--text); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a class="back" href="landing.html">← На главную</a>
+    <h1>Политика возврата</h1>
+    <p class="meta">Редакция от [ДАТА_PLACEHOLDER]</p>
+
+    <h2>1. Общие условия</h2>
+    <p>
+      Настоящая Политика регулирует порядок возврата денежных средств за платную
+      подписку (Премиум доступ) на сервис Telegram-бота
+      <a href="https://t.me/like_a_local_bot" target="_blank" rel="noopener">@like_a_local_bot</a>.
+    </p>
+
+    <div class="highlight">
+      <strong>Возврат возможен в течение 14 (четырнадцати) календарных дней</strong>
+      с момента оплаты подписки при условии, что услуга <strong>не была использована</strong> —
+      то есть Премиум доступ не был активирован и Премиум-функции Сервиса
+      не использовались.
+    </div>
+
+    <h2>2. Когда возврат невозможен</h2>
+    <p>Возврат не производится в следующих случаях:</p>
+    <ul>
+      <li>прошло более 14 календарных дней с момента оплаты;</li>
+      <li>Пользователь начал пользоваться Премиум-функциями Сервиса;</li>
+      <li>подписка была заблокирована из-за нарушения Пользователем условий
+        <a href="oferta.html">Публичной оферты</a>.</li>
+    </ul>
+
+    <h2>3. Порядок оформления возврата</h2>
+    <ol>
+      <li>Пользователь направляет письменное заявление на e-mail
+        <a href="mailto:[EMAIL_PLACEHOLDER]">[EMAIL_PLACEHOLDER]</a>.</li>
+      <li>В заявлении необходимо указать:
+        <ul>
+          <li>Telegram username и user_id, на котором оформлена подписка;</li>
+          <li>дату и сумму платежа;</li>
+          <li>причину возврата;</li>
+          <li>реквизиты для возврата средств.</li>
+        </ul>
+      </li>
+      <li>Исполнитель рассматривает заявление в течение <strong>10 рабочих дней</strong>
+        и уведомляет Пользователя о решении.</li>
+      <li>В случае одобрения денежные средства возвращаются на тот же платёжный
+        инструмент, с которого была произведена оплата, в срок до
+        <strong>10 рабочих дней</strong> с момента одобрения заявления
+        (срок зачисления зависит от платёжной системы).</li>
+    </ol>
+
+    <h2>4. Частичный возврат</h2>
+    <p>
+      Если на момент обращения 14-дневный срок не истёк, но Пользователь уже
+      воспользовался частью услуги, возможен частичный возврат пропорционально
+      неиспользованному периоду — по согласованию с Исполнителем.
+    </p>
+
+    <h2>5. Контакты для возвратов</h2>
+    <p>
+      Все заявления на возврат принимаются по адресу:
+      <a href="mailto:[EMAIL_PLACEHOLDER]">[EMAIL_PLACEHOLDER]</a>.
+    </p>
+
+    <div class="req">
+      <strong>Реквизиты Исполнителя</strong><br>
+      ИП [ФИО_PLACEHOLDER]<br>
+      ИНН [ИНН_PLACEHOLDER]<br>
+      ОГРНИП [ОГРНИП_PLACEHOLDER]<br>
+      Email: <a href="mailto:[EMAIL_PLACEHOLDER]">[EMAIL_PLACEHOLDER]</a>
+    </div>
+  </div>
+</body>
+</html>
