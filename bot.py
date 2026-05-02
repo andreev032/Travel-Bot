@@ -7,11 +7,8 @@ import asyncio
 import traceback
 import urllib.request
 import urllib.parse
-import sqlite3
-import threading
 import requests
 import psycopg2
-import psycopg2.extras
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton, WebAppInfo, InlineKeyboardMarkup, InlineKeyboardButton, BotCommand
@@ -26,34 +23,17 @@ TOKEN            = "8701321387:AAHwb_WkmrimPtInwDftv8jb0d03gTkogqA"
 CHANNEL_ID       = -1003580791059   # ВРЕМЕННО: тестовый канал для проверки расписания
 TEST_CHANNEL_ID  = -1003580791059   # тестовый канал — команда /testpost
 MOSCOW_TZ        = ZoneInfo("Europe/Moscow")
-# ── Хранилище статистики пользователей (PostgreSQL → SQLite → JSON) ─
-_db_backend: str = "none"          # "postgres" | "sqlite" | "json"
-_db_conn    = None                 # psycopg2 or sqlite3 connection
-_db_lock    = threading.Lock()
-_DATA_DIR   = "/app/data"
-_SQLITE_PATH = os.path.join(_DATA_DIR, "users.db")
-_JSON_PATH   = os.path.join(_DATA_DIR, "users.json")
 
-# ── helpers ──────────────────────────────────────────────────────────
+# ── Хранилище статистики пользователей (PostgreSQL) ──────────────────
 
-def _ensure_data_dir() -> bool:
+def get_db_connection():
+    return psycopg2.connect(os.environ['DATABASE_URL'])
+
+
+async def init_db(app) -> None:
+    """Создаёт таблицы при старте бота."""
+    conn = get_db_connection()
     try:
-        os.makedirs(_DATA_DIR, exist_ok=True)
-        return True
-    except OSError as e:
-        logger.warning("Не удалось создать %s: %s", _DATA_DIR, e)
-        return False
-
-def _try_postgres() -> bool:
-    global _db_conn, _db_backend
-    raw = os.environ.get("DATABASE_URL")
-    if not raw:
-        logger.warning("DATABASE_URL отсутствует в os.environ")
-        return False
-    logger.info("DATABASE_URL найден: %.30s…", raw)
-    try:
-        conn = psycopg2.connect(raw, connect_timeout=5)
-        conn.autocommit = True
         with conn.cursor() as cur:
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS users (
@@ -66,11 +46,11 @@ def _try_postgres() -> bool:
             """)
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS user_countries (
-                    user_id        BIGINT PRIMARY KEY,
-                    username       TEXT,
-                    first_name     TEXT,
+                    user_id         BIGINT PRIMARY KEY,
+                    username        TEXT,
+                    first_name      TEXT,
                     countries_count INTEGER DEFAULT 0,
-                    updated_at     TIMESTAMP DEFAULT NOW()
+                    updated_at      TIMESTAMP DEFAULT NOW()
                 )
             """)
             cur.execute("""
@@ -81,312 +61,118 @@ def _try_postgres() -> bool:
                     PRIMARY KEY (user_id, country_code)
                 )
             """)
-        _db_conn    = conn
-        _db_backend = "postgres"
-        # Логируем количество строк чтобы убедиться что данные сохранились
-        try:
-            with conn.cursor() as cur:
-                cur.execute("SELECT COUNT(*) FROM users")
-                n_users = cur.fetchone()[0]
-                cur.execute("SELECT COUNT(*) FROM user_countries")
-                n_countries = cur.fetchone()[0]
-            logger.info("Бэкенд: PostgreSQL ✓ | users=%d, user_countries=%d", n_users, n_countries)
-        except Exception:
-            logger.info("Бэкенд: PostgreSQL ✓")
-        return True
-    except Exception as e:
-        logger.error("PostgreSQL недоступен: %s: %s", type(e).__name__, e)
-        logger.error(traceback.format_exc())
-        return False
-
-def _check_volume() -> None:
-    """Диагностика Railway Volume — вызывается при каждом старте."""
-    logger.info("── Диагностика /app/data ──────────────────────────")
-    logger.info("DB путь : %s", _SQLITE_PATH)
-
-    # Существование и размер файла — главный признак того, сохранился ли Volume
-    db_exists = os.path.exists(_SQLITE_PATH)
-    db_size   = os.path.getsize(_SQLITE_PATH) if db_exists else 0
-    if db_exists:
-        logger.info("users.db : СУЩЕСТВУЕТ, размер %d байт", db_size)
-    else:
-        logger.warning("users.db : НЕ СУЩЕСТВУЕТ (новый деплой без Volume или Volume не подключён)")
-
-    # Проверяем запись в /app/data (Railway Volume должен это уметь)
-    test_path = os.path.join(_DATA_DIR, "test.txt")
-    try:
-        os.makedirs(_DATA_DIR, exist_ok=True)
-        with open(test_path, "w", encoding="utf-8") as f:
-            f.write("railway-volume-ok")
-        with open(test_path, "r", encoding="utf-8") as f:
-            content = f.read()
-        logger.info("Запись /app/data : ✓")
-    except Exception as e:
-        logger.error("Запись /app/data FAILED: %s: %s", type(e).__name__, e)
-
-    # Список файлов в /app/data
-    try:
-        files = os.listdir(_DATA_DIR)
-        logger.info("Файлы в /app/data : %s", files)
-    except Exception as e:
-        logger.error("os.listdir(%s) FAILED: %s", _DATA_DIR, e)
-
-    logger.info("───────────────────────────────────────────────────")
-
-def _try_sqlite() -> bool:
-    global _db_conn, _db_backend
-    if not _ensure_data_dir():
-        return False
-    try:
-        conn = sqlite3.connect(_SQLITE_PATH, check_same_thread=False)
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS users (
-                user_id    INTEGER PRIMARY KEY,
-                username   TEXT,
-                first_name TEXT,
-                first_seen TEXT DEFAULT (datetime('now')),
-                last_seen  TEXT DEFAULT (datetime('now'))
-            )
-        """)
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS user_countries (
-                user_id         INTEGER PRIMARY KEY,
-                username        TEXT,
-                first_name      TEXT,
-                countries_count INTEGER DEFAULT 0,
-                updated_at      TEXT DEFAULT (datetime('now'))
-            )
-        """)
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS user_flags (
-                user_id        INTEGER,
-                country_code   TEXT,
-                collected_date TEXT,
-                PRIMARY KEY (user_id, country_code)
-            )
-        """)
         conn.commit()
-        _db_conn    = conn
-        _db_backend = "sqlite"
-        # Логируем количество строк чтобы убедиться что данные сохранились
-        try:
-            n_users     = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
-            n_countries = conn.execute("SELECT COUNT(*) FROM user_countries").fetchone()[0]
-            logger.info("Бэкенд: SQLite ✓  | users=%d, user_countries=%d | путь: %s",
-                        n_users, n_countries, _SQLITE_PATH)
-        except Exception:
-            logger.info("Бэкенд: SQLite (%s) ✓", _SQLITE_PATH)
-        return True
+        with conn.cursor() as cur:
+            cur.execute("SELECT COUNT(*) FROM users")
+            n_users = cur.fetchone()[0]
+            cur.execute("SELECT COUNT(*) FROM user_countries")
+            n_countries = cur.fetchone()[0]
+        logger.info("Бэкенд: PostgreSQL ✓ | users=%d, user_countries=%d", n_users, n_countries)
     except Exception as e:
-        logger.error("SQLite недоступен: %s: %s", type(e).__name__, e)
+        logger.error("init_db: %s: %s", type(e).__name__, e)
         logger.error(traceback.format_exc())
-        return False
+        raise
+    finally:
+        conn.close()
 
-def _init_json() -> None:
-    global _db_backend
-    _ensure_data_dir()
-    _db_backend = "json"
-    logger.info("Бэкенд: JSON (%s)", _JSON_PATH)
-
-def _load_json() -> dict:
-    try:
-        with open(_JSON_PATH, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {}
-
-def _save_json(data: dict) -> None:
-    tmp = _JSON_PATH + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-    os.replace(tmp, _JSON_PATH)
-
-# ── public API ───────────────────────────────────────────────────────
-
-async def init_db(app) -> None:
-    """Пробует PostgreSQL, затем SQLite, затем JSON."""
-    _check_volume()
-    if _try_postgres():
-        return
-    logger.warning("Переключаемся на SQLite…")
-    if _try_sqlite():
-        return
-    logger.warning("Переключаемся на JSON…")
-    _init_json()
 
 async def record_user(user_id: int, username: str | None, first_name: str | None) -> None:
-    """Сохраняет/обновляет пользователя в активном бэкенде."""
+    """Сохраняет/обновляет пользователя."""
     try:
-        if _db_backend == "postgres":
-            with _db_lock:
-                with _db_conn.cursor() as cur:
-                    cur.execute("""
-                        INSERT INTO users (user_id, username, first_name)
-                        VALUES (%s, %s, %s)
-                        ON CONFLICT (user_id) DO UPDATE
-                            SET last_seen  = NOW(),
-                                username   = EXCLUDED.username,
-                                first_name = EXCLUDED.first_name
-                    """, (user_id, username, first_name))
-        elif _db_backend == "sqlite":
-            now = datetime.now(MOSCOW_TZ).strftime("%Y-%m-%d %H:%M:%S")
-            with _db_lock:
-                _db_conn.execute("""
-                    INSERT INTO users (user_id, username, first_name, first_seen, last_seen)
-                    VALUES (?, ?, ?, ?, ?)
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO users (user_id, username, first_name)
+                    VALUES (%s, %s, %s)
                     ON CONFLICT (user_id) DO UPDATE
-                        SET last_seen  = excluded.last_seen,
-                            username   = excluded.username,
-                            first_name = excluded.first_name
-                """, (user_id, username, first_name, now, now))
-                _db_conn.commit()
-        elif _db_backend == "json":
-            now = datetime.now(MOSCOW_TZ).strftime("%Y-%m-%d %H:%M:%S")
-            with _db_lock:
-                data = _load_json()
-                key  = str(user_id)
-                if key not in data:
-                    data[key] = {"username": username or "", "first_name": first_name or "",
-                                 "first_seen": now, "last_seen": now}
-                else:
-                    data[key].update({"username": username or "", "first_name": first_name or "",
-                                      "last_seen": now})
-                _save_json(data)
-        else:
-            return
-        logger.info("record_user: user_id=%s сохранён [%s] ✓", user_id, _db_backend)
+                        SET last_seen  = NOW(),
+                            username   = EXCLUDED.username,
+                            first_name = EXCLUDED.first_name
+                """, (user_id, username, first_name))
+            conn.commit()
+        finally:
+            conn.close()
+        logger.info("record_user: user_id=%s сохранён ✓", user_id)
     except Exception as e:
-        logger.error("record_user: ошибка user_id=%s [%s]: %s: %s",
-                     user_id, _db_backend, type(e).__name__, e)
+        logger.error("record_user: ошибка user_id=%s: %s: %s",
+                     user_id, type(e).__name__, e)
+
 
 def upsert_countries_count(user_id: int, username: str | None,
                            first_name: str | None, count: int) -> None:
     """Сохраняет количество отмеченных стран пользователя в user_countries."""
     try:
-        if _db_backend == "postgres":
-            with _db_lock:
-                with _db_conn.cursor() as cur:
-                    cur.execute("""
-                        INSERT INTO user_countries (user_id, username, first_name, countries_count, updated_at)
-                        VALUES (%s, %s, %s, %s, NOW())
-                        ON CONFLICT (user_id) DO UPDATE SET
-                            username        = EXCLUDED.username,
-                            first_name      = EXCLUDED.first_name,
-                            countries_count = EXCLUDED.countries_count,
-                            updated_at      = NOW()
-                    """, (user_id, username, first_name, count))
-        elif _db_backend == "sqlite":
-            now = datetime.now(MOSCOW_TZ).strftime("%Y-%m-%d %H:%M:%S")
-            with _db_lock:
-                _db_conn.execute("""
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""
                     INSERT INTO user_countries (user_id, username, first_name, countries_count, updated_at)
-                    VALUES (?, ?, ?, ?, ?)
-                    ON CONFLICT(user_id) DO UPDATE SET
-                        username        = excluded.username,
-                        first_name      = excluded.first_name,
-                        countries_count = excluded.countries_count,
-                        updated_at      = excluded.updated_at
-                """, (user_id, username, first_name, count, now))
-                _db_conn.commit()
+                    VALUES (%s, %s, %s, %s, NOW())
+                    ON CONFLICT (user_id) DO UPDATE SET
+                        username        = EXCLUDED.username,
+                        first_name      = EXCLUDED.first_name,
+                        countries_count = EXCLUDED.countries_count,
+                        updated_at      = NOW()
+                """, (user_id, username, first_name, count))
+            conn.commit()
+        finally:
+            conn.close()
         logger.info("upsert_countries_count: user_id=%s count=%s ✓", user_id, count)
     except Exception as e:
         logger.error("upsert_countries_count: ошибка user_id=%s: %s: %s", user_id, type(e).__name__, e)
 
 
-def get_countries_rating(user_id: int) -> tuple[list[dict], int]:
-    """Возвращает (топ-30 список, позиция текущего пользователя).
+def get_countries_rating(user_id: int) -> tuple[list[dict], int, int]:
+    """Возвращает (топ-30 список, позиция текущего пользователя, его счёт).
     Каждый элемент: {"name": str, "count": int}.
     Позиция — 1-based, 0 если пользователь не в рейтинге.
     """
     try:
-        if _db_backend in ("postgres", "sqlite"):
-            with _db_lock:
-                if _db_backend == "postgres":
-                    with _db_conn.cursor() as cur:
-                        cur.execute("""
-                            SELECT user_id, first_name, username, countries_count
-                            FROM user_countries
-                            WHERE countries_count > 0
-                            ORDER BY countries_count DESC, updated_at ASC
-                        """)
-                        rows = cur.fetchall()
-                else:
-                    cur = _db_conn.execute("""
-                        SELECT user_id, first_name, username, countries_count
-                        FROM user_countries
-                        WHERE countries_count > 0
-                        ORDER BY countries_count DESC, updated_at ASC
-                    """)
-                    rows = cur.fetchall()
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT user_id, first_name, username, countries_count
+                    FROM user_countries
+                    WHERE countries_count > 0
+                    ORDER BY countries_count DESC, updated_at ASC
+                """)
+                rows = cur.fetchall()
+        finally:
+            conn.close()
 
-            top30, my_pos, my_count = [], 0, 0
-            for pos, (uid, fname, uname, cnt) in enumerate(rows, 1):
-                name = fname or (f"@{uname}" if uname else f"id{uid}")
-                if pos <= 30:
-                    top30.append({"name": name, "count": cnt})
-                if uid == user_id:
-                    my_pos, my_count = pos, cnt
-            return top30, my_pos, my_count
+        top30, my_pos, my_count = [], 0, 0
+        for pos, (uid, fname, uname, cnt) in enumerate(rows, 1):
+            name = fname or (f"@{uname}" if uname else f"id{uid}")
+            if pos <= 30:
+                top30.append({"name": name, "count": cnt})
+            if uid == user_id:
+                my_pos, my_count = pos, cnt
+        return top30, my_pos, my_count
     except Exception as e:
         logger.error("get_countries_rating: %s: %s", type(e).__name__, e)
     return [], 0, 0
 
 
 def _get_stats() -> dict:
-    """Возвращает dict(total, new_7, new_30, active_today, since) из активного бэкенда."""
-    if _db_backend == "postgres":
-        with _db_lock:
-            with _db_conn.cursor() as cur:
-                cur.execute("SELECT COUNT(*) FROM users")
-                total = cur.fetchone()[0]
-                cur.execute("SELECT COUNT(*) FROM users WHERE first_seen >= NOW() - INTERVAL '7 days'")
-                new_7 = cur.fetchone()[0]
-                cur.execute("SELECT COUNT(*) FROM users WHERE first_seen >= NOW() - INTERVAL '30 days'")
-                new_30 = cur.fetchone()[0]
-                cur.execute("SELECT COUNT(*) FROM users WHERE last_seen >= CURRENT_DATE")
-                active_today = cur.fetchone()[0]
-                cur.execute("SELECT MIN(first_seen) FROM users")
-                row = cur.fetchone()[0]
-                since = row.strftime("%d.%m.%Y") if row else "нет данных"
-    elif _db_backend == "sqlite":
-        with _db_lock:
-            cur = _db_conn.execute("SELECT COUNT(*) FROM users")
+    """Возвращает dict(total, new_7, new_30, active_today, since)."""
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT COUNT(*) FROM users")
             total = cur.fetchone()[0]
-            cur = _db_conn.execute(
-                "SELECT COUNT(*) FROM users WHERE first_seen >= datetime('now', '-7 days')")
+            cur.execute("SELECT COUNT(*) FROM users WHERE first_seen >= NOW() - INTERVAL '7 days'")
             new_7 = cur.fetchone()[0]
-            cur = _db_conn.execute(
-                "SELECT COUNT(*) FROM users WHERE first_seen >= datetime('now', '-30 days')")
+            cur.execute("SELECT COUNT(*) FROM users WHERE first_seen >= NOW() - INTERVAL '30 days'")
             new_30 = cur.fetchone()[0]
-            cur = _db_conn.execute(
-                "SELECT COUNT(*) FROM users WHERE last_seen >= date('now')")
+            cur.execute("SELECT COUNT(*) FROM users WHERE last_seen >= CURRENT_DATE")
             active_today = cur.fetchone()[0]
-            cur = _db_conn.execute("SELECT MIN(first_seen) FROM users")
+            cur.execute("SELECT MIN(first_seen) FROM users")
             row = cur.fetchone()[0]
-            if row:
-                y, m, d = row[:10].split("-")
-                since = f"{d}.{m}.{y}"
-            else:
-                since = "нет данных"
-    elif _db_backend == "json":
-        data  = _load_json()
-        total = len(data)
-        now   = datetime.now(MOSCOW_TZ)
-        cut7  = (now - timedelta(days=7)).strftime("%Y-%m-%d %H:%M:%S")
-        cut30 = (now - timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
-        today = now.strftime("%Y-%m-%d")
-        new_7        = sum(1 for u in data.values() if u.get("first_seen", "") >= cut7)
-        new_30       = sum(1 for u in data.values() if u.get("first_seen", "") >= cut30)
-        active_today = sum(1 for u in data.values() if u.get("last_seen", "").startswith(today))
-        all_first = [u["first_seen"][:10] for u in data.values() if u.get("first_seen")]
-        if all_first:
-            y, m, d = min(all_first).split("-")
-            since = f"{d}.{m}.{y}"
-        else:
-            since = "нет данных"
-    else:
-        total = new_7 = new_30 = active_today = 0
-        since = "нет данных"
+            since = row.strftime("%d.%m.%Y") if row else "нет данных"
+    finally:
+        conn.close()
     return {"total": total, "new_7": new_7, "new_30": new_30, "active_today": active_today,
             "since": since}
 
@@ -2192,23 +1978,19 @@ def _add_flag_to_collection(user_id: int, country_code: str) -> bool:
     """Добавляет флаг в коллекцию. Возвращает True если флаг новый."""
     today = datetime.now(MOSCOW_TZ).strftime("%Y-%m-%d")
     try:
-        if _db_backend == "postgres":
-            with _db_lock:
-                with _db_conn.cursor() as cur:
-                    cur.execute("""
-                        INSERT INTO user_flags (user_id, country_code, collected_date)
-                        VALUES (%s, %s, %s)
-                        ON CONFLICT (user_id, country_code) DO NOTHING
-                    """, (user_id, country_code, today))
-                    return cur.rowcount > 0
-        elif _db_backend == "sqlite":
-            with _db_lock:
-                cur = _db_conn.execute("""
-                    INSERT OR IGNORE INTO user_flags (user_id, country_code, collected_date)
-                    VALUES (?, ?, ?)
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO user_flags (user_id, country_code, collected_date)
+                    VALUES (%s, %s, %s)
+                    ON CONFLICT (user_id, country_code) DO NOTHING
                 """, (user_id, country_code, today))
-                _db_conn.commit()
-                return cur.rowcount > 0
+                rowcount = cur.rowcount
+            conn.commit()
+            return rowcount > 0
+        finally:
+            conn.close()
     except Exception as e:
         logger.error("_add_flag_to_collection error: %s", e)
     return False
@@ -2217,16 +1999,13 @@ def _add_flag_to_collection(user_id: int, country_code: str) -> bool:
 def _get_flag_count(user_id: int) -> int:
     """Возвращает количество флагов пользователя."""
     try:
-        if _db_backend == "postgres":
-            with _db_lock:
-                with _db_conn.cursor() as cur:
-                    cur.execute("SELECT COUNT(*) FROM user_flags WHERE user_id = %s", (user_id,))
-                    return cur.fetchone()[0]
-        elif _db_backend == "sqlite":
-            with _db_lock:
-                return _db_conn.execute(
-                    "SELECT COUNT(*) FROM user_flags WHERE user_id = ?", (user_id,)
-                ).fetchone()[0]
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT COUNT(*) FROM user_flags WHERE user_id = %s", (user_id,))
+                return cur.fetchone()[0]
+        finally:
+            conn.close()
     except Exception as e:
         logger.error("_get_flag_count error: %s", e)
     return 0
@@ -2235,21 +2014,16 @@ def _get_flag_count(user_id: int) -> int:
 def _get_user_flags(user_id: int) -> list[str]:
     """Возвращает список кодов стран в коллекции пользователя."""
     try:
-        if _db_backend == "postgres":
-            with _db_lock:
-                with _db_conn.cursor() as cur:
-                    cur.execute(
-                        "SELECT country_code FROM user_flags WHERE user_id = %s ORDER BY collected_date",
-                        (user_id,)
-                    )
-                    return [r[0] for r in cur.fetchall()]
-        elif _db_backend == "sqlite":
-            with _db_lock:
-                rows = _db_conn.execute(
-                    "SELECT country_code FROM user_flags WHERE user_id = ? ORDER BY collected_date",
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT country_code FROM user_flags WHERE user_id = %s ORDER BY collected_date",
                     (user_id,)
-                ).fetchall()
-                return [r[0] for r in rows]
+                )
+                return [r[0] for r in cur.fetchall()]
+        finally:
+            conn.close()
     except Exception as e:
         logger.error("_get_user_flags error: %s", e)
     return []
@@ -2258,28 +2032,20 @@ def _get_user_flags(user_id: int) -> list[str]:
 def _get_flag_top() -> list[tuple]:
     """Возвращает топ-10 коллекционеров: (first_name, count)."""
     try:
-        if _db_backend == "postgres":
-            with _db_lock:
-                with _db_conn.cursor() as cur:
-                    cur.execute("""
-                        SELECT u.first_name, COUNT(f.country_code) AS cnt
-                        FROM user_flags f
-                        JOIN users u ON u.user_id = f.user_id
-                        GROUP BY u.user_id, u.first_name
-                        ORDER BY cnt DESC
-                        LIMIT 10
-                    """)
-                    return cur.fetchall()
-        elif _db_backend == "sqlite":
-            with _db_lock:
-                return _db_conn.execute("""
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""
                     SELECT u.first_name, COUNT(f.country_code) AS cnt
                     FROM user_flags f
                     JOIN users u ON u.user_id = f.user_id
                     GROUP BY u.user_id, u.first_name
                     ORDER BY cnt DESC
                     LIMIT 10
-                """).fetchall()
+                """)
+                return cur.fetchall()
+        finally:
+            conn.close()
     except Exception as e:
         logger.error("_get_flag_top error: %s", e)
     return []
@@ -7134,10 +6900,6 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     """Статистика пользователей — только для администратора."""
     if update.effective_user.id != ADMIN_ID:
         await update.message.reply_text("⛔ Нет доступа.")
-        return
-
-    if _db_backend == "none":
-        await update.message.reply_text("⛔ Хранилище недоступно.")
         return
 
     try:
