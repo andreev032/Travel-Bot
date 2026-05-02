@@ -426,7 +426,8 @@ MAIN_MENU, ANSWERING, HELP_MENU, HELP_TOPIC, TRANSLATING, VISA_MENU, VISA_CATEGO
     QUIZ_ACTIVE, \
     GAMES_MENU, GUESS_ACTIVE, PAIR_ACTIVE, \
     COUNTRY_OF_DAY, \
-    SHOP_MENU, SHOP_TYPING = range(38)
+    SHOP_MENU, SHOP_TYPING, \
+    EVENTS_MENU, EVENTS_TOPIC = range(40)
 
 # Замени на реальный HTTPS-URL после деплоя webapp/index.html
 WEBAPP_URL      = "https://andreev032.github.io/Travel-Bot/"
@@ -470,6 +471,7 @@ def get_folder_planning_kb():
             [KeyboardButton("🌍 Подобрать страну"),       KeyboardButton("🔮 Страна по судьбе")],
             [KeyboardButton("🌤 Сезоны путешествий"),     KeyboardButton("🛂 Визы")],
             [KeyboardButton("⛔ Несовместимые страны"),    KeyboardButton("✅ Чеклист", web_app=WebAppInfo(url=CHECKLIST_URL))],
+            [KeyboardButton("📅 Куда слетать")],
             [KeyboardButton("◀️ Назад"),                   KeyboardButton(HOME_BTN)],
         ],
         resize_keyboard=True,
@@ -3313,6 +3315,8 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await show_movies_menu(update, context)
     elif text == INCOMPATIBLE_BTN:
         return await show_incompatible_menu(update, context)
+    elif text == "📅 Куда слетать":
+        return await show_events_menu(update, context)
     elif text == "🚁 Дроны":
         return await drone_menu_handler(update, context)
     elif text == "🌤 Сезоны путешествий":
@@ -5473,6 +5477,205 @@ async def incompatible_topic_handler(update: Update, context: ContextTypes.DEFAU
     return await show_incompatible_menu(update, context)
 
 
+## ── 📅 КУДА СЛЕТАТЬ ─────────────────────────────────────────────────────────
+
+EVENTS_SECTIONS = {
+    "🏅 Спортивные события": (
+        "🏅 *СПОРТИВНЫЕ СОБЫТИЯ 2026*\n\n"
+        "🎾 *ТЕННИС — Большой шлем*\n"
+        "• Ролан Гаррос — 25 мая–7 июня 🇫🇷 Париж\n"
+        "• Уимблдон — 29 июня–12 июля 🇬🇧 Лондон\n"
+        "• US Open — 31 авг–13 сент 🇺🇸 Нью-Йорк\n\n"
+        "⚽ *ФУТБОЛ*\n"
+        "• ЧМ 2026 — 11 июня–19 июля\n"
+        "  🇺🇸 США / 🇨🇦 Канада / 🇲🇽 Мексика\n"
+        "  48 команд • 104 матча\n"
+        "  Финал 19 июля — Нью-Йорк (MetLife Stadium)\n\n"
+        "🏎 *ФОРМУЛА 1*\n"
+        "• Канада — 22–24 мая 🇨🇦 Монреаль\n"
+        "• Монако — 5–7 июня 🇲🇨\n"
+        "• Испания — 14 июня 🇪🇸 Барселона\n"
+        "• Австрия — 28 июня 🇦🇹\n"
+        "• Великобритания — 5 июля 🇬🇧 Сильверстоун\n"
+        "• Бельгия — 19 июля 🇧🇪 Спа\n"
+        "• Венгрия — 26 июля 🇭🇺 Будапешт\n"
+        "• Нидерланды — август 🇳🇱 Зандворт\n"
+        "• Италия — сентябрь 🇮🇹 Монца\n"
+        "• Сингапур — сентябрь 🇸🇬\n"
+        "• Япония — октябрь 🇯🇵 Сузука\n"
+        "• Абу-Даби — 4–6 декабря 🇦🇪 (финал сезона)"
+    ),
+    "🎵 Музыкальные фестивали": (
+        "🎵 *МУЗЫКАЛЬНЫЕ ФЕСТИВАЛИ 2026*\n\n"
+        "🎸 *PRIMAVERA SOUND*\n"
+        "📍 Барселона, Испания 🇪🇸\n"
+        "🗓 4–6 июня 2026\n"
+        "🎤 The Cure, Doja Cat, The xx, Gorillaz\n"
+        "    Massive Attack, Skrillex, My Bloody Valentine\n"
+        "💰 от €125 (1 день) / €350 (весь фест)\n"
+        "⚠️ Билеты распроданы — только перепродажа\n\n"
+        "🤘 *MAD COOL — 10-летие!*\n"
+        "📍 Мадрид, Испания 🇪🇸\n"
+        "🗓 8–11 июля 2026\n"
+        "🎤 Foo Fighters, Florence + The Machine, Lorde\n"
+        "    Nick Cave & The Bad Seeds, Twenty One Pilots\n"
+        "    Pulp, Kings of Leon, Wolf Alice, Moby, Pixies\n"
+        "    Halsey, David Byrne, Interpol\n"
+        "💰 4-дневный пропуск ~€200\n\n"
+        "🔊 *TOMORROWLAND*\n"
+        "📍 Бум, Бельгия 🇧🇪\n"
+        "🗓 17–19 и 24–26 июля 2026\n"
+        "🎤 David Guetta, Martin Garrix, Calvin Harris\n"
+        "    Armin van Buuren, Dimitri Vegas & Like Mike\n"
+        "    Chase & Status, Hardwell, John Summit, Fisher\n"
+        "🎨 Тема 2026: Consciencia\n"
+        "500+ артистов • 16 сцен • 18+\n\n"
+        "🇭🇺 *SZIGET — Остров свободы*\n"
+        "📍 Будапешт, Венгрия 🇭🇺\n"
+        "🗓 11–15 августа 2026\n"
+        "🎤 Florence + The Machine, Lewis Capaldi\n"
+        "    Twenty One Pilots, Bring Me The Horizon\n"
+        "    Wolf Alice, Zara Larsson, Biffy Clyro\n"
+        "💰 5-дневный пропуск ~€300\n"
+        "✅ Для россиян — безвизовый въезд!\n\n"
+        "🚫 *GLASTONBURY 2026*\n"
+        "📍 Сомерсет, Великобритания 🇬🇧\n"
+        "⚠️ В 2026 году НЕ ПРОВОДИТСЯ\n"
+        "   Возвращается в 2027 году"
+    ),
+    "🎭 Праздники и культура": (
+        "🎭 *ПРАЗДНИКИ И КУЛЬТУРА МИРА*\n\n"
+        "— *ЯНВАРЬ–ФЕВРАЛЬ* —\n\n"
+        "🎆 *Китайский Новый год*\n"
+        "📍 Китай, Гонконг, Сингапур 🇨🇳\n"
+        "🗓 Февраль (дата меняется каждый год)\n"
+        "👥 1,5 млрд человек — крупнейший праздник планеты\n"
+        "✨ Фейерверки, парады драконов, фонари\n\n"
+        "🎭 *Венецианский карнавал*\n"
+        "📍 Венеция, Италия 🇮🇹\n"
+        "🗓 Февраль (за 40 дней до Пасхи)\n"
+        "👥 3 млн посетителей\n"
+        "✨ Маски, костюмы, балы — с 1094 года\n\n"
+        "🎊 *Марди Гра*\n"
+        "📍 Новый Орлеан, США 🇺🇸\n"
+        "🗓 Февраль\n"
+        "✨ Парады, джаз, уличные гуляния\n\n"
+        "— *МАРТ–АПРЕЛЬ* —\n\n"
+        "🎉 *Карнавал в Рио*\n"
+        "📍 Рио-де-Жанейро, Бразилия 🇧🇷\n"
+        "🗓 Февраль–март\n"
+        "👥 2+ млн человек ежедневно\n"
+        "✨ Крупнейший карнавал мира — самба, парады, Самбадром\n\n"
+        "🌈 *Холи — праздник красок*\n"
+        "📍 Индия 🇮🇳 (Матхура, Вриндаван)\n"
+        "🗓 Март (полнолуние)\n"
+        "✨ Цветные порошки, символ весны и радости\n\n"
+        "🍀 *День Святого Патрика*\n"
+        "📍 Дублин, Ирландия 🇮🇪\n"
+        "🗓 17 марта ежегодно\n"
+        "👥 500 000+ в Дублине\n"
+        "✨ Парады, зелёные наряды, реку красят в зелёный\n\n"
+        "🟠 *День короля Koningsdag*\n"
+        "📍 Амстердам, Нидерланды 🇳🇱\n"
+        "🗓 27 апреля ежегодно\n"
+        "👥 1 млн+ человек\n"
+        "✨ Весь город в оранжевом, барахолки на улицах\n"
+        "   Концерты, лодки на каналах\n"
+        "⭐ Крупнейший уличный праздник Европы!\n\n"
+        "🌸 *Ханами — фестиваль сакуры*\n"
+        "📍 Токио, Киото, Япония 🇯🇵\n"
+        "🗓 Конец марта–апрель\n"
+        "✨ Пикники под цветущей сакурой\n\n"
+        "— *МАЙ–ИЮНЬ* —\n\n"
+        "🐂 *Коррида Сан-Исидро*\n"
+        "📍 Мадрид, Испания 🇪🇸\n"
+        "🗓 Май (18 дней)\n"
+        "✨ Главный корридный фестиваль мира — арена Лас-Вентас\n\n"
+        "🌙 *Белые ночи*\n"
+        "📍 Санкт-Петербург, Россия 🇷🇺\n"
+        "🗓 Июнь–июль\n"
+        "✨ Разводные мосты, фестивали, ночи без темноты\n\n"
+        "— *ИЮЛЬ–АВГУСТ* —\n\n"
+        "🏃 *Сан-Фермин — бег с быками*\n"
+        "📍 Памплона, Испания 🇪🇸\n"
+        "🗓 6–14 июля ежегодно\n"
+        "👥 1 млн+ туристов за 9 дней\n"
+        "✨ Забег с быками по улочкам — адреналин!\n\n"
+        "🍅 *Томатина*\n"
+        "📍 Буньоль, Испания 🇪🇸\n"
+        "🗓 Последняя среда августа\n"
+        "✨ 150 тонн помидоров за 1 час — битва томатами\n\n"
+        "🎆 *Карнавал Ноттинг-Хилл*\n"
+        "📍 Лондон, Великобритания 🇬🇧\n"
+        "🗓 Август (банковский выходной)\n"
+        "👥 2 млн человек\n"
+        "✨ Крупнейший уличный фестиваль Европы — карибская музыка\n\n"
+        "🔥 *Burning Man*\n"
+        "📍 Пустыня Блэк-Рок, Невада, США 🇺🇸\n"
+        "🗓 Конец августа–начало сентября\n"
+        "👥 80 000 человек\n"
+        "✨ Арт-инсталляции, сожжение фигуры, полная свобода\n\n"
+        "— *СЕНТЯБРЬ–ДЕКАБРЬ* —\n\n"
+        "🍺 *Октоберфест*\n"
+        "📍 Мюнхен, Германия 🇩🇪\n"
+        "🗓 17 сентября–4 октября 2026\n"
+        "👥 6 млн человек\n"
+        "✨ Крупнейший пивной фестиваль мира — 14 шатров, баварская еда\n\n"
+        "💀 *День мёртвых*\n"
+        "📍 Оахака, Мехико, Мексика 🇲🇽\n"
+        "🗓 1–2 ноября\n"
+        "✨ Алтари, цветы, грим — красочный и глубокий праздник\n\n"
+        "🎆 *Новый год в Сиднее*\n"
+        "📍 Сидней, Австралия 🇦🇺\n"
+        "🗓 31 декабря\n"
+        "👥 1 млн+ на берегу залива\n"
+        "✨ Первый крупный фейерверк в мире у Оперного театра\n\n"
+        "🎆 *Новый год у Бурдж-Халифа*\n"
+        "📍 Дубай, ОАЭ 🇦🇪\n"
+        "🗓 31 декабря\n"
+        "✨ Рекордный фейерверк с самого высокого здания мира"
+    ),
+}
+
+EVENTS_MENU_BTN = list(EVENTS_SECTIONS.keys())
+
+
+async def show_events_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    keyboard = [[btn] for btn in EVENTS_MENU_BTN] + [["◀️ Назад"], [HOME_BTN]]
+    await update.message.reply_text(
+        "📅 *Куда слетать*\n\n"
+        "Выбери категорию событий 2026 года:",
+        parse_mode="Markdown",
+        reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True),
+    )
+    return EVENTS_MENU
+
+
+async def events_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text
+    if text == HOME_BTN:
+        return await go_home(update, context)
+    if text == "◀️ Назад":
+        return await show_folder_planning(update, context)
+    if text in EVENTS_SECTIONS:
+        content = EVENTS_SECTIONS[text]
+        keyboard = [["◀️ Назад к категориям"], [HOME_BTN]]
+        await update.message.reply_text(
+            content,
+            parse_mode="Markdown",
+            reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True),
+        )
+        return EVENTS_TOPIC
+    return await show_events_menu(update, context)
+
+
+async def events_topic_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text
+    if text == HOME_BTN:
+        return await go_home(update, context)
+    return await show_events_menu(update, context)
+
+
 ## ── DRONE DATA ───────────────────────────────────────────────────────────────
 
 DRONE_REGION_BTNS = ["🌍 Европа", "🌏 Азия и СНГ", "🌎 Америка", "🌍 Африка", "🌊 Океания"]
@@ -7116,6 +7319,14 @@ def main():
             INCOMPATIBLE_TOPIC: [
                 home,
                 MessageHandler(filters.TEXT & ~filters.COMMAND, incompatible_topic_handler),
+            ],
+            EVENTS_MENU: [
+                home,
+                MessageHandler(filters.TEXT & ~filters.COMMAND, events_menu_handler),
+            ],
+            EVENTS_TOPIC: [
+                home,
+                MessageHandler(filters.TEXT & ~filters.COMMAND, events_topic_handler),
             ],
             DRONE_MENU: [
                 home,
