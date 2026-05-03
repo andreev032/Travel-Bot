@@ -18,7 +18,7 @@ from posts import CHANNEL_POSTS
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-TOKEN            = "8701321387:AAHwb_WkmrimPtInwDftv8jb0d03gTkogqA"
+TOKEN            = os.getenv("BOT_TOKEN")
 # CHANNEL_ID     = -1002079377291   # основной канал — вернуть после проверки
 CHANNEL_ID       = -1003580791059   # ВРЕМЕННО: тестовый канал для проверки расписания
 TEST_CHANNEL_ID  = -1003580791059   # тестовый канал — команда /testpost
@@ -2990,6 +2990,10 @@ def score_destination(dest, answers):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    try:
+        await context.bot.unpin_all_chat_messages(chat_id=update.effective_chat.id)
+    except:
+        pass
     context.user_data.clear()
     user = update.effective_user
     await record_user(user.id, user.username, user.first_name)
