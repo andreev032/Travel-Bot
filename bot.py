@@ -6871,6 +6871,7 @@ def _scheduler_done_cb(task: asyncio.Task) -> None:
 _PARTNERS_KB = ReplyKeyboardMarkup(
     [
         ["🇬🇧 Школа английского Skyeng"],
+        ["📱 eSIM MobiMatter"],
         ["◀️ Назад", HOME_BTN],
     ],
     resize_keyboard=True,
@@ -6893,6 +6894,27 @@ _SKYENG_TEXT = (
     "🤝 Познакомишься с местными жителями\n"
     "💼 Откроет двери в международные направления\n\n"
     "🎁 Специально для подписчиков «Как местный»"
+)
+
+_MOBIMATTER_TEXT = (
+    "📱 *eSIM для путешественников — MobiMatter*\n\n"
+    "Интернет за рубежом без роуминга и дорогих симкарт.\n"
+    "Просто купи eSIM онлайн и подключись по прилёту!\n\n"
+    "*🌍 Что такое MobiMatter:*\n"
+    "• eSIM для 200+ стран мира\n"
+    "• Моментальная активация — без похода в магазин\n"
+    "• Работает на iPhone и Android с поддержкой eSIM\n"
+    "• Тарифы от $2 — платишь только за нужные дни\n"
+    "• Глобальные пакеты для тех, кто едет в несколько стран\n\n"
+    "*✅ Почему удобно:*\n"
+    "• Не нужно менять физическую симкарту\n"
+    "• Покупаешь до отъезда прямо с телефона\n"
+    "• Остаток интернета не сгорает сразу\n"
+    "• Есть роуминг-тарифы для Азии, Европы, Америки\n\n"
+    "*💰 Бонус по реферальному коду:*\n"
+    "Используй ссылку ниже — получишь скидку на первую покупку!\n\n"
+    "⚠️ Для оплаты потребуется зарубежная карта (Visa/Mastercard) или карта банка Казахстана, Армении, Грузии\n"
+    "⚠️ Перед покупкой убедись, что твой телефон поддерживает eSIM"
 )
 
 
@@ -6923,6 +6945,22 @@ async def partners_menu_handler(update: Update, context: ContextTypes.DEFAULT_TY
         ]])
         await update.message.reply_text(
             _SKYENG_TEXT,
+            parse_mode="Markdown",
+            reply_markup=inline_kb,
+            disable_web_page_preview=True,
+        )
+        back_kb = ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True)
+        await update.message.reply_text("Навигация:", reply_markup=back_kb)
+        return PARTNERS_MENU
+    if text == "📱 eSIM MobiMatter":
+        inline_kb = InlineKeyboardMarkup([[
+            InlineKeyboardButton(
+                "👉 Купить eSIM",
+                url="https://mobimatter.com?referrerId=AK09022081",
+            )
+        ]])
+        await update.message.reply_text(
+            _MOBIMATTER_TEXT,
             parse_mode="Markdown",
             reply_markup=inline_kb,
             disable_web_page_preview=True,
