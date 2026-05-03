@@ -20,8 +20,8 @@ logger = logging.getLogger(__name__)
 
 TOKEN            = os.getenv("BOT_TOKEN")
 # CHANNEL_ID     = -1002079377291   # основной канал — вернуть после проверки
-CHANNEL_ID       = int(os.getenv("CHANNEL_ID"))   # ВРЕМЕННО: тестовый канал для проверки расписания
-TEST_CHANNEL_ID  = int(os.getenv("TEST_CHANNEL_ID"))   # тестовый канал — команда /testpost
+CHANNEL_ID       = int(os.getenv("CHANNEL_ID", "-1002079377291"))   # ВРЕМЕННО: тестовый канал для проверки расписания
+TEST_CHANNEL_ID  = int(os.getenv("TEST_CHANNEL_ID", "-1003580791059"))   # тестовый канал — команда /testpost
 MOSCOW_TZ        = ZoneInfo("Europe/Moscow")
 
 # ── Хранилище статистики пользователей (PostgreSQL) ──────────────────
@@ -233,7 +233,7 @@ CHANNEL_URL     = "https://t.me/like_a_local"
 HOME_BTN    = "🏠 Главное меню"
 CHANNEL_BTN = "📢 Наш канал"
 SHOP_BTN    = "🛒 Магазин"
-ADMIN_ID    = int(os.getenv("ADMIN_ID"))       # доступ к /stats и служебным командам
+ADMIN_ID    = int(os.getenv("ADMIN_ID", "462171750"))       # доступ к /stats и служебным командам
 
 
 def get_main_keyboard():
