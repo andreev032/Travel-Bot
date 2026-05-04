@@ -6588,7 +6588,13 @@ async def weather_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def weather_show(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.message.text.strip().lower()
+    text_in = update.message.text.strip()
+    if text_in == HOME_BTN:
+        return await go_home(update, context)
+    if text_in == "◀️ Назад":
+        return await show_folder_planning(update, context)
+
+    query = text_in.lower()
     if query not in COUNTRY_COORDS:
         await update.message.reply_text(
             "❌ Страна не найдена. Попробуй написать иначе.\n"
@@ -6608,7 +6614,7 @@ async def weather_show(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception:
         await update.message.reply_text("⚠️ Не удалось получить погоду. Попробуй позже.", reply_markup=reply_markup)
 
-    return ConversationHandler.END
+    return WEATHER_INPUT
 
 
 ## ── LOUNGES ──────────────────────────────────────────────────────────────────
@@ -7150,16 +7156,20 @@ async def partners_menu_handler(update: Update, context: ContextTypes.DEFAULT_TY
         await update.message.reply_text("Навигация:", reply_markup=back_kb)
         return PARTNERS_MENU
     if text == "📱 eSIM MobiMatter":
-        reply_markup = ReplyKeyboardMarkup(
-            [["◀️ Назад", "🏠 Главное меню"]],
-            resize_keyboard=True,
-        )
+        inline_kb = InlineKeyboardMarkup([
+            [InlineKeyboardButton(
+                "📱 Купить eSIM — скидка по ссылке",
+                url="https://mobimatter.com?referrerId=AK09022081",
+            )]
+        ])
         await update.message.reply_text(
             _MOBIMATTER_TEXT,
             parse_mode="Markdown",
-            reply_markup=reply_markup,
+            reply_markup=inline_kb,
             disable_web_page_preview=True,
         )
+        back_kb = ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True)
+        await update.message.reply_text("Навигация:", reply_markup=back_kb)
         return PARTNERS_MENU
     # Неизвестная кнопка — вернуть меню
     return await show_partners_menu(update, context)
@@ -7469,6 +7479,7 @@ def main():
             ],
             WEATHER_INPUT: [
                 home,
+                MessageHandler(filters.Regex("^◀️ Назад$"), show_folder_planning),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, weather_show),
             ],
         },
