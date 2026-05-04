@@ -6536,7 +6536,7 @@ async def get_weather(lat: float, lon: float) -> dict:
         f"?latitude={lat}&longitude={lon}"
         f"&current=temperature_2m,weathercode,windspeed_10m,relativehumidity_2m"
         f"&daily=weathercode,temperature_2m_max,temperature_2m_min"
-        f"&timezone=auto&forecast_days=4"
+        f"&timezone=auto&forecast_days=8"
     )
     async with httpx.AsyncClient() as client:
         resp = await client.get(url, timeout=10)
@@ -6554,7 +6554,7 @@ def format_weather(data: dict, city: str, country: str) -> str:
 
     days = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
     forecast_lines = []
-    for i in range(1, 4):
+    for i in range(1, 8):
         date_str = daily["time"][i]
         d = datetime.strptime(date_str, "%Y-%m-%d")
         day_name = days[d.weekday()]
@@ -6573,7 +6573,7 @@ def format_weather(data: dict, city: str, country: str) -> str:
         f"🌡 Температура: *{temp:.1f}°C*\n"
         f"💨 Ветер: {wind:.0f} км/ч\n"
         f"💧 Влажность: {humidity}%\n\n"
-        f"*Прогноз на 3 дня:*\n"
+        f"*Прогноз на 7 дней:*\n"
         f"{forecast}\n\n"
         f"_Данные: [Open-Meteo.com](http://Open-Meteo.com)_"
     )
