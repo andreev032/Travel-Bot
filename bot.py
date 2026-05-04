@@ -8,6 +8,7 @@ import traceback
 import urllib.request
 import urllib.parse
 import requests
+import httpx
 import psycopg2
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -213,7 +214,8 @@ MAIN_MENU, ANSWERING, HELP_MENU, HELP_TOPIC, TRANSLATING, VISA_MENU, VISA_CATEGO
     GAMES_MENU, GUESS_ACTIVE, PAIR_ACTIVE, \
     COUNTRY_OF_DAY, \
     SHOP_MENU, SHOP_TYPING, \
-    EVENTS_MENU, EVENTS_TOPIC = range(40)
+    EVENTS_MENU, EVENTS_TOPIC, \
+    WEATHER_INPUT = range(41)
 
 # Замени на реальный HTTPS-URL после деплоя webapp/index.html
 WEBAPP_URL      = "https://andreev032.github.io/Travel-Bot/"
@@ -255,8 +257,9 @@ def get_folder_planning_kb():
     return ReplyKeyboardMarkup(
         [
             [KeyboardButton("🌍 Подобрать страну"),       KeyboardButton("🔮 Страна по судьбе")],
-            [KeyboardButton("🌤 Сезоны путешествий"),     KeyboardButton("🛂 Визы")],
-            [KeyboardButton("⛔ Несовместимые страны"),    KeyboardButton("✅ Чеклист", web_app=WebAppInfo(url=CHECKLIST_URL))],
+            [KeyboardButton("🌤 Сезоны путешествий"),     KeyboardButton("🌤 Погода")],
+            [KeyboardButton("🛂 Визы"),                    KeyboardButton("⛔ Несовместимые страны")],
+            [KeyboardButton("✅ Чеклист", web_app=WebAppInfo(url=CHECKLIST_URL))],
             [KeyboardButton("📅 Куда слетать")],
             [KeyboardButton("◀️ Назад"),                   KeyboardButton(HOME_BTN)],
         ],
@@ -3091,6 +3094,8 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await drone_menu_handler(update, context)
     elif text == "🌤 Сезоны путешествий":
         return await season_menu_handler(update, context)
+    elif text == "🌤 Погода":
+        return await weather_start(update, context)
     elif text == "🛋 Лаунджи аэропортов":
         return await lounge_menu_handler(update, context)
     elif text == "📚 Путеводители":
@@ -6438,6 +6443,175 @@ async def season_region_handler(update: Update, context: ContextTypes.DEFAULT_TY
     return SEASON_REGION
 
 
+## ── WEATHER ──────────────────────────────────────────────────────────────────
+
+COUNTRY_COORDS = {
+    "россия": (55.75, 37.62, "Москва"),
+    "таиланд": (13.75, 100.52, "Бангкок"),
+    "турция": (39.93, 32.85, "Анкара"),
+    "франция": (48.85, 2.35, "Париж"),
+    "италия": (41.90, 12.50, "Рим"),
+    "испания": (40.42, -3.70, "Мадрид"),
+    "германия": (52.52, 13.41, "Берлин"),
+    "япония": (35.69, 139.69, "Токио"),
+    "китай": (39.91, 116.39, "Пекин"),
+    "индия": (28.61, 77.21, "Нью-Дели"),
+    "сша": (38.91, -77.04, "Вашингтон"),
+    "египет": (30.06, 31.25, "Каир"),
+    "оаэ": (24.47, 54.37, "Абу-Даби"),
+    "грузия": (41.69, 44.83, "Тбилиси"),
+    "армения": (40.18, 44.51, "Ереван"),
+    "азербайджан": (40.41, 49.87, "Баку"),
+    "казахстан": (51.18, 71.45, "Астана"),
+    "греция": (37.98, 23.73, "Афины"),
+    "португалия": (38.72, -9.14, "Лиссабон"),
+    "нидерланды": (52.37, 4.90, "Амстердам"),
+    "швейцария": (46.95, 7.45, "Берн"),
+    "австрия": (48.21, 16.37, "Вена"),
+    "чехия": (50.09, 14.42, "Прага"),
+    "венгрия": (47.50, 19.04, "Будапешт"),
+    "польша": (52.23, 21.01, "Варшава"),
+    "хорватия": (45.81, 15.98, "Загреб"),
+    "черногория": (42.44, 19.26, "Подгорица"),
+    "сербия": (44.80, 20.46, "Белград"),
+    "израиль": (31.77, 35.22, "Иерусалим"),
+    "индонезия": (6.21, 106.85, "Джакарта"),
+    "вьетнам": (21.03, 105.85, "Ханой"),
+    "малайзия": (3.15, 101.69, "Куала-Лумпур"),
+    "сингапур": (1.35, 103.82, "Сингапур"),
+    "южная корея": (37.57, 126.98, "Сеул"),
+    "мексика": (19.43, -99.13, "Мехико"),
+    "бразилия": (-15.78, -47.93, "Бразилиа"),
+    "аргентина": (-34.61, -58.38, "Буэнос-Айрес"),
+    "австралия": (-35.28, 149.13, "Канберра"),
+    "марокко": (34.02, -6.84, "Рабат"),
+    "куба": (23.13, -82.38, "Гавана"),
+    "мальдивы": (4.18, 73.51, "Мале"),
+    "шри-ланка": (6.93, 79.85, "Коломбо"),
+    "непал": (27.71, 85.32, "Катманду"),
+    "монголия": (47.91, 106.88, "Улан-Батор"),
+    "исландия": (64.13, -21.82, "Рейкьявик"),
+    "норвегия": (59.91, 10.75, "Осло"),
+    "швеция": (59.33, 18.07, "Стокгольм"),
+    "финляндия": (60.17, 24.94, "Хельсинки"),
+    "дания": (55.68, 12.57, "Копенгаген"),
+    "великобритания": (51.51, -0.13, "Лондон"),
+    "канада": (45.42, -75.69, "Оттава"),
+    "новая зеландия": (-41.29, 174.78, "Веллингтон"),
+    "перу": (-12.05, -77.04, "Лима"),
+    "колумбия": (4.71, -74.07, "Богота"),
+    "узбекистан": (41.30, 69.24, "Ташкент"),
+    "беларусь": (53.90, 27.57, "Минск"),
+    "украина": (50.45, 30.52, "Киев"),
+}
+
+WEATHER_CODES = {
+    0: "☀️ Ясно",
+    1: "🌤 Преимущественно ясно",
+    2: "⛅️ Переменная облачность",
+    3: "☁️ Пасмурно",
+    45: "🌫 Туман",
+    48: "🌫 Изморозь",
+    51: "🌦 Лёгкая морось",
+    53: "🌦 Морось",
+    55: "🌧 Сильная морось",
+    61: "🌧 Лёгкий дождь",
+    63: "🌧 Дождь",
+    65: "🌧 Сильный дождь",
+    71: "🌨 Лёгкий снег",
+    73: "🌨 Снег",
+    75: "❄️ Сильный снег",
+    80: "🌦 Ливень",
+    81: "🌧 Сильный ливень",
+    82: "⛈ Очень сильный ливень",
+    85: "🌨 Снегопад",
+    95: "⛈ Гроза",
+    96: "⛈ Гроза с градом",
+    99: "⛈ Сильная гроза с градом",
+}
+
+
+async def get_weather(lat: float, lon: float) -> dict:
+    url = (
+        f"https://api.open-meteo.com/v1/forecast"
+        f"?latitude={lat}&longitude={lon}"
+        f"&current=temperature_2m,weathercode,windspeed_10m,relativehumidity_2m"
+        f"&daily=weathercode,temperature_2m_max,temperature_2m_min"
+        f"&timezone=auto&forecast_days=4"
+    )
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(url, timeout=10)
+        return resp.json()
+
+
+def format_weather(data: dict, city: str, country: str) -> str:
+    cur = data["current"]
+    daily = data["daily"]
+    temp = cur["temperature_2m"]
+    wind = cur["windspeed_10m"]
+    humidity = cur["relativehumidity_2m"]
+    code = cur["weathercode"]
+    condition = WEATHER_CODES.get(code, "🌡 Неизвестно")
+
+    days = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
+    forecast_lines = []
+    for i in range(1, 4):
+        date_str = daily["time"][i]
+        d = datetime.strptime(date_str, "%Y-%m-%d")
+        day_name = days[d.weekday()]
+        tmax = daily["temperature_2m_max"][i]
+        tmin = daily["temperature_2m_min"][i]
+        wcode = daily["weathercode"][i]
+        wcond = WEATHER_CODES.get(wcode, "🌡")
+        forecast_lines.append(f"  {day_name} {date_str[8:]}.{date_str[5:7]}: {wcond} {tmin:.0f}°…{tmax:.0f}°")
+
+    forecast = "\n".join(forecast_lines)
+
+    return (
+        f"🌍 *{country}* — {city}\n\n"
+        f"*Сейчас:*\n"
+        f"{condition}\n"
+        f"🌡 Температура: *{temp:.1f}°C*\n"
+        f"💨 Ветер: {wind:.0f} км/ч\n"
+        f"💧 Влажность: {humidity}%\n\n"
+        f"*Прогноз на 3 дня:*\n"
+        f"{forecast}\n\n"
+        f"_Данные: [Open-Meteo.com](http://Open-Meteo.com)_"
+    )
+
+
+async def weather_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "🌍 Введи название страны на русском языке:\n\n"
+        "Например: Таиланд, Франция, Япония, Египет"
+    )
+    return WEATHER_INPUT
+
+
+async def weather_show(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.message.text.strip().lower()
+    if query not in COUNTRY_COORDS:
+        await update.message.reply_text(
+            "❌ Страна не найдена. Попробуй написать иначе.\n"
+            "Например: Таиланд, Франция, Япония"
+        )
+        return WEATHER_INPUT
+
+    lat, lon, city = COUNTRY_COORDS[query]
+    try:
+        data = await get_weather(lat, lon)
+        text = format_weather(data, city, query.capitalize())
+        await update.message.reply_text(text, parse_mode="Markdown")
+    except Exception:
+        await update.message.reply_text("⚠️ Не удалось получить погоду. Попробуй позже.")
+
+    await update.message.reply_text(
+        "🧭 Папка «Планирование»:",
+        reply_markup=get_folder_planning_kb(),
+    )
+    return MAIN_MENU
+
+
 ## ── LOUNGES ──────────────────────────────────────────────────────────────────
 
 LOUNGE_BTNS = [
@@ -7297,6 +7471,10 @@ def main():
             SHOP_TYPING: [
                 home,
                 MessageHandler(filters.TEXT & ~filters.COMMAND, shop_typing_handler),
+            ],
+            WEATHER_INPUT: [
+                home,
+                MessageHandler(filters.TEXT & ~filters.COMMAND, weather_show),
             ],
         },
         fallbacks=[
