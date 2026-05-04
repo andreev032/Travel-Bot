@@ -7169,7 +7169,7 @@ async def partners_menu_handler(update: Update, context: ContextTypes.DEFAULT_TY
             disable_web_page_preview=True,
         )
         back_kb = ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True)
-        await update.message.reply_text("Навигация:", reply_markup=back_kb)
+        await update.message.reply_text(" ", reply_markup=back_kb)
         return PARTNERS_MENU
     # Неизвестная кнопка — вернуть меню
     return await show_partners_menu(update, context)
