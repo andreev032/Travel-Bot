@@ -6605,11 +6605,7 @@ async def weather_show(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception:
         await update.message.reply_text("⚠️ Не удалось получить погоду. Попробуй позже.")
 
-    await update.message.reply_text(
-        "🧭 Папка «Планирование»:",
-        reply_markup=get_folder_planning_kb(),
-    )
-    return MAIN_MENU
+    return ConversationHandler.END
 
 
 ## ── LOUNGES ──────────────────────────────────────────────────────────────────
@@ -7163,8 +7159,6 @@ async def partners_menu_handler(update: Update, context: ContextTypes.DEFAULT_TY
             reply_markup=inline_kb,
             disable_web_page_preview=True,
         )
-        back_kb = ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True)
-        await update.message.reply_text("Навигация:", reply_markup=back_kb)
         return PARTNERS_MENU
     # Неизвестная кнопка — вернуть меню
     return await show_partners_menu(update, context)
