@@ -7084,7 +7084,7 @@ def _scheduler_done_cb(task: asyncio.Task) -> None:
 
 QUEUE_SIGNATURE   = "\n\n🎒 [Как местный | Подписаться](https://t.me/like_a_local)"
 QUEUE_LOW_THRESHOLD = 10
-QUEUE_POST_TIMES = ("12:30", "13:00")  # ВРЕМЕННО для теста (в проде: 09:00, 19:00)
+QUEUE_POST_TIMES = ("13:15", "13:30")  # ВРЕМЕННО для теста (в проде: 09:00, 19:00)
 
 
 def _queue_insert(text: str | None, media_id: str | None, media_type: str | None) -> int:
