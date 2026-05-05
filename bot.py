@@ -13,7 +13,7 @@ import psycopg2
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton, WebAppInfo, InlineKeyboardMarkup, InlineKeyboardButton, BotCommand
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler, CallbackQueryHandler
 from posts import CHANNEL_POSTS
 
 logging.basicConfig(level=logging.INFO)
@@ -60,6 +60,17 @@ async def init_db(app) -> None:
                     country_code   TEXT,
                     collected_date TEXT,
                     PRIMARY KEY (user_id, country_code)
+                )
+            """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS post_queue (
+                    id                BIGSERIAL PRIMARY KEY,
+                    source_text       TEXT,
+                    source_media_id   TEXT,
+                    source_media_type TEXT,
+                    status            TEXT DEFAULT 'pending',
+                    created_at        TIMESTAMP DEFAULT NOW(),
+                    published_at      TIMESTAMP
                 )
             """)
         conn.commit()
@@ -7068,6 +7079,344 @@ def _scheduler_done_cb(task: asyncio.Task) -> None:
 
 
 # ═══════════════════════════════════════════════════════════════
+#  📬 ОЧЕРЕДЬ АВТОПОСТИНГА
+# ═══════════════════════════════════════════════════════════════
+
+QUEUE_SIGNATURE   = "\n\n🎒 [Как местный | Подписаться](https://t.me/like_a_local)"
+QUEUE_LOW_THRESHOLD = 10
+QUEUE_POST_TIMES = ("09:00", "19:00")
+
+
+def _queue_insert(text: str | None, media_id: str | None, media_type: str | None) -> int:
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO post_queue (source_text, source_media_id, source_media_type, status)
+                VALUES (%s, %s, %s, 'pending')
+                RETURNING id
+                """,
+                (text, media_id, media_type),
+            )
+            new_id = cur.fetchone()[0]
+        conn.commit()
+        return int(new_id)
+    finally:
+        conn.close()
+
+
+def _queue_set_status(post_id: int, status: str) -> bool:
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE post_queue SET status = %s WHERE id = %s AND status = 'pending'",
+                (status, post_id),
+            )
+            updated = cur.rowcount
+        conn.commit()
+        return updated > 0
+    finally:
+        conn.close()
+
+
+def _queue_pop_next_approved() -> dict | None:
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT id, source_text, source_media_id, source_media_type
+                FROM post_queue
+                WHERE status = 'approved'
+                ORDER BY created_at ASC, id ASC
+                LIMIT 1
+                """
+            )
+            row = cur.fetchone()
+        if not row:
+            return None
+        return {
+            "id": int(row[0]),
+            "text": row[1],
+            "media_id": row[2],
+            "media_type": row[3],
+        }
+    finally:
+        conn.close()
+
+
+def _queue_mark_published(post_id: int) -> None:
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE post_queue SET status = 'published', published_at = NOW() WHERE id = %s",
+                (post_id,),
+            )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def _queue_counts() -> tuple[int, int]:
+    """Returns (approved_count, pending_count)."""
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT status, COUNT(*) FROM post_queue WHERE status IN ('approved','pending') GROUP BY status"
+            )
+            rows = cur.fetchall()
+    finally:
+        conn.close()
+    counts = {"approved": 0, "pending": 0}
+    for status, n in rows:
+        counts[status] = int(n)
+    return counts["approved"], counts["pending"]
+
+
+def _queue_next_publication_label() -> str:
+    """Human label like 'сегодня в 19:00' or 'завтра в 09:00' (МСК)."""
+    now = datetime.now(MOSCOW_TZ)
+    times = []
+    for hhmm in QUEUE_POST_TIMES:
+        h, m = (int(x) for x in hhmm.split(":"))
+        candidate = now.replace(hour=h, minute=m, second=0, microsecond=0)
+        if candidate <= now:
+            candidate = candidate + timedelta(days=1)
+        times.append((candidate, hhmm))
+    times.sort()
+    next_dt, next_hhmm = times[0]
+    if next_dt.date() == now.date():
+        when = "сегодня"
+    elif next_dt.date() == (now.date() + timedelta(days=1)):
+        when = "завтра"
+    else:
+        when = next_dt.strftime("%d.%m")
+    return f"{when} в {next_hhmm}"
+
+
+async def queue_channel_post_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Listens to TEST_CHANNEL_ID — saves new posts to queue and notifies ADMIN."""
+    msg = update.channel_post
+    if msg is None or msg.chat is None or msg.chat.id != TEST_CHANNEL_ID:
+        return
+
+    text: str | None = msg.text or msg.caption
+    media_id: str | None = None
+    media_type: str | None = None
+
+    if msg.photo:
+        media_id = msg.photo[-1].file_id
+        media_type = "photo"
+    elif msg.video:
+        media_id = msg.video.file_id
+        media_type = "video"
+    elif text is None:
+        logger.info("queue: пропускаем неподдерживаемый тип сообщения в тестовом канале")
+        return
+
+    try:
+        post_id = _queue_insert(text, media_id, media_type)
+    except Exception as e:
+        logger.error("queue: ошибка вставки в БД: %s: %s", type(e).__name__, e)
+        return
+
+    logger.info("queue: новый пост #%s сохранён (media_type=%s)", post_id, media_type)
+
+    if text and text.strip():
+        preview = text.strip()
+        if len(preview) > 500:
+            preview = preview[:500].rstrip() + "…"
+    elif media_type == "video":
+        preview = "📹 Видео без текста"
+    elif media_type == "photo":
+        preview = "🖼 Фото без текста"
+    else:
+        preview = "(пусто)"
+
+    admin_text = (
+        f"📬 Новый пост в очереди #{post_id}\n\n"
+        f"{preview}\n\n"
+        f"➕ Добавить в очередь?"
+    )
+    kb = InlineKeyboardMarkup([[
+        InlineKeyboardButton("✅ Одобрить", callback_data=f"pq:approve:{post_id}"),
+        InlineKeyboardButton("❌ Отклонить", callback_data=f"pq:reject:{post_id}"),
+    ]])
+    try:
+        await context.bot.send_message(chat_id=ADMIN_ID, text=admin_text, reply_markup=kb)
+    except Exception as e:
+        logger.error("queue: не удалось уведомить ADMIN_ID=%s: %s: %s", ADMIN_ID, type(e).__name__, e)
+
+
+async def queue_callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+    if query is None or not query.data:
+        return
+    if query.from_user.id != ADMIN_ID:
+        await query.answer("⛔ Нет доступа", show_alert=True)
+        return
+
+    parts = query.data.split(":")
+    if len(parts) != 3 or parts[0] != "pq":
+        await query.answer()
+        return
+
+    action = parts[1]
+    try:
+        post_id = int(parts[2])
+    except ValueError:
+        await query.answer()
+        return
+
+    new_status = "approved" if action == "approve" else "rejected"
+    try:
+        ok = _queue_set_status(post_id, new_status)
+    except Exception as e:
+        logger.error("queue cb: db error: %s: %s", type(e).__name__, e)
+        await query.answer("Ошибка БД", show_alert=True)
+        return
+
+    await query.answer()
+    if not ok:
+        try:
+            await query.edit_message_text(f"⚠️ Пост #{post_id} уже обработан")
+        except Exception:
+            pass
+        return
+
+    reply = f"✅ Пост #{post_id} добавлен в очередь" if new_status == "approved" else f"❌ Пост #{post_id} отклонён"
+    try:
+        await query.edit_message_text(reply)
+    except Exception as e:
+        logger.warning("queue cb: edit_message_text failed: %s: %s", type(e).__name__, e)
+        try:
+            await context.bot.send_message(chat_id=ADMIN_ID, text=reply)
+        except Exception:
+            pass
+
+
+async def _publish_queue_post(bot, post: dict) -> bool:
+    """Publish a queued post to the main channel with QUEUE_SIGNATURE."""
+    text = (post.get("text") or "").strip()
+    caption = (text + QUEUE_SIGNATURE) if text else QUEUE_SIGNATURE.lstrip("\n")
+    media_type = post.get("media_type")
+    media_id = post.get("media_id")
+
+    try:
+        if media_type == "video" and media_id:
+            await bot.send_video(
+                chat_id=CHANNEL_ID, video=media_id,
+                caption=caption, parse_mode="Markdown",
+            )
+        elif media_type == "photo" and media_id:
+            await bot.send_photo(
+                chat_id=CHANNEL_ID, photo=media_id,
+                caption=caption, parse_mode="Markdown",
+            )
+        else:
+            await bot.send_message(
+                chat_id=CHANNEL_ID, text=caption,
+                parse_mode="Markdown", disable_web_page_preview=True,
+            )
+        return True
+    except Exception as e:
+        logger.error(
+            "autopost: ошибка публикации поста #%s (media=%s): %s: %s",
+            post.get("id"), media_type, type(e).__name__, e,
+        )
+        return False
+
+
+async def _autopost_check_low_queue(bot) -> None:
+    approved, _ = _queue_counts()
+    if approved <= QUEUE_LOW_THRESHOLD:
+        days = approved / len(QUEUE_POST_TIMES)
+        days_str = f"{days:.1f}".rstrip("0").rstrip(".")
+        try:
+            await bot.send_message(
+                chat_id=ADMIN_ID,
+                text=f"⚠️ В очереди осталось {approved} постов (на {days_str} дней). Пора добавить новые!",
+            )
+        except Exception as e:
+            logger.error("autopost: low-queue notify failed: %s: %s", type(e).__name__, e)
+
+
+async def autopost_scheduler(bot) -> None:
+    """Infinite loop: publishes one approved post at 09:00 and 19:00 МСК."""
+    sent_keys: set[str] = set()
+    logger.info(
+        f"Автопостинг очереди запущен ({', '.join(QUEUE_POST_TIMES)} МСК) | CHANNEL_ID={CHANNEL_ID}"
+    )
+    while True:
+        try:
+            now = datetime.now(MOSCOW_TZ)
+            hhmm = now.strftime("%H:%M")
+            day = now.strftime("%Y-%m-%d")
+            key = f"{day}-{hhmm}"
+
+            if hhmm in QUEUE_POST_TIMES and key not in sent_keys:
+                sent_keys.add(key)
+                post = _queue_pop_next_approved()
+                if post is None:
+                    logger.warning("autopost: %s — очередь пуста, нечего публиковать", hhmm)
+                    try:
+                        await bot.send_message(
+                            chat_id=ADMIN_ID,
+                            text="⚠️ Очередь пуста — публикация пропущена. Добавь новые посты!",
+                        )
+                    except Exception as e:
+                        logger.error("autopost: empty-queue notify failed: %s: %s", type(e).__name__, e)
+                else:
+                    logger.info("autopost: %s — публикуем пост #%s", hhmm, post["id"])
+                    ok = await _publish_queue_post(bot, post)
+                    if ok:
+                        _queue_mark_published(post["id"])
+                        logger.info("autopost: пост #%s опубликован ✓", post["id"])
+                        await _autopost_check_low_queue(bot)
+                    else:
+                        logger.error("autopost: пост #%s не опубликован — статус не меняем", post["id"])
+
+            if hhmm == "00:00":
+                sent_keys.clear()
+
+        except asyncio.CancelledError:
+            logger.info("Автопостинг очереди остановлен (CancelledError)")
+            raise
+        except Exception as e:
+            logger.error("autopost: необработанная ошибка: %s: %s", type(e).__name__, e)
+
+        await asyncio.sleep(30)
+
+
+async def queue_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Admin-only: shows queue stats."""
+    if update.effective_user.id != ADMIN_ID:
+        await update.message.reply_text("⛔ Нет доступа.")
+        return
+    try:
+        approved, pending = _queue_counts()
+    except Exception as e:
+        logger.error("queue_command: %s: %s", type(e).__name__, e)
+        await update.message.reply_text("⛔ Ошибка при получении очереди.")
+        return
+
+    days = approved / len(QUEUE_POST_TIMES)
+    days_str = f"{days:.1f}".rstrip("0").rstrip(".")
+    next_pub = _queue_next_publication_label()
+    text = (
+        "📊 Очередь публикаций:\n"
+        f"✅ Одобрено: {approved} постов (на {days_str} дней)\n"
+        f"⏳ Ожидает одобрения: {pending} постов\n"
+        f"📅 Следующая публикация: {next_pub}"
+    )
+    await update.message.reply_text(text)
+
+
+# ═══════════════════════════════════════════════════════════════
 #  🤝 ПАРТНЁРЫ
 # ═══════════════════════════════════════════════════════════════
 
@@ -7296,11 +7645,15 @@ async def post_init(app: Application) -> None:
     except Exception as e:
         logger.error(f"Стартовая проверка канала: {type(e).__name__}: {e}")
 
-    # Автопостинг временно отключён
+    # Автопостинг старого формата (CHANNEL_POSTS) — выключен
     # task = asyncio.create_task(scheduler(app.bot))
     # task.add_done_callback(_scheduler_done_cb)
-    # logger.info("Задача планировщика создана и запущена")
-    logger.info("Автопостинг отключён — /testpost доступен вручную")
+    logger.info("Автопостинг (CHANNEL_POSTS) отключён — /testpost доступен вручную")
+
+    # Автопостинг очереди (post_queue) — 09:00 и 19:00 МСК
+    queue_task = asyncio.create_task(autopost_scheduler(app.bot))
+    queue_task.add_done_callback(_scheduler_done_cb)
+    logger.info("Задача автопостинга очереди создана и запущена")
 
 
 def main():
@@ -7494,6 +7847,12 @@ def main():
     app.add_handler(CommandHandler("testpost", testpost_command))
     app.add_handler(CommandHandler("stats",    stats_command))
     app.add_handler(CommandHandler("menu",     menu_command))
+    app.add_handler(CommandHandler("queue",    queue_command))
+    app.add_handler(CallbackQueryHandler(queue_callback_handler, pattern=r"^pq:"))
+    app.add_handler(MessageHandler(
+        filters.UpdateType.CHANNEL_POST & filters.Chat(TEST_CHANNEL_ID),
+        queue_channel_post_handler,
+    ))
 
     logger.info("Бот запущен!")
     app.run_polling(allowed_updates=Update.ALL_TYPES, drop_pending_updates=True)
