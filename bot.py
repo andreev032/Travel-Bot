@@ -4,6 +4,8 @@ import json
 import random as _random
 import logging
 import asyncio
+import secrets
+import string
 import traceback
 import urllib.request
 import urllib.parse
@@ -71,6 +73,21 @@ async def init_db(app) -> None:
                     status            TEXT DEFAULT 'pending',
                     created_at        TIMESTAMP DEFAULT NOW(),
                     published_at      TIMESTAMP
+                )
+            """)
+            # ── Premium-доступ ──────────────────────────────────────────────
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS premium_until TIMESTAMP")
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS promo_source TEXT")
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS ref_code TEXT UNIQUE")
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS ref_count INTEGER DEFAULT 0")
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS referred_by TEXT")
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS promo_codes (
+                    code        TEXT PRIMARY KEY,
+                    type        TEXT NOT NULL,
+                    created_by  BIGINT,
+                    uses_count  INTEGER DEFAULT 0,
+                    created_at  TIMESTAMP DEFAULT NOW()
                 )
             """)
         conn.commit()
@@ -188,6 +205,302 @@ def _get_stats() -> dict:
     return {"total": total, "new_7": new_7, "new_30": new_30, "active_today": active_today,
             "since": since}
 
+
+# ── Premium-доступ ──────────────────────────────────────────────────
+BOT_USERNAME = os.getenv("BOT_USERNAME", "like_a_local_bot")
+
+
+def generate_ref_code(user_id: int) -> str:
+    """Генерирует уникальный реф.код для пользователя."""
+    chars = string.ascii_uppercase + string.digits
+    return f"REF_{''.join(secrets.choice(chars) for _ in range(8))}"
+
+
+def is_premium(user_id: int) -> bool:
+    """Премиум активен, если promo_source='lifetime' или premium_until > NOW()."""
+    try:
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT premium_until, promo_source FROM users WHERE user_id = %s",
+                    (user_id,),
+                )
+                row = cur.fetchone()
+        finally:
+            conn.close()
+        if not row:
+            return False
+        until, source = row
+        if until is None:
+            return source == "lifetime"
+        return until > datetime.now()
+    except Exception as e:
+        logger.error("is_premium: %s: %s", type(e).__name__, e)
+        return False
+
+
+def activate_trial(user_id: int, promo_source: str | None = None) -> None:
+    """Активирует 7-дневный триал."""
+    try:
+        until = datetime.now() + timedelta(days=7)
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO users (user_id, premium_until, promo_source)
+                    VALUES (%s, %s, %s)
+                    ON CONFLICT (user_id) DO UPDATE
+                        SET premium_until = EXCLUDED.premium_until,
+                            promo_source  = COALESCE(EXCLUDED.promo_source, users.promo_source)
+                """, (user_id, until, promo_source))
+            conn.commit()
+        finally:
+            conn.close()
+        logger.info("activate_trial: user_id=%s до %s source=%r ✓", user_id, until, promo_source)
+    except Exception as e:
+        logger.error("activate_trial: user_id=%s %s: %s", user_id, type(e).__name__, e)
+
+
+def activate_lifetime(user_id: int) -> None:
+    """Вечный доступ (для блогеров): premium_until = NULL + promo_source='lifetime'."""
+    try:
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO users (user_id, premium_until, promo_source)
+                    VALUES (%s, NULL, 'lifetime')
+                    ON CONFLICT (user_id) DO UPDATE
+                        SET premium_until = NULL,
+                            promo_source  = 'lifetime'
+                """, (user_id,))
+            conn.commit()
+        finally:
+            conn.close()
+        logger.info("activate_lifetime: user_id=%s ✓", user_id)
+    except Exception as e:
+        logger.error("activate_lifetime: user_id=%s %s: %s", user_id, type(e).__name__, e)
+
+
+def get_or_create_ref_code(user_id: int) -> str:
+    """Возвращает реф.код пользователя; создаёт при первом обращении."""
+    try:
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT ref_code FROM users WHERE user_id = %s", (user_id,))
+                row = cur.fetchone()
+                if row and row[0]:
+                    return row[0]
+                # Генерируем уникальный код, повторяя при коллизии
+                for _ in range(8):
+                    code = generate_ref_code(user_id)
+                    try:
+                        cur.execute("""
+                            INSERT INTO users (user_id, ref_code)
+                            VALUES (%s, %s)
+                            ON CONFLICT (user_id) DO UPDATE SET ref_code = EXCLUDED.ref_code
+                        """, (user_id, code))
+                        conn.commit()
+                        return code
+                    except psycopg2.IntegrityError:
+                        conn.rollback()
+                        continue
+        finally:
+            conn.close()
+    except Exception as e:
+        logger.error("get_or_create_ref_code: user_id=%s %s: %s", user_id, type(e).__name__, e)
+    return generate_ref_code(user_id)
+
+
+def get_premium_info(user_id: int) -> dict:
+    """Возвращает {'until': datetime|None, 'is_lifetime': bool, 'ref_count': int}."""
+    info = {"until": None, "is_lifetime": False, "ref_count": 0}
+    try:
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT premium_until, promo_source, ref_count FROM users WHERE user_id = %s",
+                    (user_id,),
+                )
+                row = cur.fetchone()
+        finally:
+            conn.close()
+        if row:
+            info["until"] = row[0]
+            info["is_lifetime"] = (row[1] == "lifetime") and row[0] is None
+            info["ref_count"] = row[2] or 0
+    except Exception as e:
+        logger.error("get_premium_info: %s: %s", type(e).__name__, e)
+    return info
+
+
+def find_user_by_ref_code(ref_code: str) -> int | None:
+    """Ищет user_id владельца реф.кода."""
+    try:
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT user_id FROM users WHERE ref_code = %s", (ref_code,))
+                row = cur.fetchone()
+        finally:
+            conn.close()
+        return row[0] if row else None
+    except Exception as e:
+        logger.error("find_user_by_ref_code: %s: %s", type(e).__name__, e)
+        return None
+
+
+def increment_ref_count(owner_id: int) -> None:
+    try:
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "UPDATE users SET ref_count = COALESCE(ref_count, 0) + 1 WHERE user_id = %s",
+                    (owner_id,),
+                )
+            conn.commit()
+        finally:
+            conn.close()
+    except Exception as e:
+        logger.error("increment_ref_count: %s: %s", type(e).__name__, e)
+
+
+def set_referred_by(user_id: int, ref_code: str) -> None:
+    try:
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "UPDATE users SET referred_by = %s WHERE user_id = %s",
+                    (ref_code, user_id),
+                )
+            conn.commit()
+        finally:
+            conn.close()
+    except Exception as e:
+        logger.error("set_referred_by: %s: %s", type(e).__name__, e)
+
+
+def get_promo_code(code: str) -> dict | None:
+    """Возвращает {'code', 'type', 'uses_count'} или None."""
+    try:
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT code, type, uses_count FROM promo_codes WHERE code = %s",
+                    (code,),
+                )
+                row = cur.fetchone()
+        finally:
+            conn.close()
+        if row:
+            return {"code": row[0], "type": row[1], "uses_count": row[2]}
+    except Exception as e:
+        logger.error("get_promo_code: %s: %s", type(e).__name__, e)
+    return None
+
+
+def increment_promo_uses(code: str) -> None:
+    try:
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "UPDATE promo_codes SET uses_count = COALESCE(uses_count, 0) + 1 WHERE code = %s",
+                    (code,),
+                )
+            conn.commit()
+        finally:
+            conn.close()
+    except Exception as e:
+        logger.error("increment_promo_uses: %s: %s", type(e).__name__, e)
+
+
+def add_promo_code(code: str, ptype: str, created_by: int | None = None) -> bool:
+    """Добавляет промо-код. Возвращает False, если код уже есть."""
+    try:
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "INSERT INTO promo_codes (code, type, created_by) VALUES (%s, %s, %s) ON CONFLICT (code) DO NOTHING",
+                    (code, ptype, created_by),
+                )
+                added = cur.rowcount > 0
+            conn.commit()
+        finally:
+            conn.close()
+        return added
+    except Exception as e:
+        logger.error("add_promo_code: %s: %s", type(e).__name__, e)
+        return False
+
+
+def list_promo_codes() -> list[dict]:
+    try:
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT code, type, uses_count FROM promo_codes ORDER BY created_at DESC"
+                )
+                rows = cur.fetchall()
+        finally:
+            conn.close()
+        return [{"code": r[0], "type": r[1], "uses_count": r[2]} for r in rows]
+    except Exception as e:
+        logger.error("list_promo_codes: %s: %s", type(e).__name__, e)
+        return []
+
+
+def get_premium_user_stats() -> dict:
+    """Всего пользователей, активных премиум, истёкших триалов."""
+    out = {"total": 0, "active_premium": 0, "expired_trials": 0}
+    try:
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT COUNT(*) FROM users")
+                out["total"] = cur.fetchone()[0]
+                cur.execute("""
+                    SELECT COUNT(*) FROM users
+                    WHERE premium_until > NOW()
+                       OR (premium_until IS NULL AND promo_source = 'lifetime')
+                """)
+                out["active_premium"] = cur.fetchone()[0]
+                cur.execute(
+                    "SELECT COUNT(*) FROM users WHERE premium_until IS NOT NULL AND premium_until <= NOW()"
+                )
+                out["expired_trials"] = cur.fetchone()[0]
+        finally:
+            conn.close()
+    except Exception as e:
+        logger.error("get_premium_user_stats: %s: %s", type(e).__name__, e)
+    return out
+
+
+def find_user_id_by_username(username: str) -> int | None:
+    """Ищет user_id по @username (без @)."""
+    try:
+        uname = username.lstrip("@")
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT user_id FROM users WHERE username = %s", (uname,))
+                row = cur.fetchone()
+        finally:
+            conn.close()
+        return row[0] if row else None
+    except Exception as e:
+        logger.error("find_user_id_by_username: %s: %s", type(e).__name__, e)
+        return None
+
+
 # ── Персистентный индекс поста (сохраняется между перезапусками) ─
 POST_INDEX_FILE = os.path.join(os.path.dirname(__file__), "post_index.json")
 
@@ -293,21 +606,40 @@ def get_folder_tools_kb():
     )
 
 
-def get_folder_mytrips_kb():
+def get_folder_mytrips_kb(user_id: int | None = None):
+    # Платные пункты этой папки (открываются по premium)
+    premium = is_premium(user_id) if user_id is not None else True
+
+    def gated(label: str, url: str) -> KeyboardButton:
+        if premium:
+            return KeyboardButton(label, web_app=WebAppInfo(url=url))
+        return KeyboardButton(label)
+
     return ReplyKeyboardMarkup(
         [
             [KeyboardButton("🗺 Мои страны",                  web_app=WebAppInfo(url=WEBAPP_URL)),
              KeyboardButton("🏆 Рейтинг путешественников")],
             [KeyboardButton("🇷🇺 Путешествия по России",      web_app=WebAppInfo(url=RUSSIA_URL)),
-             KeyboardButton("🏛 Мои достопримечательности",   web_app=WebAppInfo(url=ATTRACTIONS_URL))],
-            [KeyboardButton("📊 Моя статистика",              web_app=WebAppInfo(url=STATS_URL)),
+             gated("🏛 Мои достопримечательности",            ATTRACTIONS_URL)],
+            [gated("📊 Моя статистика",                       STATS_URL),
              KeyboardButton("📏 Калькулятор расстояний",      web_app=WebAppInfo(url=DISTANCE_URL))],
-            [KeyboardButton("📖 Дневник путешественника",     web_app=WebAppInfo(url=DIARY_URL))],
+            [gated("📖 Дневник путешественника",              DIARY_URL)],
             [KeyboardButton("◀️ Назад"),                      KeyboardButton(HOME_BTN)],
         ],
         resize_keyboard=True,
         one_time_keyboard=True,
     )
+
+
+PREMIUM_LOCK_TEXT = (
+    "🔒 Это премиум-функция\n\n"
+    "⭐ Попробуй бесплатно 7 дней или оформи подписку 200₽/мес\n\n"
+    "Нажми ⭐ Премиум в главном меню"
+)
+
+
+async def _send_premium_lock(update: Update) -> None:
+    await update.message.reply_text(PREMIUM_LOCK_TEXT)
 
 
 def get_folder_knowledge_kb():
@@ -338,6 +670,9 @@ def get_folder_services_kb():
 async def show_rating(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Показывает топ-30 путешественников по количеству стран."""
     user = update.effective_user
+    if not is_premium(user.id):
+        await _send_premium_lock(update)
+        return MAIN_MENU
     top30, my_pos, my_count = get_countries_rating(user.id)
 
     if not top30:
@@ -345,7 +680,7 @@ async def show_rating(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "🏆 *Рейтинг путешественников*\n\n"
             "Рейтинг пока пуст. Отмечай страны в «Мои страны» чтобы появиться в рейтинге! 🌍",
             parse_mode="Markdown",
-            reply_markup=get_folder_mytrips_kb(),
+            reply_markup=get_folder_mytrips_kb(user.id),
         )
         return MAIN_MENU
 
@@ -365,7 +700,7 @@ async def show_rating(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "\n".join(lines),
         parse_mode="Markdown",
-        reply_markup=get_folder_mytrips_kb(),
+        reply_markup=get_folder_mytrips_kb(user.id),
     )
     return MAIN_MENU
 
@@ -1361,6 +1696,9 @@ def _guess_finish_kb() -> ReplyKeyboardMarkup:
 
 
 async def guess_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_premium(update.effective_user.id):
+        await _send_premium_lock(update)
+        return GAMES_MENU
     riddles = _GUESS_RIDDLES.copy()
     _random_guess.shuffle(riddles)
     context.user_data["guess_riddles"]      = riddles
@@ -1634,6 +1972,9 @@ def _pair_finish_kb() -> ReplyKeyboardMarkup:
 
 
 async def pair_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_premium(update.effective_user.id):
+        await _send_premium_lock(update)
+        return GAMES_MENU
     questions = _pair_build_questions()
     context.user_data["pair_questions"]      = questions
     context.user_data["pair_index"]          = 0
@@ -3010,6 +3351,34 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data.clear()
     user = update.effective_user
     await record_user(user.id, user.username, user.first_name)
+
+    # ── Deep-link обработка: /start <CODE> ──────────────────────────────
+    arg = context.args[0].strip() if getattr(context, "args", None) else ""
+    deep_link_msg = None
+    if arg:
+        if arg.startswith("REF_"):
+            owner_id = find_user_by_ref_code(arg)
+            if owner_id and owner_id != user.id:
+                set_referred_by(user.id, arg)
+                increment_ref_count(owner_id)
+                activate_trial(user.id, promo_source=arg)
+                deep_link_msg = "🎁 Тебе активирован бесплатный доступ на 7 дней по приглашению друга!"
+        elif arg.startswith("BLOG_"):
+            promo = get_promo_code(arg)
+            if promo and promo["type"] == "partner":
+                activate_trial(user.id, promo_source=arg)
+                increment_promo_uses(arg)
+                deep_link_msg = "🎁 Тебе активирован бесплатный доступ на 7 дней!"
+        else:
+            promo = get_promo_code(arg)
+            if promo and promo["type"] == "trial":
+                activate_trial(user.id, promo_source=arg)
+                increment_promo_uses(arg)
+                deep_link_msg = "🎁 Тебе активирован бесплатный доступ на 7 дней!"
+
+    if deep_link_msg:
+        await update.message.reply_text(deep_link_msg)
+
     await update.message.reply_text(
         "✈️ Привет! Я твой travel-помощник «Как местный» 🎒\n"
         "Всё что нужно для путешествия — в одном месте:\n\n"
@@ -3024,6 +3393,56 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Выбери раздел 👇",
         reply_markup=get_main_keyboard(),
     )
+    return MAIN_MENU
+
+
+async def show_premium_screen(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Экран ⭐ Премиум: статус, реф.ссылка, оформить."""
+    user = update.effective_user
+    info = get_premium_info(user.id)
+    ref_code = get_or_create_ref_code(user.id)
+    ref_link = f"t.me/{BOT_USERNAME}?start={ref_code}"
+
+    if is_premium(user.id):
+        if info["is_lifetime"]:
+            until_str = "вечно"
+        else:
+            until_str = info["until"].strftime("%d.%m.%Y") if info["until"] else "—"
+        msg = (
+            "⭐ *Как местный Премиум*\n\n"
+            f"✅ Премиум активен до: *{until_str}*\n\n"
+            "🔗 Твоя реферальная ссылка:\n"
+            f"{ref_link}\n\n"
+            f"👥 Приглашено друзей: *{info['ref_count']}*\n\n"
+            "Делись ссылкой — друзья получат 7 дней бесплатно!"
+        )
+        kb = ReplyKeyboardMarkup(
+            [["◀️ Назад", HOME_BTN]],
+            resize_keyboard=True,
+            one_time_keyboard=True,
+        )
+    else:
+        msg = (
+            "⭐ *Как местный Премиум*\n\n"
+            "🔒 Открой полный доступ к боту:\n"
+            "• 📖 Дневник путешественника\n"
+            "• 📊 Детальная статистика\n"
+            "• 🏛 Мои достопримечательности\n"
+            "• 🏆 Рейтинг путешественников\n"
+            "• 🎮 Все игры\n\n"
+            "💰 200₽/месяц или 1490₽/год\n"
+            "🎁 Первые 7 дней — бесплатно\n\n"
+            "🔗 Твоя реферальная ссылка:\n"
+            f"{ref_link}\n\n"
+            "Приглашай друзей — они получат 7 дней бесплатно!"
+        )
+        kb = ReplyKeyboardMarkup(
+            [["💳 Оформить подписку"], ["◀️ Назад", HOME_BTN]],
+            resize_keyboard=True,
+            one_time_keyboard=True,
+        )
+
+    await update.message.reply_text(msg, parse_mode="Markdown", reply_markup=kb)
     return MAIN_MENU
 
 
@@ -3053,11 +3472,24 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(
             "🗺 *Мои путешествия*\n\nВыбери раздел:",
             parse_mode="Markdown",
-            reply_markup=get_folder_mytrips_kb(),
+            reply_markup=get_folder_mytrips_kb(update.effective_user.id),
         )
         return MAIN_MENU
     elif text == "🏆 Рейтинг путешественников":
         return await show_rating(update, context)
+    elif text in ("🏛 Мои достопримечательности", "📊 Моя статистика", "📖 Дневник путешественника"):
+        # Тапы по этим лейблам приходят сюда только когда WebApp-кнопка заменена
+        # на обычную (не премиум). У премиум-пользователя кнопка открывает WebApp напрямую.
+        if not is_premium(update.effective_user.id):
+            await _send_premium_lock(update)
+            return MAIN_MENU
+        # На всякий случай — если премиум всё-таки ввёл текст руками, вернём папку
+        await update.message.reply_text(
+            "🗺 *Мои путешествия*\n\nВыбери раздел:",
+            parse_mode="Markdown",
+            reply_markup=get_folder_mytrips_kb(update.effective_user.id),
+        )
+        return MAIN_MENU
     elif text == "📚 Знания":
         await update.message.reply_text(
             "📚 *Знания*\n\nВыбери раздел:",
@@ -3133,12 +3565,9 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == "🏛 Чудеса и наследие":
         return await show_wonders_menu(update, context)
     elif text == "⭐ Премиум":
-        await update.message.reply_text(
-            "⭐ *Как местный Премиум*\n\n"
-            "🚧 В разработке — скоро появится!",
-            parse_mode="Markdown",
-            reply_markup=ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True),
-        )
+        return await show_premium_screen(update, context)
+    elif text == "💳 Оформить подписку":
+        await update.message.reply_text("Скоро!")
         return MAIN_MENU
     elif text == "🤝 Партнёры":
         return await show_partners_menu(update, context)
@@ -7657,6 +8086,79 @@ async def testpost_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     await update.message.reply_text("\n".join(result_lines), parse_mode="Markdown")
 
 
+async def giveaccess_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """/giveaccess @username | user_id — выдать вечный премиум."""
+    if update.effective_user.id != ADMIN_ID:
+        await update.message.reply_text("⛔ Нет доступа.")
+        return
+    if not context.args:
+        await update.message.reply_text("Использование: /giveaccess @username  или  /giveaccess <user_id>")
+        return
+    target = context.args[0]
+    if target.startswith("@"):
+        uid = find_user_id_by_username(target)
+        if uid is None:
+            await update.message.reply_text(f"⛔ Пользователь {target} не найден в БД.")
+            return
+    else:
+        try:
+            uid = int(target)
+        except ValueError:
+            await update.message.reply_text("⛔ Нужно @username или числовой user_id.")
+            return
+    activate_lifetime(uid)
+    await update.message.reply_text(f"✅ Вечный доступ выдан user_id={uid}.")
+
+
+async def addpromo_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """/addpromo КОД TYPE — добавить промо-код (TYPE = trial|partner)."""
+    if update.effective_user.id != ADMIN_ID:
+        await update.message.reply_text("⛔ Нет доступа.")
+        return
+    if len(context.args) < 2:
+        await update.message.reply_text("Использование: /addpromo КОД TYPE  (TYPE = trial|partner)")
+        return
+    code, ptype = context.args[0], context.args[1].lower()
+    if ptype not in ("trial", "partner"):
+        await update.message.reply_text("⛔ TYPE должен быть trial или partner.")
+        return
+    added = add_promo_code(code, ptype, created_by=update.effective_user.id)
+    if added:
+        await update.message.reply_text(f"✅ Промо-код `{code}` ({ptype}) добавлен.", parse_mode="Markdown")
+    else:
+        await update.message.reply_text(f"⚠️ Код `{code}` уже существует.", parse_mode="Markdown")
+
+
+async def promostats_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """/promostats — статистика по промо-кодам."""
+    if update.effective_user.id != ADMIN_ID:
+        await update.message.reply_text("⛔ Нет доступа.")
+        return
+    rows = list_promo_codes()
+    if not rows:
+        await update.message.reply_text("Промо-кодов пока нет.")
+        return
+    lines = ["📊 *Промо-коды:*\n"]
+    for r in rows:
+        lines.append(f"`{r['code']}` — {r['type']} — {r['uses_count']} исп.")
+    await update.message.reply_text("\n".join(lines), parse_mode="Markdown")
+
+
+async def userstats_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """/userstats — всего, активных премиум, истёкших триалов."""
+    if update.effective_user.id != ADMIN_ID:
+        await update.message.reply_text("⛔ Нет доступа.")
+        return
+    s = get_premium_user_stats()
+    text = (
+        "👥 *Пользователи*\n\n"
+        f"Всего: *{s['total']}*\n"
+        f"Активный премиум: *{s['active_premium']}*\n"
+        f"Истёкших триалов: *{s['expired_trials']}*"
+    )
+    await update.message.reply_text(text, parse_mode="Markdown")
+
+
 async def post_init(app: Application) -> None:
     """Called by PTB after initialize() — set bot commands, verify channel, launch scheduler."""
     # Register menu commands (visible via the '/' button next to the clip icon)
@@ -7879,6 +8381,10 @@ def main():
     app.add_handler(CommandHandler("stats",    stats_command))
     app.add_handler(CommandHandler("menu",     menu_command))
     app.add_handler(CommandHandler("queue",    queue_command))
+    app.add_handler(CommandHandler("giveaccess", giveaccess_command))
+    app.add_handler(CommandHandler("addpromo",   addpromo_command))
+    app.add_handler(CommandHandler("promostats", promostats_command))
+    app.add_handler(CommandHandler("userstats",  userstats_command))
     app.add_handler(CallbackQueryHandler(queue_callback_handler, pattern=r"^pq:"))
     app.add_handler(MessageHandler(
         filters.UpdateType.CHANNEL_POST & filters.Chat(TEST_CHANNEL_ID),
