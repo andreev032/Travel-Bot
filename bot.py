@@ -7299,9 +7299,26 @@ async def queue_callback_handler(update: Update, context: ContextTypes.DEFAULT_T
             pass
 
 
+def clean_post_text(text: str) -> str:
+    if not text:
+        return text
+    lines = text.split('\n')
+    clean_lines = []
+    skip_keywords = ['t.me', '@', 'подпишись', 'подписывайся', 'перейди', 'переходи', 'канал', 'telegram', 'tg', 'max', 'мах', 'бот', 'ссылка', 'жми', 'кликай']
+    for line in lines:
+        line_lower = line.lower().strip()
+        if line_lower.startswith('#'):
+            continue
+        if any(kw.lower() in line_lower for kw in skip_keywords):
+            continue
+        clean_lines.append(line)
+    result = '\n'.join(clean_lines).strip()
+    return result
+
+
 async def _publish_queue_post(bot, post: dict) -> bool:
     """Publish a queued post to the test channel with QUEUE_SIGNATURE (ВРЕМЕННО: TEST_CHANNEL_ID)."""
-    text = (post.get("text") or "").strip()
+    text = clean_post_text((post.get("text") or "").strip())
     caption = (text + QUEUE_SIGNATURE) if text else QUEUE_SIGNATURE.lstrip("\n")
     media_type = post.get("media_type")
     media_id = post.get("media_id")
