@@ -241,9 +241,9 @@ def is_premium(user_id: int) -> bool:
 
 
 def activate_trial(user_id: int, promo_source: str | None = None) -> None:
-    """Активирует 7-дневный триал."""
+    """Активирует 30-дневный триал."""
     try:
-        until = datetime.now() + timedelta(days=7)
+        until = datetime.now() + timedelta(days=30)
         conn = get_db_connection()
         try:
             with conn.cursor() as cur:
