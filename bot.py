@@ -7304,15 +7304,29 @@ def clean_post_text(text: str) -> str:
         return text
     lines = text.split('\n')
     clean_lines = []
-    skip_keywords = ['t.me', '@', 'подпишись', 'подписывайся', 'перейди', 'переходи', 'канал', 'telegram', 'tg', 'max', 'мах', 'бот', 'ссылка', 'жми', 'кликай']
+    skip_keywords = [
+        'удивительный мир', 'красивые места', 'вокруг света',
+        'max', 'мах', 't.me', '@', 'подпишись', 'подписывайся',
+        'поделись', 'перейди', 'переходи', 'telegram', 'tg',
+        'бот', 'ссылка', 'жми', 'кликай',
+    ]
     for line in lines:
         line_lower = line.lower().strip()
         if line_lower.startswith('#'):
             continue
-        if any(kw.lower() in line_lower for kw in skip_keywords):
+        if any(kw in line_lower for kw in skip_keywords):
             continue
         clean_lines.append(line)
-    result = '\n'.join(clean_lines).strip()
+    # Убрать подряд идущие пустые строки (оставить не более одной)
+    result_lines = []
+    prev_empty = False
+    for line in clean_lines:
+        is_empty = line.strip() == ''
+        if is_empty and prev_empty:
+            continue
+        result_lines.append(line)
+        prev_empty = is_empty
+    result = '\n'.join(result_lines).strip()
     return result
 
 
