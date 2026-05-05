@@ -7084,7 +7084,7 @@ def _scheduler_done_cb(task: asyncio.Task) -> None:
 
 QUEUE_SIGNATURE   = "\n\n🎒 [Как местный | Подписаться](https://t.me/like_a_local)"
 QUEUE_LOW_THRESHOLD = 10
-QUEUE_POST_TIMES = ("09:00", "19:00")
+QUEUE_POST_TIMES = ("12:30", "13:00")  # ВРЕМЕННО для теста (в проде: 09:00, 19:00)
 
 
 def _queue_insert(text: str | None, media_id: str | None, media_type: str | None) -> int:
@@ -7300,7 +7300,7 @@ async def queue_callback_handler(update: Update, context: ContextTypes.DEFAULT_T
 
 
 async def _publish_queue_post(bot, post: dict) -> bool:
-    """Publish a queued post to the main channel with QUEUE_SIGNATURE."""
+    """Publish a queued post to the test channel with QUEUE_SIGNATURE (ВРЕМЕННО: TEST_CHANNEL_ID)."""
     text = (post.get("text") or "").strip()
     caption = (text + QUEUE_SIGNATURE) if text else QUEUE_SIGNATURE.lstrip("\n")
     media_type = post.get("media_type")
@@ -7309,17 +7309,17 @@ async def _publish_queue_post(bot, post: dict) -> bool:
     try:
         if media_type == "video" and media_id:
             await bot.send_video(
-                chat_id=CHANNEL_ID, video=media_id,
+                chat_id=TEST_CHANNEL_ID, video=media_id,  # ВРЕМЕННО (в проде: CHANNEL_ID)
                 caption=caption, parse_mode="Markdown",
             )
         elif media_type == "photo" and media_id:
             await bot.send_photo(
-                chat_id=CHANNEL_ID, photo=media_id,
+                chat_id=TEST_CHANNEL_ID, photo=media_id,  # ВРЕМЕННО (в проде: CHANNEL_ID)
                 caption=caption, parse_mode="Markdown",
             )
         else:
             await bot.send_message(
-                chat_id=CHANNEL_ID, text=caption,
+                chat_id=TEST_CHANNEL_ID, text=caption,    # ВРЕМЕННО (в проде: CHANNEL_ID)
                 parse_mode="Markdown", disable_web_page_preview=True,
             )
         return True
