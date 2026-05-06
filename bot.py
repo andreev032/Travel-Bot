@@ -7883,12 +7883,9 @@ async def queue_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 _PARTNERS_KB = ReplyKeyboardMarkup(
     [
         ["✈️ Авиабилеты Aviasales"],
-        ["🏨 Отели Островок"],
-        ["🏨 Яндекс.Путешествия"],
+        ["🏨 Отели"],
         ["🛡 Страховка Cherehapa"],
-        ["📱 eSIM Airalo"],
-        ["📱 eSIM Yesim"],
-        ["📱 eSIM MobiMatter"],
+        ["📱 eSIM"],
         ["🧭 Экскурсии Tripster"],
         ["🚢 Круизы Круиз.онлайн"],
         ["🚖 Трансферы Kiwitaxi"],
@@ -7896,6 +7893,11 @@ _PARTNERS_KB = ReplyKeyboardMarkup(
         ["🇬🇧 Школа английского Skyeng"],
         ["◀️ Назад", HOME_BTN],
     ],
+    resize_keyboard=True,
+)
+
+_PARTNERS_NAV_KB = ReplyKeyboardMarkup(
+    [["◀️ Назад", HOME_BTN]],
     resize_keyboard=True,
 )
 
@@ -7918,26 +7920,26 @@ _SKYENG_TEXT = (
     "🎁 Специально для подписчиков «Как местный»"
 )
 
-_MOBIMATTER_TEXT = (
-    "📱 *eSIM для путешественников — MobiMatter*\n\n"
-    "Интернет за рубежом без роуминга и дорогих симкарт.\n"
-    "Просто купи eSIM онлайн и подключись по прилёту!\n\n"
-    "*🌍 Что такое MobiMatter:*\n"
-    "• eSIM для 200+ стран мира\n"
-    "• Моментальная активация — без похода в магазин\n"
-    "• Работает на iPhone и Android с поддержкой eSIM\n"
-    "• Тарифы от $2 — платишь только за нужные дни\n"
-    "• Глобальные пакеты для тех, кто едет в несколько стран\n\n"
-    "*✅ Почему удобно:*\n"
-    "• Не нужно менять физическую симкарту\n"
-    "• Покупаешь до отъезда прямо с телефона\n"
-    "• Остаток интернета не сгорает сразу\n"
-    "• Есть роуминг-тарифы для Азии, Европы, Америки\n\n"
-    "*💰 Бонус по реферальному коду:*\n"
-    "Используй ссылку ниже — получишь скидку на первую покупку!\n\n"
-    "⚠️ Для оплаты потребуется зарубежная карта (Visa/Mastercard) или карта банка Казахстана, Армении, Грузии\n"
-    "⚠️ Перед покупкой убедись, что твой телефон поддерживает eSIM"
+_HOTELS_TEXT = (
+    "🏨 *Отели и жильё*\n\n"
+    "Выбери сервис для бронирования отеля или жилья:"
 )
+
+_HOTELS_INLINE_KB = InlineKeyboardMarkup([
+    [InlineKeyboardButton("🏨 Островок", url="https://ostrovok.tpo.mx/AWzXT1nl")],
+    [InlineKeyboardButton("🏨 Яндекс.Путешествия", url="https://yandex.tpo.mx/O3BDe6cM")],
+])
+
+_ESIM_TEXT = (
+    "📱 *eSIM-карты*\n\n"
+    "Выбери провайдера eSIM для интернета за рубежом без роуминга:"
+)
+
+_ESIM_INLINE_KB = InlineKeyboardMarkup([
+    [InlineKeyboardButton("📱 Airalo", url="https://airalo.tpo.mx/YtTdNPSd")],
+    [InlineKeyboardButton("📱 Yesim", url="https://yesim.tpo.mx/PvssJqb7")],
+    [InlineKeyboardButton("📱 MobiMatter", url="https://mobimatter.com?referrerId=AK09022081")],
+])
 
 _AVIASALES_TEXT = (
     "✈️ *Aviasales — поиск дешёвых авиабилетов*\n\n"
@@ -7955,37 +7957,6 @@ _AVIASALES_TEXT = (
     "🌍 Покрытие 200+ стран мира"
 )
 
-_OSTROVOK_TEXT = (
-    "🏨 *Островок — бронирование отелей по всему миру*\n\n"
-    "Островок — российский сервис бронирования отелей с поддержкой на русском языке "
-    "и оплатой российскими картами.\n\n"
-    "*Что умеет:*\n"
-    "• Более 2,5 млн отелей и апартаментов в 220 странах\n"
-    "• Оплата картами «Мир», Visa, Mastercard\n"
-    "• Бесплатная отмена на большинстве отелей\n"
-    "• Кэшбэк бонусами за каждое бронирование\n"
-    "• Поддержка 24/7 на русском языке\n\n"
-    "*Почему пригодится:*\n"
-    "🇷🇺 Работает с российскими картами\n"
-    "💬 Русскоязычная поддержка\n"
-    "💰 Часто цены ниже, чем у зарубежных аналогов"
-)
-
-_YANDEX_TRAVEL_TEXT = (
-    "🏨 *Яндекс.Путешествия — отели, билеты, туры*\n\n"
-    "Сервис от Яндекса: отели, авиабилеты, ж/д билеты и туры в одном месте.\n\n"
-    "*Что умеет:*\n"
-    "• Бронирование отелей по всему миру\n"
-    "• Авиа- и железнодорожные билеты\n"
-    "• Готовые туры и пакетные предложения\n"
-    "• Кэшбэк Яндекс Плюс баллами\n"
-    "• Оплата российскими картами\n\n"
-    "*Почему пригодится:*\n"
-    "🇷🇺 Полная поддержка российских карт\n"
-    "🎁 Кэшбэк баллами Плюса\n"
-    "📱 Удобное приложение и единый аккаунт"
-)
-
 _CHEREHAPA_TEXT = (
     "🛡 *Cherehapa — страховка для путешественников*\n\n"
     "Cherehapa — крупнейший в России агрегатор туристических страховок. "
@@ -8000,39 +7971,6 @@ _CHEREHAPA_TEXT = (
     "🏥 Покрытие COVID-19 и экстренной помощи\n"
     "📄 Принимается всеми консульствами\n"
     "💰 Сравнение цен — найдёшь дешевле, чем у страховой напрямую"
-)
-
-_AIRALO_TEXT = (
-    "📱 *Airalo — eSIM для 200+ стран*\n\n"
-    "Airalo — крупнейший в мире маркетплейс eSIM. "
-    "Подключаешь интернет за рубежом без роуминга и поиска местных симкарт.\n\n"
-    "*Что умеет:*\n"
-    "• eSIM для 200+ стран и регионов\n"
-    "• Региональные пакеты (Европа, Азия, Америка)\n"
-    "• Глобальные тарифы для нескольких стран\n"
-    "• Активация по QR-коду за минуту\n"
-    "• Тарифы от $4,5\n\n"
-    "*Почему пригодится:*\n"
-    "🌍 Самый широкий выбор стран на рынке\n"
-    "⚡ Подключение до вылета — интернет уже по прилёту\n"
-    "💳 Оплата зарубежной картой или Apple/Google Pay\n\n"
-    "⚠️ Нужен телефон с поддержкой eSIM"
-)
-
-_YESIM_TEXT = (
-    "📱 *Yesim — eSIM с безлимитом и звонками*\n\n"
-    "Yesim — eSIM-сервис с тарифами на безлимитный интернет и местные номера для звонков.\n\n"
-    "*Что умеет:*\n"
-    "• eSIM для 150+ стран\n"
-    "• Безлимитные тарифы по подписке\n"
-    "• Локальные номера телефонов в 80+ странах\n"
-    "• Сохранение остатка трафика\n"
-    "• Подключение за минуту через приложение\n\n"
-    "*Почему пригодится:*\n"
-    "♾ Безлимит — не считаешь гигабайты\n"
-    "📞 Местный номер для звонков и регистраций\n"
-    "🌍 Один тариф на несколько стран\n\n"
-    "⚠️ Нужен телефон с поддержкой eSIM"
 )
 
 _TRIPSTER_TEXT = (
@@ -8110,6 +8048,17 @@ async def show_partners_menu(update: Update, context: ContextTypes.DEFAULT_TYPE)
     return PARTNERS_MENU
 
 
+async def _send_partner(update, body, inline_kb):
+    """Отправляет описание партнёра и переключает клавиатуру на ◀️ Назад / 🏠."""
+    await update.message.reply_text(
+        body,
+        parse_mode="Markdown",
+        reply_markup=inline_kb,
+        disable_web_page_preview=True,
+    )
+    await update.message.reply_text(" ", reply_markup=_PARTNERS_NAV_KB)
+
+
 async def partners_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обрабатывает нажатия в меню Партнёры."""
     text = update.message.text
@@ -8125,30 +8074,7 @@ async def partners_menu_handler(update: Update, context: ContextTypes.DEFAULT_TY
                     "&utm_source=referral&inviterHash=4d5449314d54597a4e44553d",
             )
         ]])
-        await update.message.reply_text(
-            _SKYENG_TEXT,
-            parse_mode="Markdown",
-            reply_markup=inline_kb,
-            disable_web_page_preview=True,
-        )
-        back_kb = ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True)
-        await update.message.reply_text("Навигация:", reply_markup=back_kb)
-        return PARTNERS_MENU
-    if text == "📱 eSIM MobiMatter":
-        inline_kb = InlineKeyboardMarkup([
-            [InlineKeyboardButton(
-                "📱 Купить eSIM — скидка по ссылке",
-                url="https://mobimatter.com?referrerId=AK09022081",
-            )]
-        ])
-        await update.message.reply_text(
-            _MOBIMATTER_TEXT,
-            parse_mode="Markdown",
-            reply_markup=inline_kb,
-            disable_web_page_preview=True,
-        )
-        back_kb = ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True)
-        await update.message.reply_text(" ", reply_markup=back_kb)
+        await _send_partner(update, _SKYENG_TEXT, inline_kb)
         return PARTNERS_MENU
     if text == "✈️ Авиабилеты Aviasales":
         inline_kb = InlineKeyboardMarkup([[
@@ -8157,46 +8083,10 @@ async def partners_menu_handler(update: Update, context: ContextTypes.DEFAULT_TY
                 url="https://aviasales.tpo.mx/JwJuaOjB",
             )
         ]])
-        await update.message.reply_text(
-            _AVIASALES_TEXT,
-            parse_mode="Markdown",
-            reply_markup=inline_kb,
-            disable_web_page_preview=True,
-        )
-        back_kb = ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True)
-        await update.message.reply_text("Навигация:", reply_markup=back_kb)
+        await _send_partner(update, _AVIASALES_TEXT, inline_kb)
         return PARTNERS_MENU
-    if text == "🏨 Отели Островок":
-        inline_kb = InlineKeyboardMarkup([[
-            InlineKeyboardButton(
-                "🏨 Забронировать на Островке",
-                url="https://ostrovok.tpo.mx/AWzXT1nl",
-            )
-        ]])
-        await update.message.reply_text(
-            _OSTROVOK_TEXT,
-            parse_mode="Markdown",
-            reply_markup=inline_kb,
-            disable_web_page_preview=True,
-        )
-        back_kb = ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True)
-        await update.message.reply_text("Навигация:", reply_markup=back_kb)
-        return PARTNERS_MENU
-    if text == "🏨 Яндекс.Путешествия":
-        inline_kb = InlineKeyboardMarkup([[
-            InlineKeyboardButton(
-                "🏨 Открыть Яндекс.Путешествия",
-                url="https://yandex.tpo.mx/O3BDe6cM",
-            )
-        ]])
-        await update.message.reply_text(
-            _YANDEX_TRAVEL_TEXT,
-            parse_mode="Markdown",
-            reply_markup=inline_kb,
-            disable_web_page_preview=True,
-        )
-        back_kb = ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True)
-        await update.message.reply_text("Навигация:", reply_markup=back_kb)
+    if text == "🏨 Отели":
+        await _send_partner(update, _HOTELS_TEXT, _HOTELS_INLINE_KB)
         return PARTNERS_MENU
     if text == "🛡 Страховка Cherehapa":
         inline_kb = InlineKeyboardMarkup([[
@@ -8205,46 +8095,10 @@ async def partners_menu_handler(update: Update, context: ContextTypes.DEFAULT_TY
                 url="https://cherehapa.tpo.mx/mleWBEwZ",
             )
         ]])
-        await update.message.reply_text(
-            _CHEREHAPA_TEXT,
-            parse_mode="Markdown",
-            reply_markup=inline_kb,
-            disable_web_page_preview=True,
-        )
-        back_kb = ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True)
-        await update.message.reply_text("Навигация:", reply_markup=back_kb)
+        await _send_partner(update, _CHEREHAPA_TEXT, inline_kb)
         return PARTNERS_MENU
-    if text == "📱 eSIM Airalo":
-        inline_kb = InlineKeyboardMarkup([[
-            InlineKeyboardButton(
-                "📱 Купить eSIM на Airalo",
-                url="https://airalo.tpo.mx/YtTdNPSd",
-            )
-        ]])
-        await update.message.reply_text(
-            _AIRALO_TEXT,
-            parse_mode="Markdown",
-            reply_markup=inline_kb,
-            disable_web_page_preview=True,
-        )
-        back_kb = ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True)
-        await update.message.reply_text("Навигация:", reply_markup=back_kb)
-        return PARTNERS_MENU
-    if text == "📱 eSIM Yesim":
-        inline_kb = InlineKeyboardMarkup([[
-            InlineKeyboardButton(
-                "📱 Купить eSIM на Yesim",
-                url="https://yesim.tpo.mx/PvssJqb7",
-            )
-        ]])
-        await update.message.reply_text(
-            _YESIM_TEXT,
-            parse_mode="Markdown",
-            reply_markup=inline_kb,
-            disable_web_page_preview=True,
-        )
-        back_kb = ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True)
-        await update.message.reply_text("Навигация:", reply_markup=back_kb)
+    if text == "📱 eSIM":
+        await _send_partner(update, _ESIM_TEXT, _ESIM_INLINE_KB)
         return PARTNERS_MENU
     if text == "🧭 Экскурсии Tripster":
         inline_kb = InlineKeyboardMarkup([[
@@ -8253,14 +8107,7 @@ async def partners_menu_handler(update: Update, context: ContextTypes.DEFAULT_TY
                 url="https://tripster.tpo.mx/2Bviy2vb",
             )
         ]])
-        await update.message.reply_text(
-            _TRIPSTER_TEXT,
-            parse_mode="Markdown",
-            reply_markup=inline_kb,
-            disable_web_page_preview=True,
-        )
-        back_kb = ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True)
-        await update.message.reply_text("Навигация:", reply_markup=back_kb)
+        await _send_partner(update, _TRIPSTER_TEXT, inline_kb)
         return PARTNERS_MENU
     if text == "🚢 Круизы Круиз.онлайн":
         inline_kb = InlineKeyboardMarkup([[
@@ -8269,14 +8116,7 @@ async def partners_menu_handler(update: Update, context: ContextTypes.DEFAULT_TY
                 url="https://kruiz-online.tpo.mx/8LRnfhfo",
             )
         ]])
-        await update.message.reply_text(
-            _KRUIZ_ONLINE_TEXT,
-            parse_mode="Markdown",
-            reply_markup=inline_kb,
-            disable_web_page_preview=True,
-        )
-        back_kb = ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True)
-        await update.message.reply_text("Навигация:", reply_markup=back_kb)
+        await _send_partner(update, _KRUIZ_ONLINE_TEXT, inline_kb)
         return PARTNERS_MENU
     if text == "🚖 Трансферы Kiwitaxi":
         inline_kb = InlineKeyboardMarkup([[
@@ -8285,14 +8125,7 @@ async def partners_menu_handler(update: Update, context: ContextTypes.DEFAULT_TY
                 url="https://kiwitaxi.tpo.mx/tn9FuGlz",
             )
         ]])
-        await update.message.reply_text(
-            _KIWITAXI_TEXT,
-            parse_mode="Markdown",
-            reply_markup=inline_kb,
-            disable_web_page_preview=True,
-        )
-        back_kb = ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True)
-        await update.message.reply_text("Навигация:", reply_markup=back_kb)
+        await _send_partner(update, _KIWITAXI_TEXT, inline_kb)
         return PARTNERS_MENU
     if text == "🆘 Компенсации AirHelp":
         inline_kb = InlineKeyboardMarkup([[
@@ -8301,14 +8134,7 @@ async def partners_menu_handler(update: Update, context: ContextTypes.DEFAULT_TY
                 url="https://airhelp.tpo.mx/OreO2QvC",
             )
         ]])
-        await update.message.reply_text(
-            _AIRHELP_TEXT,
-            parse_mode="Markdown",
-            reply_markup=inline_kb,
-            disable_web_page_preview=True,
-        )
-        back_kb = ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True)
-        await update.message.reply_text("Навигация:", reply_markup=back_kb)
+        await _send_partner(update, _AIRHELP_TEXT, inline_kb)
         return PARTNERS_MENU
     # Неизвестная кнопка — вернуть меню
     return await show_partners_menu(update, context)
