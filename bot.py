@@ -3393,7 +3393,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "🤝 Официальные партнёры:\n"
         "Aviasales • Островок • Яндекс.Путешествия\n"
         "Cherehapa • Tripster • Airalo • Yesim\n"
-        "MobiMatter • Kiwitaxi • Kruiz.online\n\n"
+        "MobiMatter • Kiwitaxi • Круиз.онлайн\n\n"
         "Выбери раздел 👇",
         reply_markup=get_main_keyboard(),
     )
@@ -8133,7 +8133,7 @@ async def show_partners_menu(update: Update, context: ContextTypes.DEFAULT_TYPE)
         "🎒 Как местный — официальный партнёр ведущих travel-сервисов:\n"
         "Aviasales • Островок • Яндекс.Путешествия\n"
         "Cherehapa • Tripster • Airalo • Yesim\n"
-        "MobiMatter • Kiwitaxi • Kruiz.online\n\n"
+        "MobiMatter • Kiwitaxi • Круиз.онлайн\n\n"
         "Выбери категорию 👇",
         parse_mode="Markdown",
         reply_markup=_PARTNERS_KB,
