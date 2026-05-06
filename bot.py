@@ -3390,6 +3390,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "🛋 Как попасть в аэропортовый лаундж бесплатно\n"
         "⛔ Куда не пустят со штампом другой страны\n"
         "📖 Полная инструкция для первой самостоятельной поездки\n\n"
+        "🤝 Официальные партнёры:\n"
+        "Aviasales • Островок • Яндекс.Путешествия\n"
+        "Cherehapa • Tripster • Airalo • Yesim\n"
+        "MobiMatter • Kiwitaxi • Kruiz.online\n\n"
         "Выбери раздел 👇",
         reply_markup=get_main_keyboard(),
     )
@@ -8041,7 +8045,12 @@ _AIRHELP_TEXT = (
 async def show_partners_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Показывает меню раздела Партнёры."""
     await update.message.reply_text(
-        "🤝 *Партнёры*\n\nВыбери партнёра:",
+        "🤝 Партнёры\n\n"
+        "🎒 Как местный — официальный партнёр ведущих travel-сервисов:\n"
+        "Aviasales • Островок • Яндекс.Путешествия\n"
+        "Cherehapa • Tripster • Airalo • Yesim\n"
+        "MobiMatter • Kiwitaxi • Kruiz.online\n\n"
+        "Выбери категорию 👇",
         parse_mode="Markdown",
         reply_markup=_PARTNERS_KB,
     )
