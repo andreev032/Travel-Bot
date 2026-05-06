@@ -7882,8 +7882,18 @@ async def queue_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
 _PARTNERS_KB = ReplyKeyboardMarkup(
     [
-        ["🇬🇧 Школа английского Skyeng"],
+        ["✈️ Авиабилеты Aviasales"],
+        ["🏨 Отели Островок"],
+        ["🏨 Яндекс.Путешествия"],
+        ["🛡 Страховка Cherehapa"],
+        ["📱 eSIM Airalo"],
+        ["📱 eSIM Yesim"],
         ["📱 eSIM MobiMatter"],
+        ["🧭 Экскурсии Tripster"],
+        ["🚢 Круизы Круиз.онлайн"],
+        ["🚖 Трансферы Kiwitaxi"],
+        ["🆘 Компенсации AirHelp"],
+        ["🇬🇧 Школа английского Skyeng"],
         ["◀️ Назад", HOME_BTN],
     ],
     resize_keyboard=True,
@@ -7927,6 +7937,166 @@ _MOBIMATTER_TEXT = (
     "Используй ссылку ниже — получишь скидку на первую покупку!\n\n"
     "⚠️ Для оплаты потребуется зарубежная карта (Visa/Mastercard) или карта банка Казахстана, Армении, Грузии\n"
     "⚠️ Перед покупкой убедись, что твой телефон поддерживает eSIM"
+)
+
+_AVIASALES_TEXT = (
+    "✈️ *Aviasales — поиск дешёвых авиабилетов*\n\n"
+    "Aviasales — крупнейший в России поисковик авиабилетов. "
+    "Сравнивает цены сотен авиакомпаний и агентств за один запрос.\n\n"
+    "*Что умеет:*\n"
+    "• Поиск по всем авиакомпаниям мира\n"
+    "• Календарь низких цен — сразу видно, когда лететь дешевле\n"
+    "• Подписка на снижение цены по маршруту\n"
+    "• Стыковочные перелёты со скрытыми скидками\n"
+    "• Поиск из ближайших городов\n\n"
+    "*Почему пригодится:*\n"
+    "💰 Экономия до 30% на билетах\n"
+    "📅 Гибкие даты — найдёшь лучшую цену в месяце\n"
+    "🌍 Покрытие 200+ стран мира"
+)
+
+_OSTROVOK_TEXT = (
+    "🏨 *Островок — бронирование отелей по всему миру*\n\n"
+    "Островок — российский сервис бронирования отелей с поддержкой на русском языке "
+    "и оплатой российскими картами.\n\n"
+    "*Что умеет:*\n"
+    "• Более 2,5 млн отелей и апартаментов в 220 странах\n"
+    "• Оплата картами «Мир», Visa, Mastercard\n"
+    "• Бесплатная отмена на большинстве отелей\n"
+    "• Кэшбэк бонусами за каждое бронирование\n"
+    "• Поддержка 24/7 на русском языке\n\n"
+    "*Почему пригодится:*\n"
+    "🇷🇺 Работает с российскими картами\n"
+    "💬 Русскоязычная поддержка\n"
+    "💰 Часто цены ниже, чем у зарубежных аналогов"
+)
+
+_YANDEX_TRAVEL_TEXT = (
+    "🏨 *Яндекс.Путешествия — отели, билеты, туры*\n\n"
+    "Сервис от Яндекса: отели, авиабилеты, ж/д билеты и туры в одном месте.\n\n"
+    "*Что умеет:*\n"
+    "• Бронирование отелей по всему миру\n"
+    "• Авиа- и железнодорожные билеты\n"
+    "• Готовые туры и пакетные предложения\n"
+    "• Кэшбэк Яндекс Плюс баллами\n"
+    "• Оплата российскими картами\n\n"
+    "*Почему пригодится:*\n"
+    "🇷🇺 Полная поддержка российских карт\n"
+    "🎁 Кэшбэк баллами Плюса\n"
+    "📱 Удобное приложение и единый аккаунт"
+)
+
+_CHEREHAPA_TEXT = (
+    "🛡 *Cherehapa — страховка для путешественников*\n\n"
+    "Cherehapa — крупнейший в России агрегатор туристических страховок. "
+    "Сравнивает полисы 20+ страховых компаний.\n\n"
+    "*Что умеет:*\n"
+    "• Страховки для визы (Шенген, США, Великобритания и др.)\n"
+    "• Покрытие медицинских расходов до 100 000 €\n"
+    "• Страхование от невыезда, потери багажа, спорта\n"
+    "• Оформление онлайн за 5 минут\n"
+    "• Полис приходит на email сразу после оплаты\n\n"
+    "*Почему пригодится:*\n"
+    "🏥 Покрытие COVID-19 и экстренной помощи\n"
+    "📄 Принимается всеми консульствами\n"
+    "💰 Сравнение цен — найдёшь дешевле, чем у страховой напрямую"
+)
+
+_AIRALO_TEXT = (
+    "📱 *Airalo — eSIM для 200+ стран*\n\n"
+    "Airalo — крупнейший в мире маркетплейс eSIM. "
+    "Подключаешь интернет за рубежом без роуминга и поиска местных симкарт.\n\n"
+    "*Что умеет:*\n"
+    "• eSIM для 200+ стран и регионов\n"
+    "• Региональные пакеты (Европа, Азия, Америка)\n"
+    "• Глобальные тарифы для нескольких стран\n"
+    "• Активация по QR-коду за минуту\n"
+    "• Тарифы от $4,5\n\n"
+    "*Почему пригодится:*\n"
+    "🌍 Самый широкий выбор стран на рынке\n"
+    "⚡ Подключение до вылета — интернет уже по прилёту\n"
+    "💳 Оплата зарубежной картой или Apple/Google Pay\n\n"
+    "⚠️ Нужен телефон с поддержкой eSIM"
+)
+
+_YESIM_TEXT = (
+    "📱 *Yesim — eSIM с безлимитом и звонками*\n\n"
+    "Yesim — eSIM-сервис с тарифами на безлимитный интернет и местные номера для звонков.\n\n"
+    "*Что умеет:*\n"
+    "• eSIM для 150+ стран\n"
+    "• Безлимитные тарифы по подписке\n"
+    "• Локальные номера телефонов в 80+ странах\n"
+    "• Сохранение остатка трафика\n"
+    "• Подключение за минуту через приложение\n\n"
+    "*Почему пригодится:*\n"
+    "♾ Безлимит — не считаешь гигабайты\n"
+    "📞 Местный номер для звонков и регистраций\n"
+    "🌍 Один тариф на несколько стран\n\n"
+    "⚠️ Нужен телефон с поддержкой eSIM"
+)
+
+_TRIPSTER_TEXT = (
+    "🧭 *Tripster — экскурсии от местных гидов*\n\n"
+    "Tripster — сервис авторских экскурсий по всему миру. "
+    "Гиды — местные жители, которые показывают город изнутри.\n\n"
+    "*Что умеет:*\n"
+    "• 60 000+ экскурсий в 800+ городах мира\n"
+    "• Индивидуальные и групповые форматы\n"
+    "• Пешие, автомобильные, гастрономические туры\n"
+    "• Реальные отзывы путешественников\n"
+    "• Бесплатная отмена за 24 часа\n\n"
+    "*Почему пригодится:*\n"
+    "🗣 Гиды на русском языке\n"
+    "🏛 Узнаешь то, чего нет в путеводителях\n"
+    "💰 Цены ниже, чем у туроператоров на месте"
+)
+
+_KRUIZ_ONLINE_TEXT = (
+    "🚢 *Круиз.онлайн — морские и речные круизы*\n\n"
+    "Круиз.онлайн — российский сервис подбора и бронирования круизов "
+    "по всему миру.\n\n"
+    "*Что умеет:*\n"
+    "• Морские круизы по Средиземке, Карибам, Азии\n"
+    "• Речные круизы по России и Европе\n"
+    "• Все ведущие круизные компании в одном поиске\n"
+    "• Подбор по бюджету, длительности, маршруту\n"
+    "• Оплата российскими картами и в рассрочку\n\n"
+    "*Почему пригодится:*\n"
+    "🛳 Сравнение цен крупнейших круизных линий\n"
+    "🇷🇺 Поддержка на русском и помощь с визами\n"
+    "💰 Спецпредложения и раннее бронирование"
+)
+
+_KIWITAXI_TEXT = (
+    "🚖 *Kiwitaxi — трансферы из аэропорта*\n\n"
+    "Kiwitaxi — международный сервис заказа трансферов. "
+    "Водитель встречает с табличкой в зоне прилёта.\n\n"
+    "*Что умеет:*\n"
+    "• Трансферы в 100+ странах мира\n"
+    "• Фиксированная цена — без сюрпризов в пути\n"
+    "• Встреча с табличкой в аэропорту\n"
+    "• Авто на любой бюджет — от эконома до минивэна\n"
+    "• Бесплатная отмена за 24 часа\n\n"
+    "*Почему пригодится:*\n"
+    "💳 Оплата российскими картами\n"
+    "🚗 Не торгуешься с местными таксистами\n"
+    "👨‍👩‍👧 Большие авто для семьи и багажа"
+)
+
+_AIRHELP_TEXT = (
+    "🆘 *AirHelp — компенсации за задержки рейсов*\n\n"
+    "AirHelp помогает получить компенсацию от авиакомпаний за задержки, "
+    "отмены и овербукинг. По европейскому регламенту EC 261 — до 600 €.\n\n"
+    "*Что умеет:*\n"
+    "• Компенсации за задержку от 3 часов\n"
+    "• Возврат за отменённые рейсы\n"
+    "• Компенсация при овербукинге\n"
+    "• Юристы AirHelp ведут дело за тебя\n"
+    "• Платишь только если получили компенсацию\n\n"
+    "*Почему пригодится:*\n"
+    "💰 До 600 € за один рейс\n"
+    "📋 Не нужно самому общаться с авиакомпанией\n"
+    "⏳ Можно подать за рейсы за последние 3 года"
 )
 
 
@@ -7979,6 +8149,166 @@ async def partners_menu_handler(update: Update, context: ContextTypes.DEFAULT_TY
         )
         back_kb = ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True)
         await update.message.reply_text(" ", reply_markup=back_kb)
+        return PARTNERS_MENU
+    if text == "✈️ Авиабилеты Aviasales":
+        inline_kb = InlineKeyboardMarkup([[
+            InlineKeyboardButton(
+                "✈️ Найти билеты на Aviasales",
+                url="https://aviasales.tpo.mx/JwJuaOjB",
+            )
+        ]])
+        await update.message.reply_text(
+            _AVIASALES_TEXT,
+            parse_mode="Markdown",
+            reply_markup=inline_kb,
+            disable_web_page_preview=True,
+        )
+        back_kb = ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True)
+        await update.message.reply_text("Навигация:", reply_markup=back_kb)
+        return PARTNERS_MENU
+    if text == "🏨 Отели Островок":
+        inline_kb = InlineKeyboardMarkup([[
+            InlineKeyboardButton(
+                "🏨 Забронировать на Островке",
+                url="https://ostrovok.tpo.mx/AWzXT1nl",
+            )
+        ]])
+        await update.message.reply_text(
+            _OSTROVOK_TEXT,
+            parse_mode="Markdown",
+            reply_markup=inline_kb,
+            disable_web_page_preview=True,
+        )
+        back_kb = ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True)
+        await update.message.reply_text("Навигация:", reply_markup=back_kb)
+        return PARTNERS_MENU
+    if text == "🏨 Яндекс.Путешествия":
+        inline_kb = InlineKeyboardMarkup([[
+            InlineKeyboardButton(
+                "🏨 Открыть Яндекс.Путешествия",
+                url="https://yandex.tpo.mx/O3BDe6cM",
+            )
+        ]])
+        await update.message.reply_text(
+            _YANDEX_TRAVEL_TEXT,
+            parse_mode="Markdown",
+            reply_markup=inline_kb,
+            disable_web_page_preview=True,
+        )
+        back_kb = ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True)
+        await update.message.reply_text("Навигация:", reply_markup=back_kb)
+        return PARTNERS_MENU
+    if text == "🛡 Страховка Cherehapa":
+        inline_kb = InlineKeyboardMarkup([[
+            InlineKeyboardButton(
+                "🛡 Оформить страховку",
+                url="https://cherehapa.tpo.mx/mleWBEwZ",
+            )
+        ]])
+        await update.message.reply_text(
+            _CHEREHAPA_TEXT,
+            parse_mode="Markdown",
+            reply_markup=inline_kb,
+            disable_web_page_preview=True,
+        )
+        back_kb = ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True)
+        await update.message.reply_text("Навигация:", reply_markup=back_kb)
+        return PARTNERS_MENU
+    if text == "📱 eSIM Airalo":
+        inline_kb = InlineKeyboardMarkup([[
+            InlineKeyboardButton(
+                "📱 Купить eSIM на Airalo",
+                url="https://airalo.tpo.mx/YtTdNPSd",
+            )
+        ]])
+        await update.message.reply_text(
+            _AIRALO_TEXT,
+            parse_mode="Markdown",
+            reply_markup=inline_kb,
+            disable_web_page_preview=True,
+        )
+        back_kb = ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True)
+        await update.message.reply_text("Навигация:", reply_markup=back_kb)
+        return PARTNERS_MENU
+    if text == "📱 eSIM Yesim":
+        inline_kb = InlineKeyboardMarkup([[
+            InlineKeyboardButton(
+                "📱 Купить eSIM на Yesim",
+                url="https://yesim.tpo.mx/PvssJqb7",
+            )
+        ]])
+        await update.message.reply_text(
+            _YESIM_TEXT,
+            parse_mode="Markdown",
+            reply_markup=inline_kb,
+            disable_web_page_preview=True,
+        )
+        back_kb = ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True)
+        await update.message.reply_text("Навигация:", reply_markup=back_kb)
+        return PARTNERS_MENU
+    if text == "🧭 Экскурсии Tripster":
+        inline_kb = InlineKeyboardMarkup([[
+            InlineKeyboardButton(
+                "🧭 Найти экскурсию на Tripster",
+                url="https://tripster.tpo.mx/2Bviy2vb",
+            )
+        ]])
+        await update.message.reply_text(
+            _TRIPSTER_TEXT,
+            parse_mode="Markdown",
+            reply_markup=inline_kb,
+            disable_web_page_preview=True,
+        )
+        back_kb = ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True)
+        await update.message.reply_text("Навигация:", reply_markup=back_kb)
+        return PARTNERS_MENU
+    if text == "🚢 Круизы Круиз.онлайн":
+        inline_kb = InlineKeyboardMarkup([[
+            InlineKeyboardButton(
+                "🚢 Подобрать круиз",
+                url="https://kruiz-online.tpo.mx/8LRnfhfo",
+            )
+        ]])
+        await update.message.reply_text(
+            _KRUIZ_ONLINE_TEXT,
+            parse_mode="Markdown",
+            reply_markup=inline_kb,
+            disable_web_page_preview=True,
+        )
+        back_kb = ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True)
+        await update.message.reply_text("Навигация:", reply_markup=back_kb)
+        return PARTNERS_MENU
+    if text == "🚖 Трансферы Kiwitaxi":
+        inline_kb = InlineKeyboardMarkup([[
+            InlineKeyboardButton(
+                "🚖 Заказать трансфер",
+                url="https://kiwitaxi.tpo.mx/tn9FuGlz",
+            )
+        ]])
+        await update.message.reply_text(
+            _KIWITAXI_TEXT,
+            parse_mode="Markdown",
+            reply_markup=inline_kb,
+            disable_web_page_preview=True,
+        )
+        back_kb = ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True)
+        await update.message.reply_text("Навигация:", reply_markup=back_kb)
+        return PARTNERS_MENU
+    if text == "🆘 Компенсации AirHelp":
+        inline_kb = InlineKeyboardMarkup([[
+            InlineKeyboardButton(
+                "🆘 Получить компенсацию",
+                url="https://airhelp.tpo.mx/OreO2QvC",
+            )
+        ]])
+        await update.message.reply_text(
+            _AIRHELP_TEXT,
+            parse_mode="Markdown",
+            reply_markup=inline_kb,
+            disable_web_page_preview=True,
+        )
+        back_kb = ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True)
+        await update.message.reply_text("Навигация:", reply_markup=back_kb)
         return PARTNERS_MENU
     # Неизвестная кнопка — вернуть меню
     return await show_partners_menu(update, context)
