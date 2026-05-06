@@ -7924,26 +7924,109 @@ _SKYENG_TEXT = (
     "🎁 Специально для подписчиков «Как местный»"
 )
 
-_HOTELS_TEXT = (
-    "🏨 *Отели и жильё*\n\n"
-    "Выбери сервис для бронирования отеля или жилья:"
+_HOTELS_SUBMENU_KB = ReplyKeyboardMarkup(
+    [
+        ["🏨 Островок"],
+        ["🏨 Яндекс.Путешествия"],
+        ["◀️ Назад", HOME_BTN],
+    ],
+    resize_keyboard=True,
 )
 
-_HOTELS_INLINE_KB = InlineKeyboardMarkup([
-    [InlineKeyboardButton("🏨 Островок", url="https://ostrovok.tpo.mx/AWzXT1nl")],
-    [InlineKeyboardButton("🏨 Яндекс.Путешествия", url="https://yandex.tpo.mx/O3BDe6cM")],
-])
-
-_ESIM_TEXT = (
-    "📱 *eSIM-карты*\n\n"
-    "Выбери провайдера eSIM для интернета за рубежом без роуминга:"
+_ESIM_SUBMENU_KB = ReplyKeyboardMarkup(
+    [
+        ["📱 Airalo"],
+        ["📱 Yesim"],
+        ["📱 MobiMatter"],
+        ["◀️ Назад", HOME_BTN],
+    ],
+    resize_keyboard=True,
 )
 
-_ESIM_INLINE_KB = InlineKeyboardMarkup([
-    [InlineKeyboardButton("📱 Airalo", url="https://airalo.tpo.mx/YtTdNPSd")],
-    [InlineKeyboardButton("📱 Yesim", url="https://yesim.tpo.mx/PvssJqb7")],
-    [InlineKeyboardButton("📱 MobiMatter", url="https://mobimatter.com?referrerId=AK09022081")],
-])
+_OSTROVOK_TEXT = (
+    "🏨 *Островок — бронирование отелей по всему миру*\n\n"
+    "Островок — российский сервис бронирования отелей с поддержкой на русском языке "
+    "и оплатой российскими картами.\n\n"
+    "*Что умеет:*\n"
+    "• Более 2,5 млн отелей и апартаментов в 220 странах\n"
+    "• Оплата картами «Мир», Visa, Mastercard\n"
+    "• Бесплатная отмена на большинстве отелей\n"
+    "• Кэшбэк бонусами за каждое бронирование\n"
+    "• Поддержка 24/7 на русском языке\n\n"
+    "*Почему пригодится:*\n"
+    "🇷🇺 Работает с российскими картами\n"
+    "💬 Русскоязычная поддержка\n"
+    "💰 Часто цены ниже, чем у зарубежных аналогов"
+)
+
+_YANDEX_TRAVEL_TEXT = (
+    "🏨 *Яндекс.Путешествия — отели, билеты, туры*\n\n"
+    "Сервис от Яндекса: отели, авиабилеты, ж/д билеты и туры в одном месте.\n\n"
+    "*Что умеет:*\n"
+    "• Бронирование отелей по всему миру\n"
+    "• Авиа- и железнодорожные билеты\n"
+    "• Готовые туры и пакетные предложения\n"
+    "• Кэшбэк Яндекс Плюс баллами\n"
+    "• Оплата российскими картами\n\n"
+    "*Почему пригодится:*\n"
+    "🇷🇺 Полная поддержка российских карт\n"
+    "🎁 Кэшбэк баллами Плюса\n"
+    "📱 Удобное приложение и единый аккаунт"
+)
+
+_AIRALO_TEXT = (
+    "📱 *Airalo — eSIM для 200+ стран*\n\n"
+    "Airalo — крупнейший в мире маркетплейс eSIM. "
+    "Подключаешь интернет за рубежом без роуминга и поиска местных симкарт.\n\n"
+    "*Что умеет:*\n"
+    "• eSIM для 200+ стран и регионов\n"
+    "• Региональные пакеты (Европа, Азия, Америка)\n"
+    "• Глобальные тарифы для нескольких стран\n"
+    "• Активация по QR-коду за минуту\n"
+    "• Тарифы от $4,5\n\n"
+    "*Почему пригодится:*\n"
+    "🌍 Самый широкий выбор стран на рынке\n"
+    "⚡ Подключение до вылета — интернет уже по прилёту\n"
+    "💳 Оплата зарубежной картой или Apple/Google Pay\n\n"
+    "⚠️ Нужен телефон с поддержкой eSIM"
+)
+
+_YESIM_TEXT = (
+    "📱 *Yesim — eSIM с безлимитом и звонками*\n\n"
+    "Yesim — eSIM-сервис с тарифами на безлимитный интернет и местные номера для звонков.\n\n"
+    "*Что умеет:*\n"
+    "• eSIM для 150+ стран\n"
+    "• Безлимитные тарифы по подписке\n"
+    "• Локальные номера телефонов в 80+ странах\n"
+    "• Сохранение остатка трафика\n"
+    "• Подключение за минуту через приложение\n\n"
+    "*Почему пригодится:*\n"
+    "♾ Безлимит — не считаешь гигабайты\n"
+    "📞 Местный номер для звонков и регистраций\n"
+    "🌍 Один тариф на несколько стран\n\n"
+    "⚠️ Нужен телефон с поддержкой eSIM"
+)
+
+_MOBIMATTER_TEXT = (
+    "📱 *eSIM для путешественников — MobiMatter*\n\n"
+    "Интернет за рубежом без роуминга и дорогих симкарт.\n"
+    "Просто купи eSIM онлайн и подключись по прилёту!\n\n"
+    "*🌍 Что такое MobiMatter:*\n"
+    "• eSIM для 200+ стран мира\n"
+    "• Моментальная активация — без похода в магазин\n"
+    "• Работает на iPhone и Android с поддержкой eSIM\n"
+    "• Тарифы от $2 — платишь только за нужные дни\n"
+    "• Глобальные пакеты для тех, кто едет в несколько стран\n\n"
+    "*✅ Почему удобно:*\n"
+    "• Не нужно менять физическую симкарту\n"
+    "• Покупаешь до отъезда прямо с телефона\n"
+    "• Остаток интернета не сгорает сразу\n"
+    "• Есть роуминг-тарифы для Азии, Европы, Америки\n\n"
+    "*💰 Бонус по реферальному коду:*\n"
+    "Используй ссылку ниже — получишь скидку на первую покупку!\n\n"
+    "⚠️ Для оплаты потребуется зарубежная карта (Visa/Mastercard) или карта банка Казахстана, Армении, Грузии\n"
+    "⚠️ Перед покупкой убедись, что твой телефон поддерживает eSIM"
+)
 
 _AVIASALES_TEXT = (
     "✈️ *Aviasales — поиск дешёвых авиабилетов*\n\n"
@@ -8044,6 +8127,7 @@ _AIRHELP_TEXT = (
 
 async def show_partners_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Показывает меню раздела Партнёры."""
+    context.user_data.pop("partners_sub", None)
     await update.message.reply_text(
         "🤝 Партнёры\n\n"
         "🎒 Как местный — официальный партнёр ведущих travel-сервисов:\n"
@@ -8053,6 +8137,26 @@ async def show_partners_menu(update: Update, context: ContextTypes.DEFAULT_TYPE)
         "Выбери категорию 👇",
         parse_mode="Markdown",
         reply_markup=_PARTNERS_KB,
+    )
+    return PARTNERS_MENU
+
+
+async def show_hotels_submenu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Уровень 1: подменю отелей."""
+    context.user_data["partners_sub"] = "hotels"
+    await update.message.reply_text(
+        "Выбери сервис:",
+        reply_markup=_HOTELS_SUBMENU_KB,
+    )
+    return PARTNERS_MENU
+
+
+async def show_esim_submenu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Уровень 1: подменю eSIM."""
+    context.user_data["partners_sub"] = "esim"
+    await update.message.reply_text(
+        "Выбери провайдера:",
+        reply_markup=_ESIM_SUBMENU_KB,
     )
     return PARTNERS_MENU
 
@@ -8071,10 +8175,73 @@ async def _send_partner(update, body, inline_kb):
 async def partners_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обрабатывает нажатия в меню Партнёры."""
     text = update.message.text
+    sub = context.user_data.get("partners_sub")
     if text == HOME_BTN:
+        context.user_data.pop("partners_sub", None)
         return await go_home(update, context)
     if text == "◀️ Назад":
+        if sub == "hotel_detail":
+            return await show_hotels_submenu(update, context)
+        if sub == "esim_detail":
+            return await show_esim_submenu(update, context)
+        if sub in ("hotels", "esim"):
+            return await show_partners_menu(update, context)
+        context.user_data.pop("partners_sub", None)
         return await go_home(update, context)
+    if text == "🏨 Отели":
+        return await show_hotels_submenu(update, context)
+    if text == "📱 eSIM":
+        return await show_esim_submenu(update, context)
+    if text == "🏨 Островок":
+        context.user_data["partners_sub"] = "hotel_detail"
+        inline_kb = InlineKeyboardMarkup([[
+            InlineKeyboardButton(
+                "🏨 Перейти на Островок",
+                url="https://ostrovok.tpo.mx/AWzXT1nl",
+            )
+        ]])
+        await _send_partner(update, _OSTROVOK_TEXT, inline_kb)
+        return PARTNERS_MENU
+    if text == "🏨 Яндекс.Путешествия":
+        context.user_data["partners_sub"] = "hotel_detail"
+        inline_kb = InlineKeyboardMarkup([[
+            InlineKeyboardButton(
+                "🏨 Перейти на Яндекс.Путешествия",
+                url="https://yandex.tpo.mx/O3BDe6cM",
+            )
+        ]])
+        await _send_partner(update, _YANDEX_TRAVEL_TEXT, inline_kb)
+        return PARTNERS_MENU
+    if text == "📱 Airalo":
+        context.user_data["partners_sub"] = "esim_detail"
+        inline_kb = InlineKeyboardMarkup([[
+            InlineKeyboardButton(
+                "📱 Купить eSIM на Airalo",
+                url="https://airalo.tpo.mx/YtTdNPSd",
+            )
+        ]])
+        await _send_partner(update, _AIRALO_TEXT, inline_kb)
+        return PARTNERS_MENU
+    if text == "📱 Yesim":
+        context.user_data["partners_sub"] = "esim_detail"
+        inline_kb = InlineKeyboardMarkup([[
+            InlineKeyboardButton(
+                "📱 Купить eSIM на Yesim",
+                url="https://yesim.tpo.mx/PvssJqb7",
+            )
+        ]])
+        await _send_partner(update, _YESIM_TEXT, inline_kb)
+        return PARTNERS_MENU
+    if text == "📱 MobiMatter":
+        context.user_data["partners_sub"] = "esim_detail"
+        inline_kb = InlineKeyboardMarkup([[
+            InlineKeyboardButton(
+                "📱 Купить eSIM на MobiMatter",
+                url="https://mobimatter.com?referrerId=AK09022081",
+            )
+        ]])
+        await _send_partner(update, _MOBIMATTER_TEXT, inline_kb)
+        return PARTNERS_MENU
     if text == "🇬🇧 Школа английского Skyeng":
         inline_kb = InlineKeyboardMarkup([[
             InlineKeyboardButton(
@@ -8094,9 +8261,6 @@ async def partners_menu_handler(update: Update, context: ContextTypes.DEFAULT_TY
         ]])
         await _send_partner(update, _AVIASALES_TEXT, inline_kb)
         return PARTNERS_MENU
-    if text == "🏨 Отели":
-        await _send_partner(update, _HOTELS_TEXT, _HOTELS_INLINE_KB)
-        return PARTNERS_MENU
     if text == "🛡 Страховка Cherehapa":
         inline_kb = InlineKeyboardMarkup([[
             InlineKeyboardButton(
@@ -8105,9 +8269,6 @@ async def partners_menu_handler(update: Update, context: ContextTypes.DEFAULT_TY
             )
         ]])
         await _send_partner(update, _CHEREHAPA_TEXT, inline_kb)
-        return PARTNERS_MENU
-    if text == "📱 eSIM":
-        await _send_partner(update, _ESIM_TEXT, _ESIM_INLINE_KB)
         return PARTNERS_MENU
     if text == "🧭 Экскурсии Tripster":
         inline_kb = InlineKeyboardMarkup([[
