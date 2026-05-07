@@ -3456,6 +3456,22 @@ async def show_premium_screen(update: Update, context: ContextTypes.DEFAULT_TYPE
     return MAIN_MENU
 
 
+async def premium_buy_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Заглушка оплаты — ЮKassa ещё не подключена."""
+    query = update.callback_query
+    await query.answer()
+    nav_kb = ReplyKeyboardMarkup(
+        [["◀️ Назад", "🏠 Главное меню"]],
+        resize_keyboard=True,
+    )
+    await query.message.reply_text(
+        "💳 Оплата через ЮKassa\n\n"
+        "Скоро здесь появится оплата подписки.\n"
+        "Следи за обновлениями в нашем канале 📢",
+        reply_markup=nav_kb,
+    )
+
+
 async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
 
@@ -8715,6 +8731,7 @@ def main():
     app.add_handler(CommandHandler("addpromo",   addpromo_command))
     app.add_handler(CommandHandler("promostats", promostats_command))
     app.add_handler(CommandHandler("userstats",  userstats_command))
+    app.add_handler(CallbackQueryHandler(premium_buy_callback, pattern=r"^premium_buy$"))
     app.add_handler(CallbackQueryHandler(queue_callback_handler, pattern=r"^pq:"))
     app.add_handler(MessageHandler(
         filters.UpdateType.CHANNEL_POST & filters.Chat(TEST_CHANNEL_ID),
