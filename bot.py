@@ -3446,14 +3446,12 @@ async def show_premium_screen(update: Update, context: ContextTypes.DEFAULT_TYPE
         [InlineKeyboardButton("💳 Подключить Премиум", callback_data="premium_buy")],
         [InlineKeyboardButton("📄 Условия оферты", url="https://andreev032.github.io/Travel-Bot/oferta.html")],
     ])
-    await update.message.reply_text(msg, parse_mode="Markdown", reply_markup=inline_kb)
-    await update.message.reply_text(
-        "⬇️ Навигация",
-        reply_markup=ReplyKeyboardMarkup(
-            [["◀️ Назад", "🏠 Главное меню"]],
-            resize_keyboard=True
-        )
+    nav_kb = ReplyKeyboardMarkup(
+        [["◀️ Назад", HOME_BTN]],
+        resize_keyboard=True,
     )
+    await update.message.reply_text(msg, parse_mode="Markdown", reply_markup=inline_kb)
+    await update.message.reply_text(".", reply_markup=nav_kb)
     return MAIN_MENU
 
 
