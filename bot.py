@@ -3456,7 +3456,7 @@ async def show_premium_screen(update: Update, context: ContextTypes.DEFAULT_TYPE
         reply_markup=inline_kb
     )
     await update.message.reply_text(
-        "Навигация:",
+        " ",
         reply_markup=nav_kb
     )
     return MAIN_MENU
