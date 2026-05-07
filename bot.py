@@ -3439,11 +3439,13 @@ async def show_premium_screen(update: Update, context: ContextTypes.DEFAULT_TYPE
         "💳 Стоимость:\n"
         "- 200₽ / месяц\n"
         "- 1490₽ / год (экономия 910₽)\n\n"
-        "🎁 Первые 7 дней — бесплатно"
+        "🎁 Первые 7 дней — бесплатно\n\n"
+        "Нажимая «Подключить», вы принимаете условия оферты"
     )
-    inline_kb = InlineKeyboardMarkup([[
-        InlineKeyboardButton("💳 Подключить Премиум", callback_data="premium_buy"),
-    ]])
+    inline_kb = InlineKeyboardMarkup([
+        [InlineKeyboardButton("💳 Подключить Премиум", callback_data="premium_buy")],
+        [InlineKeyboardButton("📄 Условия оферты", url="https://andreev032.github.io/Travel-Bot/oferta.html")],
+    ])
     nav_kb = ReplyKeyboardMarkup(
         [["◀️ Назад", HOME_BTN]],
         resize_keyboard=True,
