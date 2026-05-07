@@ -218,6 +218,7 @@ def generate_ref_code(user_id: int) -> str:
 
 def is_premium(user_id: int) -> bool:
     """Премиум активен, если promo_source='lifetime' или premium_until > NOW()."""
+    if user_id == ADMIN_ID: return False
     try:
         conn = get_db_connection()
         try:
