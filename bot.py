@@ -3426,6 +3426,11 @@ async def show_premium_screen(update: Update, context: ContextTypes.DEFAULT_TYPE
         await update.message.reply_text(msg, parse_mode="Markdown", reply_markup=kb)
         return MAIN_MENU
 
+    return await _show_premium_card(update, context)
+
+
+async def _show_premium_card(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Карточка товара Премиум (для пользователей без активной подписки)."""
     msg = (
         "⭐ Как местный Премиум\n\n"
         "Всё для серьёзного путешественника:\n\n"
@@ -3450,6 +3455,14 @@ async def show_premium_screen(update: Update, context: ContextTypes.DEFAULT_TYPE
     await update.message.reply_text(msg, parse_mode="Markdown", reply_markup=inline_kb)
     await update.message.reply_text(" ", reply_markup=nav_kb)
     return MAIN_MENU
+
+
+async def testpremium_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Показывает карточку Премиума как для пользователя без подписки. Только для админа."""
+    if update.effective_user.id != ADMIN_ID:
+        await update.message.reply_text("⛔ Нет доступа.")
+        return
+    return await _show_premium_card(update, context)
 
 
 async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -8704,6 +8717,7 @@ def main():
     )
     app.add_handler(conv)
     app.add_handler(CommandHandler("testpost", testpost_command))
+    app.add_handler(CommandHandler("testpremium", testpremium_command))
     app.add_handler(CommandHandler("stats",    stats_command))
     app.add_handler(CommandHandler("menu",     menu_command))
     app.add_handler(CommandHandler("queue",    queue_command))
