@@ -3450,8 +3450,15 @@ async def show_premium_screen(update: Update, context: ContextTypes.DEFAULT_TYPE
         [["◀️ Назад", HOME_BTN]],
         resize_keyboard=True,
     )
-    await update.message.reply_text(msg, parse_mode="Markdown", reply_markup=inline_kb)
-    await update.message.reply_text(".", reply_markup=nav_kb)
+    await update.message.reply_text(
+        msg,
+        parse_mode="Markdown",
+        reply_markup=nav_kb
+    )
+    await update.message.reply_text(
+        "Выбери действие:",
+        reply_markup=inline_kb
+    )
     return MAIN_MENU
 
 
