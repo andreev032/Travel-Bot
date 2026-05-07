@@ -3423,28 +3423,32 @@ async def show_premium_screen(update: Update, context: ContextTypes.DEFAULT_TYPE
             resize_keyboard=True,
             one_time_keyboard=True,
         )
-    else:
-        msg = (
-            "⭐ *Как местный Премиум*\n\n"
-            "🔒 Открой полный доступ к боту:\n"
-            "• 📖 Дневник путешественника\n"
-            "• 📊 Детальная статистика\n"
-            "• 🏛 Мои достопримечательности\n"
-            "• 🏆 Рейтинг путешественников\n"
-            "• 🎮 Все игры\n\n"
-            "💰 200₽/месяц или 1490₽/год\n"
-            "🎁 Первые 7 дней — бесплатно\n\n"
-            "🔗 Твоя реферальная ссылка:\n"
-            f"{ref_link}\n\n"
-            "Приглашай друзей — они получат 7 дней бесплатно!"
-        )
-        kb = ReplyKeyboardMarkup(
-            [["💳 Оформить подписку"], ["◀️ Назад", HOME_BTN]],
-            resize_keyboard=True,
-            one_time_keyboard=True,
-        )
+        await update.message.reply_text(msg, parse_mode="Markdown", reply_markup=kb)
+        return MAIN_MENU
 
-    await update.message.reply_text(msg, parse_mode="Markdown", reply_markup=kb)
+    msg = (
+        "⭐ Как местный Премиум\n\n"
+        "Всё для серьёзного путешественника:\n\n"
+        "📔 Дневник путешественника\n"
+        "📊 Моя статистика\n"
+        "🏛 Мои достопримечательности\n"
+        "🏆 Рейтинг путешественников\n"
+        "🌍 Угадай где я\n"
+        "🃏 Найди пару\n\n"
+        "💳 Стоимость:\n"
+        "- 200₽ / месяц\n"
+        "- 1490₽ / год (экономия 910₽)\n\n"
+        "🎁 Первые 7 дней — бесплатно"
+    )
+    inline_kb = InlineKeyboardMarkup([[
+        InlineKeyboardButton("💳 Подключить Премиум", callback_data="premium_buy"),
+    ]])
+    nav_kb = ReplyKeyboardMarkup(
+        [["◀️ Назад", HOME_BTN]],
+        resize_keyboard=True,
+    )
+    await update.message.reply_text(msg, parse_mode="Markdown", reply_markup=inline_kb)
+    await update.message.reply_text(" ", reply_markup=nav_kb)
     return MAIN_MENU
 
 
