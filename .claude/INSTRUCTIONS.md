@@ -87,6 +87,39 @@ SHOP_MENU, SHOP_TYPING = range(38)
 
 Навигация: `HOME_BTN` → `go_home()` + сброс `context.user_data`. fallbacks: `/start`, `/menu`, `/cancel`, `HOME_BTN`.
 
+## Партнёрки (Travelpayouts, ID 725703)
+| Партнёр | Ссылка |
+|---|---|
+| Aviasales | https://aviasales.tpo.mx/JwJuaOjB |
+| Cherehapa | https://cherehapa.tpo.mx/mleWBEwZ |
+| Tripster | https://tripster.tpo.mx/2Bviy2vb |
+| Островок | https://ostrovok.tpo.mx/AWzXT1nl |
+| Яндекс.Путешествия | https://yandex.tpo.mx/O3BDe6cM |
+| Kruiz.online | https://kruiz-online.tpo.mx/8LRnfhfo |
+| Kiwitaxi | https://kiwitaxi.tpo.mx/tn9FuGlz |
+| AirHelp | https://airhelp.tpo.mx/OreO2QvC |
+| Airalo | https://airalo.tpo.mx/YtTdNPSd |
+| Yesim | https://yesim.tpo.mx/PvssJqb7 |
+| Tutu.ru | https://tutu.tpo.mx/TUhUyfAE |
+| WeGoTrip | https://wegotrip.tpo.mx/sEJE5fXc |
+| Sutochno.ru | https://sutochno.tpo.mx/E9oytnQF |
+| MobiMatter | https://mobimatter.com?referrerId=AK09022081 |
+| Skyeng | (текущая ссылка из кода) |
+
+## Оплата
+- **ЮKassa** — основной провайдер (подписки), договор подписан, на проверке
+- **Ozon Pay** — разовые платежи, на рассмотрении
+- Подписка: **200₽/мес**, **1490₽/год**
+- Путеводители: **149₽/страна**
+
+**Оферта:** https://andreev032.github.io/Travel-Bot/oferta.html
+
+## Премиум (для неподписанных)
+- Показывает карточку товара с ценами
+- Кнопка «Подключить Премиум» (заглушка)
+- Ссылка на оферту
+- `ADMIN_ID` видит экран неподписанного (`is_premium` возвращает `False` для админа)
+
 ## Соглашения по веткам
 | Префикс | Назначение |
 |---|---|
