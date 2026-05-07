@@ -1,180 +1,124 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Публичная оферта — Как местный</title>
-  <meta name="description" content="Публичная оферта на оказание информационных услуг (подписка на Telegram-бот «Как местный»)." />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --accent: #7c3aed;
-      --bg-deep: #0a0a1a;
-      --text: #e8eaf0;
-      --muted: #8890a8;
-      --border: rgba(255,255,255,.07);
-    }
-    html { scroll-behavior: smooth; }
-    body {
-      font-family: 'Inter', system-ui, sans-serif;
-      background: var(--bg-deep);
-      color: var(--text);
-      line-height: 1.7;
-      padding: 40px 22px 80px;
-    }
-    .container { max-width: 760px; margin: 0 auto; }
-    .back {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      color: var(--muted);
-      text-decoration: none;
-      font-size: .9rem;
-      margin-bottom: 24px;
-      transition: color .2s;
-    }
-    .back:hover { color: var(--accent); }
-    h1 {
-      font-size: clamp(1.6rem, 4vw, 2.2rem);
-      font-weight: 800;
-      color: #fff;
-      margin-bottom: 8px;
-      line-height: 1.2;
-    }
-    .meta {
-      color: var(--muted);
-      font-size: .88rem;
-      margin-bottom: 32px;
-      padding-bottom: 18px;
-      border-bottom: 1px solid var(--border);
-    }
-    h2 {
-      font-size: 1.15rem;
-      font-weight: 700;
-      color: #fff;
-      margin: 28px 0 10px;
-    }
-    p, li {
-      font-size: .96rem;
-      color: #c4c8d4;
-      margin-bottom: 10px;
-    }
-    ul, ol { padding-left: 22px; margin-bottom: 12px; }
-    a { color: var(--accent); text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    strong { color: #fff; }
-    .req {
-      background: rgba(255,255,255,.03);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 16px 20px;
-      margin-top: 28px;
-      font-size: .92rem;
-      color: var(--muted);
-    }
-    .req strong { color: var(--text); }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Публичная оферта — Как местный</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: #1a1a1a;
+    color: #e8e8e8;
+    line-height: 1.6;
+    padding: 24px 16px 48px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+    background: #232323;
+    border-radius: 16px;
+    padding: 32px 28px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+  }
+  h1 {
+    color: #e8943a;
+    font-size: 26px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    text-align: center;
+    letter-spacing: 0.3px;
+  }
+  .subtitle {
+    text-align: center;
+    color: #a8a8a8;
+    font-size: 16px;
+    margin-bottom: 24px;
+  }
+  .ip-block {
+    background: #2c2c2c;
+    border-left: 3px solid #e8943a;
+    padding: 14px 18px;
+    border-radius: 8px;
+    margin-bottom: 28px;
+    font-size: 14px;
+    color: #d0d0d0;
+  }
+  .ip-block div { margin: 2px 0; }
+  h2 {
+    color: #e8943a;
+    font-size: 18px;
+    font-weight: 600;
+    margin-top: 24px;
+    margin-bottom: 10px;
+  }
+  p {
+    color: #d0d0d0;
+    font-size: 15px;
+    margin-bottom: 8px;
+  }
+  a {
+    color: #e8943a;
+    text-decoration: none;
+    border-bottom: 1px dashed rgba(232, 148, 58, 0.5);
+    transition: border-color 0.2s;
+  }
+  a:hover { border-bottom-color: #e8943a; }
+  .footer-block {
+    margin-top: 12px;
+    padding-top: 4px;
+    color: #a8a8a8;
+    font-size: 14px;
+  }
+  .footer-block div { margin: 3px 0; }
+  @media (max-width: 480px) {
+    .container { padding: 24px 18px; }
+    h1 { font-size: 22px; }
+    h2 { font-size: 16px; }
+    p, .ip-block, .footer-block { font-size: 14px; }
+  }
+</style>
 </head>
 <body>
-  <div class="container">
-    <a class="back" href="landing.html">← На главную</a>
-    <h1>Публичная оферта на оказание информационных услуг</h1>
-    <p class="meta">Редакция от 30 апреля 2026 г.</p>
+<div class="container">
+  <h1>ПУБЛИЧНАЯ ОФЕРТА</h1>
+  <div class="subtitle">на оказание информационных услуг</div>
 
-    <h2>1. Общие положения</h2>
-    <p>
-      Настоящий документ является публичной офертой Индивидуального предпринимателя
-      <strong>Андреева Кирилла Андреевича</strong> (ИНН 323307367220, далее — «Исполнитель»)
-      в адрес любого физического лица (далее — «Пользователь»), принявшего условия оферты
-      в порядке, установленном статьёй 438 Гражданского кодекса РФ.
-    </p>
-    <p>
-      Акцептом оферты является оформление Пользователем платной подписки на сервис
-      Telegram-бота <a href="https://t.me/like_a_local_bot" target="_blank" rel="noopener">@like_a_local_bot</a>
-      (далее — «Сервис») и оплата выбранного тарифа. <strong>Оферта вступает в силу с
-      момента оплаты.</strong>
-    </p>
-
-    <h2>2. Предмет договора</h2>
-    <p>
-      Исполнитель оказывает Пользователю информационные услуги по предоставлению
-      доступа к премиум-функциям Telegram-бота
-      <a href="https://t.me/like_a_local_bot" target="_blank" rel="noopener">@like_a_local_bot</a>
-      (далее — «Премиум доступ») на условиях выбранного Пользователем тарифа.
-    </p>
-    <p>Сервис носит исключительно информационно-справочный характер.</p>
-
-    <h2>3. Тарифы и оплата</h2>
-    <ul>
-      <li>Подписка на 1 месяц — <strong>200 ₽</strong></li>
-      <li>Подписка на 1 год — <strong>1 490 ₽</strong></li>
-    </ul>
-    <p>
-      Оплата производится через платёжные системы, интегрированные с Telegram, или
-      иные средства, указанные в Сервисе. Цены указаны с учётом всех применимых налогов.
-    </p>
-
-    <h2>4. Срок действия и порядок предоставления услуг</h2>
-    <p>
-      Премиум доступ активируется автоматически после поступления оплаты и
-      действует в течение оплаченного периода (1 месяц или 1 год).
-    </p>
-    <p>
-      Услуги считаются оказанными с момента активации Премиум доступа.
-    </p>
-
-    <h2>5. Права и обязанности сторон</h2>
-    <p><strong>Исполнитель обязуется:</strong></p>
-    <ul>
-      <li>предоставить Пользователю Премиум доступ в течение оплаченного периода;</li>
-      <li>обеспечивать техническую возможность использования Сервиса;</li>
-      <li>обрабатывать персональные данные в соответствии с законодательством РФ.</li>
-    </ul>
-    <p><strong>Пользователь обязуется:</strong></p>
-    <ul>
-      <li>не использовать Сервис в противоправных целях;</li>
-      <li>не передавать доступ третьим лицам;</li>
-      <li>самостоятельно обеспечивать сохранность данных учётной записи Telegram.</li>
-    </ul>
-
-    <h2>6. Возврат денежных средств</h2>
-    <p>
-      Порядок возврата регулируется отдельным документом —
-      <a href="refund.html">Политикой возврата</a>.
-    </p>
-
-    <h2>7. Ответственность сторон</h2>
-    <p>
-      Исполнитель не несёт ответственности за решения Пользователя, принятые на основе
-      информации из Сервиса. Информация в Сервисе носит справочный характер и не является
-      официальным консультированием по визовым, юридическим, финансовым или иным вопросам.
-    </p>
-
-    <h2>8. Персональные данные</h2>
-    <p>
-      Обработка персональных данных Пользователя осуществляется в соответствии с
-      Федеральным законом № 152-ФЗ «О персональных данных».
-    </p>
-
-    <h2>9. Прочие условия</h2>
-    <p>
-      Исполнитель вправе изменять условия настоящей Оферты в одностороннем порядке.
-      Действующая редакция всегда доступна по адресу настоящей страницы.
-    </p>
-    <p>
-      По всем вопросам можно обратиться по электронной почте:
-      <a href="mailto:likealocal.travels@gmail.com">likealocal.travels@gmail.com</a>.
-    </p>
-
-    <div class="req">
-      <strong>Реквизиты Исполнителя</strong><br>
-      ИП Андреев Кирилл Андреевич<br>
-      ИНН 323307367220<br>
-      Email: <a href="mailto:likealocal.travels@gmail.com">likealocal.travels@gmail.com</a>
-    </div>
+  <div class="ip-block">
+    <div><strong>ИП Андреев Кирилл Андреевич</strong></div>
+    <div>ИНН: 323307367220</div>
+    <div>ОГРНИП: 323325600002741</div>
   </div>
+
+  <h2>1. ОБЩИЕ ПОЛОЖЕНИЯ</h2>
+  <p>Услуги оказываются через Telegram-бот «Как местный» (@like_a_local_bot).</p>
+  <p>Акцепт оферты — факт оплаты услуг.</p>
+
+  <h2>2. УСЛУГИ И ЦЕНЫ</h2>
+  <p>Премиум подписка — 200₽/месяц, 1490₽/год</p>
+  <p>Включает: Дневник путешественника, Моя статистика, Мои достопримечательности, Рейтинг путешественников, игры Угадай где я и Найди пару.</p>
+
+  <h2>3. ОПЛАТА</h2>
+  <p>Через сервис ЮKassa (банковская карта, СБП).</p>
+  <p>Доступ активируется автоматически в течение 5 минут после оплаты.</p>
+
+  <h2>4. ВОЗВРАТ СРЕДСТВ</h2>
+  <p>В течение 14 дней с момента оплаты если услуга не использовалась.</p>
+  <p>Для возврата: <a href="mailto:aka09011987@gmail.com">aka09011987@gmail.com</a></p>
+
+  <h2>5. ПЕРСОНАЛЬНЫЕ ДАННЫЕ</h2>
+  <p>Обрабатывается только Telegram ID пользователя.</p>
+  <p>Данные не передаются третьим лицам.</p>
+
+  <h2>6. РЕКВИЗИТЫ</h2>
+  <div class="footer-block">
+    <div>ИП Андреев Кирилл Андреевич</div>
+    <div>ИНН: 323307367220</div>
+    <div>ОГРНИП: 323325600002741</div>
+    <div>Email: <a href="mailto:aka09011987@gmail.com">aka09011987@gmail.com</a></div>
+    <div>Telegram: <a href="https://t.me/andreev032">@andreev032</a></div>
+  </div>
+</div>
 </body>
 </html>
