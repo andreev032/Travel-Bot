@@ -8796,6 +8796,34 @@ async def giveaccess_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
     await update.message.reply_text(f"✅ Вечный доступ выдан user_id={uid}.")
 
 
+async def reset_trial_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """/reset_trial — сбрасывает триал у админа и активирует его заново через record_user()."""
+    user = update.effective_user
+    if user.id != ADMIN_ID:
+        await update.message.reply_text("⛔ Нет доступа.")
+        return
+    try:
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    UPDATE users
+                    SET is_premium         = FALSE,
+                        premium_expires_at = NULL,
+                        premium_trial_used = FALSE
+                    WHERE user_id = %s
+                """, (user.id,))
+            conn.commit()
+        finally:
+            conn.close()
+    except Exception as e:
+        logger.error("reset_trial_command: user_id=%s %s: %s", user.id, type(e).__name__, e)
+        await update.message.reply_text("⚠️ Не удалось сбросить триал.")
+        return
+    await record_user(user.id, user.username, user.first_name)
+    await update.message.reply_text("✅ Триал сброшен и активирован заново на 7 дней.")
+
+
 async def addpromo_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """/addpromo КОД TYPE — добавить промо-код (TYPE = trial|partner)."""
     if update.effective_user.id != ADMIN_ID:
@@ -9086,6 +9114,7 @@ def main():
     app.add_handler(CommandHandler("menu",     menu_command))
     app.add_handler(CommandHandler("queue",    queue_command))
     app.add_handler(CommandHandler("giveaccess", giveaccess_command))
+    app.add_handler(CommandHandler("reset_trial", reset_trial_command))
     app.add_handler(CommandHandler("addpromo",   addpromo_command))
     app.add_handler(CommandHandler("promostats", promostats_command))
     app.add_handler(CommandHandler("userstats",  userstats_command))
