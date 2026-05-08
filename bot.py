@@ -504,7 +504,7 @@ def set_referred_by(user_id: int, ref_code: str) -> None:
         try:
             with conn.cursor() as cur:
                 cur.execute(
-                    "SELECT user_id FROM users WHERE referral_code = %s",
+                    "SELECT user_id FROM users WHERE ref_code = %s",
                     (ref_code,),
                 )
                 row = cur.fetchone()
