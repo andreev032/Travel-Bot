@@ -300,6 +300,52 @@ def is_premium(user_id: int) -> bool:
         return False
 
 
+def has_paid_subscription(user_id: int) -> bool:
+    """True если у пользователя оплаченная подписка (subscription_type задан),
+    а не триал."""
+    try:
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT subscription_type FROM users WHERE user_id = %s",
+                    (user_id,),
+                )
+                row = cur.fetchone()
+                return bool(row and row[0])
+        finally:
+            conn.close()
+    except Exception as e:
+        logger.error("has_paid_subscription: %s: %s", type(e).__name__, e)
+        return False
+
+
+def detach_payment_method(user_id: int) -> bool:
+    """Обнуляет yookassa_payment_method_id. Возвращает True если карта была привязана."""
+    try:
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT yookassa_payment_method_id FROM users WHERE user_id = %s",
+                    (user_id,),
+                )
+                row = cur.fetchone()
+                if not row or not row[0]:
+                    return False
+                cur.execute(
+                    "UPDATE users SET yookassa_payment_method_id=NULL WHERE user_id=%s",
+                    (user_id,),
+                )
+            conn.commit()
+            return True
+        finally:
+            conn.close()
+    except Exception as e:
+        logger.error("detach_payment_method: user_id=%s: %s: %s", user_id, type(e).__name__, e)
+        return False
+
+
 def activate_trial(user_id: int, promo_source: str | None = None) -> None:
     """Активирует 30-дневный триал."""
     try:
@@ -3707,8 +3753,12 @@ async def show_premium_screen(update: Update, context: ContextTypes.DEFAULT_TYPE
             f"👥 Приглашено друзей: *{info['ref_count']}*\n\n"
             "Делись ссылкой — друзья получат 7 дней бесплатно!"
         )
+        rows = []
+        if has_paid_subscription(user.id):
+            rows.append(["🗑 Отвязать карту"])
+        rows.append(["◀️ Назад", HOME_BTN])
         kb = ReplyKeyboardMarkup(
-            [["◀️ Назад", HOME_BTN]],
+            rows,
             resize_keyboard=True,
             one_time_keyboard=True,
         )
@@ -3739,6 +3789,25 @@ async def show_premium_screen(update: Update, context: ContextTypes.DEFAULT_TYPE
                 ["📄 Условия оферты"],
                 ["◀️ Назад", "🏠 Главное меню"],
             ],
+            resize_keyboard=True,
+        ),
+    )
+    return MAIN_MENU
+
+
+async def detach_card_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Отвязывает карту (yookassa_payment_method_id → NULL)."""
+    user_id = update.effective_user.id
+    detached = detach_payment_method(user_id)
+    text = (
+        "Карта отвязана. Автопродление отключено."
+        if detached
+        else "У вас нет привязанной карты."
+    )
+    await update.message.reply_text(
+        text,
+        reply_markup=ReplyKeyboardMarkup(
+            [["◀️ Назад", HOME_BTN]],
             resize_keyboard=True,
         ),
     )
@@ -3925,6 +3994,8 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await show_premium_screen(update, context)
     elif text == "💳 Подключить Премиум":
         return await premium_buy_callback_reply(update, context)
+    elif text == "🗑 Отвязать карту":
+        return await detach_card_handler(update, context)
     elif text == "💳 200₽ / месяц":
         return await _handle_premium_plan(update, "month")
     elif text == "💳 1490₽ / год":
