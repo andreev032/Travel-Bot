@@ -691,8 +691,10 @@ YKConfiguration.secret_key  = YOOKASSA_SECRET_KEY
 
 # ── ЮKassa: вспомогательные функции ───────────────────────────────────
 
-def yookassa_activate_premium(user_id: int, plan: str, payment_method_id: str | None = None) -> None:
-    """Активирует премиум в БД и сохраняет payment_method_id."""
+def yookassa_activate_premium(user_id: int, plan: str, payment_method_id: str | None = None):
+    """Активирует/продлевает премиум в БД и сохраняет payment_method_id.
+    Если premium_expires_at уже в будущем — прибавляет дни к нему, иначе к NOW().
+    Возвращает новое значение premium_expires_at."""
     days = 365 if plan == "year" else 30
     conn = get_db_connection()
     try:
@@ -700,12 +702,15 @@ def yookassa_activate_premium(user_id: int, plan: str, payment_method_id: str | 
             cur.execute("""
                 UPDATE users
                 SET is_premium = TRUE,
-                    premium_expires_at = NOW() + INTERVAL '%s days',
+                    premium_expires_at = GREATEST(NOW(), COALESCE(premium_expires_at, NOW())) + (INTERVAL '1 day' * %s),
                     subscription_type = %s,
                     yookassa_payment_method_id = COALESCE(%s, yookassa_payment_method_id)
                 WHERE user_id = %s
+                RETURNING premium_expires_at
             """, (days, plan, payment_method_id, user_id))
+            row = cur.fetchone()
         conn.commit()
+        return row[0] if row else None
     finally:
         conn.close()
 
@@ -835,14 +840,21 @@ def yookassa_webhook():
     payment_method = obj.get("payment_method", {})
     pm_id = payment_method.get("id") if obj.get("save_payment_method") else None
 
-    yookassa_activate_premium(user_id, plan, pm_id)
+    new_expires_at = yookassa_activate_premium(user_id, plan, pm_id)
     logger.info("YooKassa: премиум активирован user_id=%s plan=%s pm_id=%s", user_id, plan, pm_id)
 
     if _telegram_bot_ref is not None and _main_event_loop is not None:
+        plan_label = "Год" if plan == "year" else "Месяц"
+        date_str = new_expires_at.strftime("%d.%m.%Y") if new_expires_at else "—"
+        msg = (
+            "✅ Оплата прошла успешно!\n\n"
+            f"📅 Премиум активен до: {date_str}\n"
+            f"📦 Тариф: {plan_label}"
+        )
         asyncio.run_coroutine_threadsafe(
             _telegram_bot_ref.bot.send_message(
                 chat_id=user_id,
-                text="✅ Премиум активирован! Добро пожаловать в Как местный Премиум.",
+                text=msg,
             ),
             _main_event_loop,
         )
