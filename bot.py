@@ -3442,17 +3442,18 @@ async def show_premium_screen(update: Update, context: ContextTypes.DEFAULT_TYPE
         "🎁 Первые 7 дней — бесплатно\n\n"
         "Нажимая «Подключить», вы принимаете условия оферты"
     )
-    inline_kb = InlineKeyboardMarkup([
-        [InlineKeyboardButton("💳 Подключить Премиум", callback_data="premium_buy")],
-        [InlineKeyboardButton("📄 Условия оферты ↗", url="https://andreev032.github.io/Travel-Bot/oferta.html")],
-    ])
-    nav_kb = ReplyKeyboardMarkup(
-        [["◀️ Назад", "🏠 Главное меню"]],
-        resize_keyboard=True,
+    await update.message.reply_text(
+        msg,
+        parse_mode="Markdown",
+        reply_markup=ReplyKeyboardMarkup(
+            [
+                ["💳 Подключить Премиум"],
+                ["📄 Условия оферты"],
+                ["◀️ Назад", "🏠 Главное меню"],
+            ],
+            resize_keyboard=True,
+        ),
     )
-    await update.message.reply_text(msg, parse_mode="Markdown")
-    await update.message.reply_text("·", reply_markup=inline_kb)
-    await update.message.reply_text(" ", reply_markup=nav_kb)
     return MAIN_MENU
 
 
@@ -3470,6 +3471,20 @@ async def premium_buy_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         "Следи за обновлениями в нашем канале 📢",
         reply_markup=nav_kb,
     )
+
+
+async def premium_buy_callback_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Заглушка оплаты по reply-кнопке — ЮKassa ещё не подключена."""
+    await update.message.reply_text(
+        "💳 Оплата через ЮKassa\n\n"
+        "Скоро здесь появится оплата подписки.\n"
+        "Следи за обновлениями в нашем канале 📢",
+        reply_markup=ReplyKeyboardMarkup(
+            [["◀️ Назад", "🏠 Главное меню"]],
+            resize_keyboard=True,
+        ),
+    )
+    return MAIN_MENU
 
 
 async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -3592,6 +3607,11 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await show_wonders_menu(update, context)
     elif text == "⭐ Премиум":
         return await show_premium_screen(update, context)
+    elif text == "💳 Подключить Премиум":
+        return await premium_buy_callback_reply(update, context)
+    elif text == "📄 Условия оферты":
+        await update.message.reply_text("https://andreev032.github.io/Travel-Bot/oferta.html")
+        return MAIN_MENU
     elif text == "💳 Оформить подписку":
         await update.message.reply_text("Скоро!")
         return MAIN_MENU
