@@ -369,7 +369,7 @@ async def _gate_premium_with_trial(update: Update) -> bool:
         await update.message.reply_text(
             "🎁 Тебе активирован бесплатный триал на 7 дней! Попробуй все премиум функции."
         )
-        return True
+        return is_premium(user_id)
     await _send_premium_lock(update)
     return False
 
