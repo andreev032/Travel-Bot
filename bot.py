@@ -144,7 +144,8 @@ async def record_user(user_id: int, username: str | None, first_name: str | None
                     UPDATE users
                     SET is_premium         = TRUE,
                         premium_expires_at = NOW() + INTERVAL '7 days',
-                        premium_trial_used = TRUE
+                        premium_trial_used = TRUE,
+                        subscription_type  = 'trial'
                     WHERE user_id = %s AND premium_trial_used = FALSE
                 """, (user_id,))
             conn.commit()
@@ -8876,7 +8877,7 @@ async def reset_trial_command(update: Update, context: ContextTypes.DEFAULT_TYPE
         try:
             with conn.cursor() as cur:
                 cur.execute(
-                    "UPDATE users SET is_premium=FALSE, premium_expires_at=NULL, premium_trial_used=TRUE, subscription_type=NULL WHERE user_id=%s",
+                    "UPDATE users SET is_premium=TRUE, premium_expires_at=NOW() + INTERVAL '7 days', premium_trial_used=TRUE, subscription_type='trial' WHERE user_id=%s",
                     (user.id,),
                 )
             conn.commit()
@@ -8886,7 +8887,7 @@ async def reset_trial_command(update: Update, context: ContextTypes.DEFAULT_TYPE
         logger.error("reset_trial_command: user_id=%s %s: %s", user.id, type(e).__name__, e)
         await update.message.reply_text("⚠️ Не удалось сбросить триал.")
         return
-    await update.message.reply_text("✅ Премиум сброшен. Теперь ты обычный пользователь.")
+    await update.message.reply_text("✅ Триал активирован на 7 дней.")
 
 
 async def addpromo_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
