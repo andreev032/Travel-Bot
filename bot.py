@@ -633,10 +633,31 @@ def yookassa_activate_premium(user_id: int, plan: str, payment_method_id: str | 
         conn.close()
 
 
+def _get_user_email(user_id: int) -> str:
+    """Возвращает email пользователя из БД, либо fallback для чека ЮKassa."""
+    fallback = "aka09011987@gmail.com"
+    try:
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT email FROM users WHERE user_id = %s", (user_id,))
+                row = cur.fetchone()
+                if row and row[0]:
+                    return row[0]
+        finally:
+            conn.close()
+    except Exception as e:
+        logger.warning("_get_user_email: user_id=%s: %s: %s — using fallback",
+                       user_id, type(e).__name__, e)
+    return fallback
+
+
 def yookassa_create_payment(user_id: int, plan: str) -> str:
     """Создаёт платёж в ЮKassa и возвращает confirmation_url."""
     amount = "200.00" if plan == "month" else "1490.00"
     description = "Подписка Как местный Премиум (месяц)" if plan == "month" else "Подписка Как местный Премиум (год)"
+    item_description = "Премиум подписка Как местный" if plan == "month" else "Годовая премиум подписка Как местный"
+    email = _get_user_email(user_id)
     payment = YKPayment.create({
         "amount": {"value": amount, "currency": "RUB"},
         "payment_method_data": {"type": "bank_card"},
@@ -647,6 +668,24 @@ def yookassa_create_payment(user_id: int, plan: str) -> str:
         "capture": True,
         "description": description,
         "metadata": {"user_id": str(user_id), "plan": plan},
+        "receipt": {
+            "customer": {
+                "email": email,
+            },
+            "items": [
+                {
+                    "description": item_description,
+                    "quantity": "1.00",
+                    "amount": {
+                        "value": amount,
+                        "currency": "RUB",
+                    },
+                    "vat_code": 1,
+                    "payment_mode": "full_payment",
+                    "payment_subject": "service",
+                },
+            ],
+        },
     }, secrets.token_hex(16))
     return payment.confirmation.confirmation_url
 
