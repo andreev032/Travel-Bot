@@ -8777,6 +8777,9 @@ async def post_init(app: Application) -> None:
     global _main_event_loop
     _main_event_loop = asyncio.get_running_loop()
 
+    # Сброс webhook перед polling — защита от конфликта двойного запуска
+    await app.bot.delete_webhook(drop_pending_updates=True)
+
     # Register menu commands (visible via the '/' button next to the clip icon)
     await app.bot.set_my_commands([
         BotCommand("start", "Главное меню"),
