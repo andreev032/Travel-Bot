@@ -737,10 +737,10 @@ _main_event_loop: "asyncio.AbstractEventLoop | None" = None
 
 @_flask_app.route("/yookassa/webhook", methods=["POST"])
 def yookassa_webhook():
-    ip = flask_request.remote_addr
-    if not _yookassa_ip_allowed(ip):
-        logger.warning("WARNING: webhook request from unknown IP: %s", ip)
-        return "", 403
+    # IP-фильтр временно отключён — Railway проксирует запросы, реальный IP ЮKassa не виден.
+    # Вернём проверку, когда разберёмся с цепочкой proxy.
+    ip = flask_request.headers.get("X-Forwarded-For", flask_request.remote_addr)
+    logger.info(f"Webhook received from IP: {ip}")
     data = flask_request.get_json(silent=True) or {}
     logger.info("YooKassa webhook: %s", data.get("event"))
     if data.get("event") != "payment.succeeded":
