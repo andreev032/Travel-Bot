@@ -3768,7 +3768,10 @@ async def show_premium_screen(update: Update, context: ContextTypes.DEFAULT_TYPE
             f"👥 Приглашено друзей: *{info['ref_count']}*\n\n"
             "Делись ссылкой — друзья получат 7 дней бесплатно!"
         )
-        rows = []
+        rows = [
+            ["💳 Продлить подписку"],
+            ["📄 Условия оферты"],
+        ]
         if has_paid_subscription(user.id):
             rows.append(["🗑 Отвязать карту"])
         rows.append(["◀️ Назад", HOME_BTN])
@@ -4007,7 +4010,7 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await show_wonders_menu(update, context)
     elif text == "⭐ Премиум":
         return await show_premium_screen(update, context)
-    elif text == "💳 Подключить Премиум":
+    elif text == "💳 Подключить Премиум" or text == "💳 Продлить подписку":
         return await premium_buy_callback_reply(update, context)
     elif text == "🗑 Отвязать карту":
         return await detach_card_handler(update, context)
