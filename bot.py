@@ -8875,13 +8875,10 @@ async def reset_trial_command(update: Update, context: ContextTypes.DEFAULT_TYPE
         conn = get_db_connection()
         try:
             with conn.cursor() as cur:
-                cur.execute("""
-                    UPDATE users
-                    SET is_premium         = FALSE,
-                        premium_expires_at = NULL,
-                        premium_trial_used = FALSE
-                    WHERE user_id = %s
-                """, (user.id,))
+                cur.execute(
+                    "UPDATE users SET is_premium=FALSE, premium_expires_at=NULL, premium_trial_used=TRUE, subscription_type=NULL WHERE user_id=%s",
+                    (user.id,),
+                )
             conn.commit()
         finally:
             conn.close()
@@ -8889,8 +8886,7 @@ async def reset_trial_command(update: Update, context: ContextTypes.DEFAULT_TYPE
         logger.error("reset_trial_command: user_id=%s %s: %s", user.id, type(e).__name__, e)
         await update.message.reply_text("⚠️ Не удалось сбросить триал.")
         return
-    await record_user(user.id, user.username, user.first_name)
-    await update.message.reply_text("✅ Триал сброшен и активирован заново на 7 дней.")
+    await update.message.reply_text("✅ Премиум сброшен. Теперь ты обычный пользователь.")
 
 
 async def addpromo_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
