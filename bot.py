@@ -7,6 +7,7 @@ import asyncio
 import secrets
 import string
 import traceback
+import threading
 import urllib.request
 import urllib.parse
 import requests
@@ -14,9 +15,12 @@ import httpx
 import psycopg2
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
+from flask import Flask, request as flask_request
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton, WebAppInfo, InlineKeyboardMarkup, InlineKeyboardButton, BotCommand
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler, CallbackQueryHandler
 from posts import CHANNEL_POSTS
+import yookassa
+from yookassa import Configuration as YKConfiguration, Payment as YKPayment
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -81,6 +85,11 @@ async def init_db(app) -> None:
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS ref_code TEXT UNIQUE")
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS ref_count INTEGER DEFAULT 0")
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS referred_by TEXT")
+            # ── ЮKassa ─────────────────────────────────────────────────────
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_premium BOOLEAN DEFAULT FALSE")
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS premium_expires_at TIMESTAMP")
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS yookassa_payment_method_id TEXT")
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_type TEXT")
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS promo_codes (
                     code        TEXT PRIMARY KEY,
@@ -561,6 +570,155 @@ HOME_BTN    = "🏠 Главное меню"
 CHANNEL_BTN = "📢 Наш канал"
 SHOP_BTN    = "🛒 Магазин"
 ADMIN_ID    = int(os.getenv("ADMIN_ID", "462171750"))       # доступ к /stats и служебным командам
+
+# ── ЮKassa ─────────────────────────────────────────────────────────────
+YOOKASSA_SHOP_ID     = "1350203"
+YOOKASSA_SECRET_KEY  = os.getenv("YOOKASSA_SECRET_KEY", "")
+YKConfiguration.account_id = YOOKASSA_SHOP_ID
+YKConfiguration.secret_key  = YOOKASSA_SECRET_KEY
+
+
+# ── ЮKassa: вспомогательные функции ───────────────────────────────────
+
+def yookassa_activate_premium(user_id: int, plan: str, payment_method_id: str | None = None) -> None:
+    """Активирует премиум в БД и сохраняет payment_method_id."""
+    days = 365 if plan == "year" else 30
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                UPDATE users
+                SET is_premium = TRUE,
+                    premium_expires_at = NOW() + INTERVAL '%s days',
+                    subscription_type = %s,
+                    yookassa_payment_method_id = COALESCE(%s, yookassa_payment_method_id)
+                WHERE user_id = %s
+            """, (days, plan, payment_method_id, user_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def yookassa_create_payment(user_id: int, plan: str) -> str:
+    """Создаёт платёж в ЮKassa и возвращает confirmation_url."""
+    amount = "200.00" if plan == "month" else "1490.00"
+    description = "Подписка Как местный Премиум (месяц)" if plan == "month" else "Подписка Как местный Премиум (год)"
+    payment = YKPayment.create({
+        "amount": {"value": amount, "currency": "RUB"},
+        "payment_method_data": {"type": "bank_card"},
+        "confirmation": {
+            "type": "redirect",
+            "return_url": "https://t.me/like_a_local_bot",
+        },
+        "save_payment_method": True,
+        "capture": True,
+        "description": description,
+        "metadata": {"user_id": str(user_id), "plan": plan},
+    }, secrets.token_hex(16))
+    return payment.confirmation.confirmation_url
+
+
+def yookassa_charge_renewal(user_id: int, plan: str, payment_method_id: str) -> bool:
+    """Списывает автоплатёж через сохранённый payment_method_id. Возвращает True при успехе."""
+    try:
+        amount = "200.00" if plan == "month" else "1490.00"
+        description = "Автопродление Как местный Премиум"
+        payment = YKPayment.create({
+            "amount": {"value": amount, "currency": "RUB"},
+            "payment_method_id": payment_method_id,
+            "capture": True,
+            "description": description,
+            "metadata": {"user_id": str(user_id), "plan": plan, "auto": "true"},
+        }, secrets.token_hex(16))
+        return payment.status == "succeeded"
+    except Exception as e:
+        logger.error("yookassa_charge_renewal user_id=%s: %s: %s", user_id, type(e).__name__, e)
+        return False
+
+
+# ── Flask webhook для ЮKassa ───────────────────────────────────────────
+
+_flask_app = Flask(__name__)
+_telegram_bot_ref: "Application | None" = None
+_main_event_loop: "asyncio.AbstractEventLoop | None" = None
+
+
+@_flask_app.route("/yookassa/webhook", methods=["POST"])
+def yookassa_webhook():
+    data = flask_request.get_json(silent=True) or {}
+    logger.info("YooKassa webhook: %s", data.get("event"))
+    if data.get("event") != "payment.succeeded":
+        return "", 200
+
+    obj = data.get("object", {})
+    metadata = obj.get("metadata", {})
+    user_id_str = metadata.get("user_id")
+    plan = metadata.get("plan", "month")
+    if not user_id_str:
+        logger.warning("YooKassa webhook: нет user_id в metadata")
+        return "", 200
+
+    user_id = int(user_id_str)
+    payment_method = obj.get("payment_method", {})
+    pm_id = payment_method.get("id") if obj.get("save_payment_method") else None
+
+    yookassa_activate_premium(user_id, plan, pm_id)
+    logger.info("YooKassa: премиум активирован user_id=%s plan=%s pm_id=%s", user_id, plan, pm_id)
+
+    if _telegram_bot_ref is not None and _main_event_loop is not None:
+        asyncio.run_coroutine_threadsafe(
+            _telegram_bot_ref.bot.send_message(
+                chat_id=user_id,
+                text="✅ Премиум активирован! Добро пожаловать в Как местный Премиум.",
+            ),
+            _main_event_loop,
+        )
+    return "", 200
+
+
+def _start_flask_server() -> None:
+    port = int(os.environ.get("PORT", 8080))
+    logger.info("Flask webhook сервер запускается на порту %s", port)
+    _flask_app.run(host="0.0.0.0", port=port, use_reloader=False)
+
+
+# ── Автопродление (фоновая задача) ─────────────────────────────────────
+
+async def autorenewal_scheduler(bot) -> None:
+    """Раз в сутки проверяет пользователей с истекающим премиумом и списывает автоплатёж."""
+    while True:
+        await asyncio.sleep(86400)  # 24 часа
+        try:
+            conn = get_db_connection()
+            try:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        SELECT user_id, subscription_type, yookassa_payment_method_id
+                        FROM users
+                        WHERE is_premium = TRUE
+                          AND premium_expires_at BETWEEN NOW() AND NOW() + INTERVAL '3 days'
+                          AND yookassa_payment_method_id IS NOT NULL
+                    """)
+                    rows = cur.fetchall()
+            finally:
+                conn.close()
+
+            for user_id, plan, pm_id in rows:
+                success = yookassa_charge_renewal(user_id, plan or "month", pm_id)
+                if success:
+                    yookassa_activate_premium(user_id, plan or "month")
+                    try:
+                        await bot.send_message(
+                            chat_id=user_id,
+                            text="✅ Подписка Как местный Премиум продлена!",
+                        )
+                    except Exception:
+                        pass
+                    logger.info("autorenewal: продлён user_id=%s plan=%s", user_id, plan)
+                else:
+                    logger.warning("autorenewal: не удалось списать user_id=%s", user_id)
+        except Exception as e:
+            logger.error("autorenewal_scheduler: %s: %s", type(e).__name__, e)
 
 
 def get_main_keyboard():
@@ -3458,32 +3616,60 @@ async def show_premium_screen(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 
 async def premium_buy_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Заглушка оплаты — ЮKassa ещё не подключена."""
+    """Inline-кнопка premium_buy — показываем выбор тарифа."""
     query = update.callback_query
     await query.answer()
-    nav_kb = ReplyKeyboardMarkup(
-        [["◀️ Назад", "🏠 Главное меню"]],
-        resize_keyboard=True,
-    )
     await query.message.reply_text(
-        "💳 Оплата через ЮKassa\n\n"
-        "Скоро здесь появится оплата подписки.\n"
-        "Следи за обновлениями в нашем канале 📢",
-        reply_markup=nav_kb,
+        "💳 Выбери тариф Как местный Премиум:",
+        reply_markup=ReplyKeyboardMarkup(
+            [
+                ["💳 200₽ / месяц"],
+                ["💳 1490₽ / год"],
+                ["◀️ Назад", "🏠 Главное меню"],
+            ],
+            resize_keyboard=True,
+        ),
     )
 
 
 async def premium_buy_callback_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Заглушка оплаты по reply-кнопке — ЮKassa ещё не подключена."""
+    """Кнопка «Подключить Премиум» — показываем выбор тарифа."""
     await update.message.reply_text(
-        "💳 Оплата через ЮKassa\n\n"
-        "Скоро здесь появится оплата подписки.\n"
-        "Следи за обновлениями в нашем канале 📢",
+        "💳 Выбери тариф Как местный Премиум:",
         reply_markup=ReplyKeyboardMarkup(
-            [["◀️ Назад", "🏠 Главное меню"]],
+            [
+                ["💳 200₽ / месяц"],
+                ["💳 1490₽ / год"],
+                ["◀️ Назад", "🏠 Главное меню"],
+            ],
             resize_keyboard=True,
         ),
     )
+    return MAIN_MENU
+
+
+async def _handle_premium_plan(update: Update, plan: str) -> int:
+    """Создаёт платёж ЮKassa и отправляет пользователю ссылку на оплату."""
+    user_id = update.effective_user.id
+    try:
+        url = yookassa_create_payment(user_id, plan)
+        label = "200₽ / месяц" if plan == "month" else "1490₽ / год"
+        await update.message.reply_text(
+            f"💳 Тариф: *{label}*\n\nНажми кнопку ниже для перехода к оплате.",
+            parse_mode="Markdown",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("Оплатить", url=url)],
+            ]),
+        )
+    except Exception as e:
+        logger.error("_handle_premium_plan user_id=%s plan=%s: %s: %s", user_id, plan, type(e).__name__, e)
+        await update.message.reply_text(
+            "⚠️ Не удалось создать платёж. Попробуй позже или напиши в поддержку.",
+            reply_markup=ReplyKeyboardMarkup(
+                [["◀️ Назад", "🏠 Главное меню"]],
+                resize_keyboard=True,
+            ),
+        )
     return MAIN_MENU
 
 
@@ -3609,6 +3795,10 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await show_premium_screen(update, context)
     elif text == "💳 Подключить Премиум":
         return await premium_buy_callback_reply(update, context)
+    elif text == "💳 200₽ / месяц":
+        return await _handle_premium_plan(update, "month")
+    elif text == "💳 1490₽ / год":
+        return await _handle_premium_plan(update, "year")
     elif text == "📄 Условия оферты":
         await update.message.reply_text("https://andreev032.github.io/Travel-Bot/oferta.html")
         return MAIN_MENU
@@ -8527,6 +8717,9 @@ async def userstats_command(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
 async def post_init(app: Application) -> None:
     """Called by PTB after initialize() — set bot commands, verify channel, launch scheduler."""
+    global _main_event_loop
+    _main_event_loop = asyncio.get_running_loop()
+
     # Register menu commands (visible via the '/' button next to the clip icon)
     await app.bot.set_my_commands([
         BotCommand("start", "Главное меню"),
@@ -8554,9 +8747,20 @@ async def post_init(app: Application) -> None:
     queue_task.add_done_callback(_scheduler_done_cb)
     logger.info("Задача автопостинга очереди создана и запущена")
 
+    # Автопродление ЮKassa — раз в сутки
+    renewal_task = asyncio.create_task(autorenewal_scheduler(app.bot))
+    renewal_task.add_done_callback(_scheduler_done_cb)
+    logger.info("Задача автопродления ЮKassa создана и запущена")
+
 
 def main():
+    global _telegram_bot_ref
     app = Application.builder().token(TOKEN).post_init(post_init).build()
+    _telegram_bot_ref = app
+
+    # Flask webhook сервер в отдельном потоке
+    flask_thread = threading.Thread(target=_start_flask_server, daemon=True)
+    flask_thread.start()
 
     home = MessageHandler(filters.Regex(f"^{HOME_BTN}$"), go_home)
 
