@@ -81,7 +81,6 @@ async def init_db(app) -> None:
                 )
             """)
             # ── Premium-доступ ──────────────────────────────────────────────
-            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS premium_until TIMESTAMP")
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS promo_source TEXT")
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS ref_code TEXT UNIQUE")
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS ref_count INTEGER DEFAULT 0")
@@ -101,6 +100,11 @@ async def init_db(app) -> None:
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS username TEXT")
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS first_name TEXT")
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS language_code TEXT")
+            # ── Удаление устаревшей колонки premium_until ────────────────────
+            try:
+                cur.execute("ALTER TABLE users DROP COLUMN IF EXISTS premium_until")
+            except Exception as e:
+                logger.warning("init_db: drop premium_until: %s: %s", type(e).__name__, e)
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS promo_codes (
                     code        TEXT PRIMARY KEY,
@@ -353,11 +357,15 @@ def activate_trial(user_id: int, promo_source: str | None = None) -> None:
         try:
             with conn.cursor() as cur:
                 cur.execute("""
-                    INSERT INTO users (user_id, premium_until, promo_source)
-                    VALUES (%s, %s, %s)
+                    INSERT INTO users (user_id, is_premium, premium_expires_at,
+                                       premium_trial_used, subscription_type, promo_source)
+                    VALUES (%s, TRUE, %s, TRUE, 'trial', %s)
                     ON CONFLICT (user_id) DO UPDATE
-                        SET premium_until = EXCLUDED.premium_until,
-                            promo_source  = COALESCE(EXCLUDED.promo_source, users.promo_source)
+                        SET is_premium         = TRUE,
+                            premium_expires_at = EXCLUDED.premium_expires_at,
+                            premium_trial_used = TRUE,
+                            subscription_type  = 'trial',
+                            promo_source       = COALESCE(EXCLUDED.promo_source, users.promo_source)
                 """, (user_id, until, promo_source))
             conn.commit()
         finally:
@@ -368,17 +376,20 @@ def activate_trial(user_id: int, promo_source: str | None = None) -> None:
 
 
 def activate_lifetime(user_id: int) -> None:
-    """Вечный доступ (для блогеров): premium_until = NULL + promo_source='lifetime'."""
+    """Вечный доступ (для блогеров): premium_expires_at = NULL + promo_source='lifetime'."""
     try:
         conn = get_db_connection()
         try:
             with conn.cursor() as cur:
                 cur.execute("""
-                    INSERT INTO users (user_id, premium_until, promo_source)
-                    VALUES (%s, NULL, 'lifetime')
+                    INSERT INTO users (user_id, is_premium, premium_expires_at,
+                                       subscription_type, promo_source)
+                    VALUES (%s, TRUE, NULL, 'lifetime', 'lifetime')
                     ON CONFLICT (user_id) DO UPDATE
-                        SET premium_until = NULL,
-                            promo_source  = 'lifetime'
+                        SET is_premium         = TRUE,
+                            premium_expires_at = NULL,
+                            subscription_type  = 'lifetime',
+                            promo_source       = 'lifetime'
                 """, (user_id,))
             conn.commit()
         finally:
@@ -427,7 +438,8 @@ def get_premium_info(user_id: int) -> dict:
         try:
             with conn.cursor() as cur:
                 cur.execute(
-                    "SELECT premium_until, promo_source, ref_count FROM users WHERE user_id = %s",
+                    "SELECT premium_expires_at, promo_source, ref_count, subscription_type "
+                    "FROM users WHERE user_id = %s",
                     (user_id,),
                 )
                 row = cur.fetchone()
@@ -435,7 +447,9 @@ def get_premium_info(user_id: int) -> dict:
             conn.close()
         if row:
             info["until"] = row[0]
-            info["is_lifetime"] = (row[1] == "lifetime") and row[0] is None
+            info["is_lifetime"] = (
+                (row[1] == "lifetime" or row[3] == "lifetime") and row[0] is None
+            )
             info["ref_count"] = row[2] or 0
     except Exception as e:
         logger.error("get_premium_info: %s: %s", type(e).__name__, e)
@@ -574,12 +588,14 @@ def get_premium_user_stats() -> dict:
                 out["total"] = cur.fetchone()[0]
                 cur.execute("""
                     SELECT COUNT(*) FROM users
-                    WHERE premium_until > NOW()
-                       OR (premium_until IS NULL AND promo_source = 'lifetime')
+                    WHERE (is_premium = TRUE AND (premium_expires_at IS NULL OR premium_expires_at > NOW()))
+                       OR promo_source = 'lifetime'
+                       OR subscription_type = 'lifetime'
                 """)
                 out["active_premium"] = cur.fetchone()[0]
                 cur.execute(
-                    "SELECT COUNT(*) FROM users WHERE premium_until IS NOT NULL AND premium_until <= NOW()"
+                    "SELECT COUNT(*) FROM users "
+                    "WHERE premium_expires_at IS NOT NULL AND premium_expires_at <= NOW()"
                 )
                 out["expired_trials"] = cur.fetchone()[0]
         finally:
