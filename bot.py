@@ -8,6 +8,7 @@ import secrets
 import string
 import traceback
 import threading
+import ipaddress
 import urllib.request
 import urllib.parse
 import requests
@@ -90,6 +91,16 @@ async def init_db(app) -> None:
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS premium_expires_at TIMESTAMP")
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS yookassa_payment_method_id TEXT")
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_type TEXT")
+            # ── Mobile-app migration ─────────────────────────────────────────
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS premium_trial_used BOOLEAN DEFAULT FALSE")
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_code TEXT UNIQUE")
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS referred_by BIGINT")
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS tokens INTEGER DEFAULT 0")
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS registered_at TIMESTAMP DEFAULT NOW()")
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_active_at TIMESTAMP")
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS username TEXT")
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS first_name TEXT")
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS language_code TEXT")
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS promo_codes (
                     code        TEXT PRIMARY KEY,
@@ -135,6 +146,29 @@ async def record_user(user_id: int, username: str | None, first_name: str | None
     except Exception as e:
         logger.error("record_user: ошибка user_id=%s: %s: %s",
                      user_id, type(e).__name__, e)
+
+
+async def _track_activity(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user = update.effective_user
+    if not user or user.is_bot:
+        return
+    try:
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    UPDATE users
+                    SET last_active_at = NOW(),
+                        username       = %s,
+                        first_name     = %s,
+                        language_code  = %s
+                    WHERE user_id = %s
+                """, (user.username, user.first_name, user.language_code, user.id))
+            conn.commit()
+        finally:
+            conn.close()
+    except Exception as e:
+        logger.error("_track_activity: user_id=%s: %s: %s", user.id, type(e).__name__, e)
 
 
 def upsert_countries_count(user_id: int, username: str | None,
@@ -638,6 +672,26 @@ def yookassa_charge_renewal(user_id: int, plan: str, payment_method_id: str) -> 
 
 # ── Flask webhook для ЮKassa ───────────────────────────────────────────
 
+_YOOKASSA_ALLOWED_IPS = [
+    ipaddress.ip_network("185.71.76.0/27"),
+    ipaddress.ip_network("185.71.77.0/27"),
+    ipaddress.ip_network("77.75.153.0/25"),
+    ipaddress.ip_address("77.75.156.11"),
+    ipaddress.ip_address("77.75.156.35"),
+]
+
+
+def _yookassa_ip_allowed(ip_str: str) -> bool:
+    try:
+        ip = ipaddress.ip_address(ip_str)
+        return any(
+            ip in net if isinstance(net, ipaddress.IPv4Network) else ip == net
+            for net in _YOOKASSA_ALLOWED_IPS
+        )
+    except ValueError:
+        return False
+
+
 _flask_app = Flask(__name__)
 _telegram_bot_ref: "Application | None" = None
 _main_event_loop: "asyncio.AbstractEventLoop | None" = None
@@ -645,6 +699,10 @@ _main_event_loop: "asyncio.AbstractEventLoop | None" = None
 
 @_flask_app.route("/yookassa/webhook", methods=["POST"])
 def yookassa_webhook():
+    ip = flask_request.remote_addr
+    if not _yookassa_ip_allowed(ip):
+        logger.warning("WARNING: webhook request from unknown IP: %s", ip)
+        return "", 403
     data = flask_request.get_json(silent=True) or {}
     logger.info("YooKassa webhook: %s", data.get("event"))
     if data.get("event") != "payment.succeeded":
@@ -8946,6 +9004,7 @@ def main():
             CommandHandler("cancel", cancel),
         ],
     )
+    app.add_handler(MessageHandler(filters.ALL, _track_activity), group=-1)
     app.add_handler(conv)
     app.add_handler(CommandHandler("testpost", testpost_command))
     app.add_handler(CommandHandler("stats",    stats_command))
