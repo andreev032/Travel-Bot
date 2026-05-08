@@ -6,6 +6,7 @@ import logging
 import asyncio
 import secrets
 import string
+import hmac
 import traceback
 import threading
 import ipaddress
@@ -84,7 +85,6 @@ async def init_db(app) -> None:
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS promo_source TEXT")
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS ref_code TEXT UNIQUE")
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS ref_count INTEGER DEFAULT 0")
-            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS referred_by TEXT")
             # ── ЮKassa ─────────────────────────────────────────────────────
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_premium BOOLEAN DEFAULT FALSE")
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS premium_expires_at TIMESTAMP")
@@ -94,6 +94,16 @@ async def init_db(app) -> None:
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS premium_trial_used BOOLEAN DEFAULT FALSE")
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_code TEXT UNIQUE")
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS referred_by BIGINT")
+            # Миграция типа referred_by из TEXT в BIGINT (если в проде осталась TEXT-версия).
+            try:
+                cur.execute(
+                    "ALTER TABLE users ALTER COLUMN referred_by TYPE BIGINT "
+                    "USING referred_by::BIGINT"
+                )
+            except Exception as e:
+                logger.warning("init_db: alter referred_by to BIGINT: %s: %s",
+                               type(e).__name__, e)
+                conn.rollback()
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS tokens INTEGER DEFAULT 0")
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS registered_at TIMESTAMP DEFAULT NOW()")
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_active_at TIMESTAMP")
@@ -350,9 +360,9 @@ def detach_payment_method(user_id: int) -> bool:
 
 
 def activate_trial(user_id: int, promo_source: str | None = None) -> None:
-    """Активирует 30-дневный триал."""
+    """Активирует 7-дневный триал."""
     try:
-        until = datetime.now() + timedelta(days=30)
+        until = datetime.now() + timedelta(days=7)
         conn = get_db_connection()
         try:
             with conn.cursor() as cur:
@@ -683,8 +693,9 @@ SHOP_BTN    = "🛒 Магазин"
 ADMIN_ID    = int(os.getenv("ADMIN_ID", "462171750"))       # доступ к /stats и служебным командам
 
 # ── ЮKassa ─────────────────────────────────────────────────────────────
-YOOKASSA_SHOP_ID     = "1350203"
-YOOKASSA_SECRET_KEY  = os.getenv("YOOKASSA_SECRET_KEY", "")
+YOOKASSA_SHOP_ID         = "1350203"
+YOOKASSA_SECRET_KEY      = os.getenv("YOOKASSA_SECRET_KEY", "")
+YOOKASSA_WEBHOOK_SECRET  = os.getenv("YOOKASSA_WEBHOOK_SECRET", "")
 YKConfiguration.account_id = YOOKASSA_SHOP_ID
 YKConfiguration.secret_key  = YOOKASSA_SECRET_KEY
 
@@ -823,6 +834,22 @@ def yookassa_webhook():
     # Вернём проверку, когда разберёмся с цепочкой proxy.
     ip = flask_request.headers.get("X-Forwarded-For", flask_request.remote_addr)
     logger.info(f"Webhook received from IP: {ip}")
+
+    # Проверка секрета webhook'а. Если переменная окружения не задана —
+    # пропускаем проверку (с предупреждением), чтобы не сломать прод до того,
+    # как секрет будет добавлен в Railway Variables.
+    if YOOKASSA_WEBHOOK_SECRET:
+        provided = (
+            flask_request.headers.get("HTTP_NOTIFICATION_SECRET")
+            or flask_request.headers.get("Notification-Secret")
+            or flask_request.headers.get("X-Notification-Secret")
+        )
+        if not provided or not hmac.compare_digest(provided, YOOKASSA_WEBHOOK_SECRET):
+            logger.warning("YooKassa webhook: bad/missing notification secret from IP=%s", ip)
+            return "", 403
+    else:
+        logger.warning("YooKassa webhook: YOOKASSA_WEBHOOK_SECRET не задан — проверка пропущена")
+
     data = flask_request.get_json(silent=True) or {}
     logger.info("YooKassa webhook: %s", data.get("event"))
     if data.get("event") != "payment.succeeded":
