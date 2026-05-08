@@ -644,7 +644,6 @@ def yookassa_create_payment(user_id: int, plan: str) -> str:
             "type": "redirect",
             "return_url": "https://t.me/like_a_local_bot",
         },
-        "save_payment_method": True,
         "capture": True,
         "description": description,
         "metadata": {"user_id": str(user_id), "plan": plan},
