@@ -504,8 +504,20 @@ def set_referred_by(user_id: int, ref_code: str) -> None:
         try:
             with conn.cursor() as cur:
                 cur.execute(
+                    "SELECT user_id FROM users WHERE referral_code = %s",
+                    (ref_code,),
+                )
+                row = cur.fetchone()
+                if not row:
+                    logger.warning(
+                        "set_referred_by: реферер по коду %s не найден, user_id=%s",
+                        ref_code, user_id,
+                    )
+                    return
+                referrer_id = row[0]
+                cur.execute(
                     "UPDATE users SET referred_by = %s WHERE user_id = %s",
-                    (ref_code, user_id),
+                    (referrer_id, user_id),
                 )
             conn.commit()
         finally:
