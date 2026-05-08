@@ -271,8 +271,6 @@ def is_premium(user_id: int) -> bool:
     """Читает is_premium и premium_expires_at из БД каждый раз.
     Если premium_expires_at истёк — сбрасывает is_premium=FALSE и возвращает False.
     Иначе возвращает значение is_premium из БД."""
-    if user_id == ADMIN_ID:
-        return False
     try:
         conn = get_db_connection()
         try:
