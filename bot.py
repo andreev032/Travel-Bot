@@ -260,25 +260,45 @@ def generate_ref_code(user_id: int) -> str:
 
 
 def is_premium(user_id: int) -> bool:
-    """Премиум активен, если promo_source='lifetime' или premium_until > NOW()."""
+    """Читает is_premium и premium_expires_at из БД каждый раз (без кэша).
+    Если premium_expires_at истёк — сбрасывает is_premium=FALSE.
+    Также поддерживает старые поля: promo_source='lifetime' и premium_until."""
     if user_id == ADMIN_ID: return False
     try:
+        now = datetime.now()
         conn = get_db_connection()
         try:
             with conn.cursor() as cur:
                 cur.execute(
-                    "SELECT premium_until, promo_source FROM users WHERE user_id = %s",
+                    "SELECT is_premium, premium_expires_at, premium_until, promo_source"
+                    " FROM users WHERE user_id = %s",
                     (user_id,),
                 )
                 row = cur.fetchone()
+                if not row:
+                    return False
+                db_is_premium, expires_at, premium_until, promo_source = row
+                # Если is_premium=TRUE но срок истёк — сбросить флаг
+                if db_is_premium and expires_at is not None and expires_at <= now:
+                    cur.execute(
+                        "UPDATE users SET is_premium = FALSE WHERE user_id = %s",
+                        (user_id,),
+                    )
+                    conn.commit()
+                    db_is_premium = False
+            conn.commit()
         finally:
             conn.close()
-        if not row:
-            return False
-        until, source = row
-        if until is None:
-            return source == "lifetime"
-        return until > datetime.now()
+        # Активен через is_premium (YooKassa / триал)
+        if db_is_premium and (expires_at is None or expires_at > now):
+            return True
+        # Активен через старое поле premium_until
+        if premium_until is not None and premium_until > now:
+            return True
+        # Вечный доступ (блогеры)
+        if promo_source == "lifetime":
+            return True
+        return False
     except Exception as e:
         logger.error("is_premium: %s: %s", type(e).__name__, e)
         return False
@@ -304,6 +324,54 @@ def activate_trial(user_id: int, promo_source: str | None = None) -> None:
         logger.info("activate_trial: user_id=%s до %s source=%r ✓", user_id, until, promo_source)
     except Exception as e:
         logger.error("activate_trial: user_id=%s %s: %s", user_id, type(e).__name__, e)
+
+
+def activate_auto_trial(user_id: int) -> bool:
+    """Активирует 7-дневный триал при первом обращении к премиум-разделу.
+    Устанавливает is_premium=TRUE, premium_expires_at=NOW()+7d, premium_trial_used=TRUE.
+    Возвращает True если триал активирован, False если уже использован или ошибка."""
+    try:
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT premium_trial_used FROM users WHERE user_id = %s",
+                    (user_id,),
+                )
+                row = cur.fetchone()
+                if not row or row[0]:
+                    return False
+                cur.execute("""
+                    UPDATE users
+                    SET is_premium          = TRUE,
+                        premium_expires_at  = NOW() + INTERVAL '7 days',
+                        premium_trial_used  = TRUE
+                    WHERE user_id = %s
+                """, (user_id,))
+            conn.commit()
+        finally:
+            conn.close()
+        logger.info("activate_auto_trial: user_id=%s триал активирован ✓", user_id)
+        return True
+    except Exception as e:
+        logger.error("activate_auto_trial: user_id=%s %s: %s", user_id, type(e).__name__, e)
+        return False
+
+
+async def _gate_premium_with_trial(update: Update) -> bool:
+    """Проверяет премиум. Если нет — пробует активировать 7-дневный триал.
+    Отправляет сообщение о триале или о блокировке.
+    Возвращает True если доступ разрешён (включая только что активированный триал)."""
+    user_id = update.effective_user.id
+    if is_premium(user_id):
+        return True
+    if activate_auto_trial(user_id):
+        await update.message.reply_text(
+            "🎁 Тебе активирован бесплатный триал на 7 дней! Попробуй все премиум функции."
+        )
+        return True
+    await _send_premium_lock(update)
+    return False
 
 
 def activate_lifetime(user_id: int) -> None:
@@ -925,8 +993,7 @@ def get_folder_services_kb():
 async def show_rating(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Показывает топ-30 путешественников по количеству стран."""
     user = update.effective_user
-    if not is_premium(user.id):
-        await _send_premium_lock(update)
+    if not await _gate_premium_with_trial(update):
         return MAIN_MENU
     top30, my_pos, my_count = get_countries_rating(user.id)
 
@@ -1951,8 +2018,7 @@ def _guess_finish_kb() -> ReplyKeyboardMarkup:
 
 
 async def guess_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not is_premium(update.effective_user.id):
-        await _send_premium_lock(update)
+    if not await _gate_premium_with_trial(update):
         return GAMES_MENU
     riddles = _GUESS_RIDDLES.copy()
     _random_guess.shuffle(riddles)
@@ -2227,8 +2293,7 @@ def _pair_finish_kb() -> ReplyKeyboardMarkup:
 
 
 async def pair_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not is_premium(update.effective_user.id):
-        await _send_premium_lock(update)
+    if not await _gate_premium_with_trial(update):
         return GAMES_MENU
     questions = _pair_build_questions()
     context.user_data["pair_questions"]      = questions
@@ -3803,8 +3868,7 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text in ("🏛 Мои достопримечательности", "📊 Моя статистика", "📖 Дневник путешественника"):
         # Тапы по этим лейблам приходят сюда только когда WebApp-кнопка заменена
         # на обычную (не премиум). У премиум-пользователя кнопка открывает WebApp напрямую.
-        if not is_premium(update.effective_user.id):
-            await _send_premium_lock(update)
+        if not await _gate_premium_with_trial(update):
             return MAIN_MENU
         # На всякий случай — если премиум всё-таки ввёл текст руками, вернём папку
         await update.message.reply_text(
