@@ -3,635 +3,646 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Дагестан — Страна гор. Путеводитель «Как местный»</title>
-<meta name="description" content="Путеводитель по Дагестану от проекта «Как местный» — Сулакский каньон, Гамсутль, Сарыкум, Гуниб, Дербент.">
+<title>Дагестан — Путеводитель «Как местный»</title>
+<meta name="description" content="Полный путеводитель по Дагестану от проекта «Как местный» — Сулакский каньон, Гамсутль, Дербент, горные сёла, кухня, бюджет.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Nunito:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
-  :root {
-    --bg: #0a0a0a;
-    --bg-elev: #131313;
-    --bg-card: #161616;
-    --line: #232323;
-    --text: #f3f3f1;
-    --muted: #9a9a96;
-    --accent: #c4622d;
-    --accent-soft: rgba(196, 98, 45, 0.12);
-    --max: 1180px;
-  }
+:root{
+  --bg:#080808;
+  --bg-card:#111111;
+  --line:#222222;
+  --line-accent:rgba(196,98,45,0.4);
+  --text:#F0EDE8;
+  --muted:#6B6560;
+  --accent:#C4622D;
+  --accent-hover:#d06e38;
+  --gold:#8B7355;
+  --max:1100px;
+}
 
-  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Nunito', system-ui, -apple-system, sans-serif;
-    font-weight: 400;
-    line-height: 1.65;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    overflow-x: hidden;
-  }
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Inter',system-ui,-apple-system,sans-serif;
+  font-weight:400;
+  line-height:1.7;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
 
-  h1, h2, h3, h4 {
-    font-family: 'Cormorant Garamond', Georgia, serif;
-    font-weight: 500;
-    letter-spacing: 0.01em;
-    line-height: 1.15;
-  }
+h1,h2,h3,h4{
+  font-family:'Cormorant Garamond',Georgia,serif;
+  line-height:1.15;
+  font-weight:600;
+}
 
-  a { color: inherit; text-decoration: none; }
+a{color:inherit;text-decoration:none}
+img{display:block;max-width:100%}
 
-  .container {
-    width: 100%;
-    max-width: var(--max);
-    margin: 0 auto;
-    padding: 0 24px;
-  }
+.container{
+  width:100%;
+  max-width:var(--max);
+  margin:0 auto;
+  padding:0 24px;
+}
 
-  /* === HERO === */
-  .hero {
-    position: relative;
-    min-height: 100vh;
-    min-height: 100dvh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 80px 24px 60px;
-    overflow: hidden;
-    background:
-      radial-gradient(ellipse at 50% 80%, rgba(196,98,45,0.18), transparent 60%),
-      radial-gradient(ellipse at 50% 20%, rgba(196,98,45,0.05), transparent 60%),
-      linear-gradient(180deg, #050505 0%, #0a0a0a 100%);
-  }
+/* ── SECTIONS ────────────────────────────── */
+section{padding:100px 0;border-top:1px solid var(--line)}
 
-  .hero::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background:
-      linear-gradient(180deg, transparent 0%, transparent 70%, var(--bg) 100%),
-      repeating-linear-gradient(
-        180deg,
-        transparent 0px,
-        transparent 2px,
-        rgba(255,255,255,0.012) 2px,
-        rgba(255,255,255,0.012) 3px
-      );
-    pointer-events: none;
-  }
+.eyebrow{
+  font-family:'Inter',sans-serif;
+  font-size:11px;
+  letter-spacing:4px;
+  text-transform:uppercase;
+  color:var(--accent);
+  font-weight:500;
+  margin-bottom:18px;
+}
 
-  .hero-inner {
-    position: relative;
-    text-align: center;
-    z-index: 1;
-    max-width: 900px;
-  }
+.section-title{
+  font-size:clamp(34px,5vw,52px);
+  margin-bottom:16px;
+  color:var(--text);
+}
 
-  .hero-eyebrow {
-    font-size: 13px;
-    letter-spacing: 0.32em;
-    text-transform: uppercase;
-    color: var(--accent);
-    margin-bottom: 28px;
-    font-weight: 500;
-  }
+.section-lead{
+  color:var(--muted);
+  font-size:16px;
+  font-weight:300;
+  max-width:600px;
+  margin-bottom:56px;
+  line-height:1.8;
+}
 
-  .hero h1 {
-    font-size: clamp(64px, 16vw, 180px);
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    margin-bottom: 24px;
-    background: linear-gradient(180deg, #f3f3f1 0%, #b9b9b4 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
+/* ── HERO ────────────────────────────────── */
+.hero{
+  min-height:100vh;
+  min-height:100dvh;
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding:80px 24px 60px;
+  overflow:hidden;
+  background:linear-gradient(135deg,#0a0a0a 0%,#1a0f05 100%);
+  border-top:none;
+}
 
-  .hero-sub {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: clamp(20px, 3.2vw, 28px);
-    color: var(--muted);
-    margin-bottom: 48px;
-    font-style: italic;
-    font-weight: 400;
-  }
+.hero::before{
+  content:'';
+  position:absolute;
+  inset:0;
+  background:
+    radial-gradient(ellipse 70% 60% at 50% 100%,rgba(196,98,45,0.14),transparent),
+    radial-gradient(ellipse 40% 40% at 20% 30%,rgba(139,115,85,0.06),transparent),
+    repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(255,255,255,0.008) 3px,rgba(255,255,255,0.008) 4px);
+  pointer-events:none;
+}
 
-  .hero-sub strong { color: var(--text); font-style: normal; font-weight: 500; }
+.hero::after{
+  content:'';
+  position:absolute;
+  bottom:0;left:0;right:0;
+  height:200px;
+  background:linear-gradient(transparent,var(--bg));
+  pointer-events:none;
+}
 
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    padding: 16px 32px;
-    background: var(--accent);
-    color: #fff;
-    border-radius: 999px;
-    font-weight: 600;
-    font-size: 15px;
-    letter-spacing: 0.02em;
-    transition: transform .25s ease, background .25s ease, box-shadow .25s ease;
-    border: 1px solid var(--accent);
-    cursor: pointer;
-  }
-  .btn:hover { transform: translateY(-2px); background: #d36e34; box-shadow: 0 12px 30px -10px rgba(196,98,45,0.5); }
-  .btn-ghost {
-    background: transparent;
-    color: var(--text);
-    border: 1px solid var(--line);
-  }
-  .btn-ghost:hover { background: var(--bg-card); border-color: var(--accent); box-shadow: none; }
+.hero-inner{position:relative;z-index:1;max-width:900px}
 
-  .hero-arrow {
-    position: absolute;
-    bottom: 32px;
-    left: 50%;
-    transform: translateX(-50%);
-    color: var(--muted);
-    font-size: 12px;
-    letter-spacing: 0.3em;
-    text-transform: uppercase;
-    animation: bounce 2.4s ease-in-out infinite;
-    z-index: 1;
-  }
+.hero-eyebrow{
+  font-size:11px;
+  letter-spacing:4px;
+  text-transform:uppercase;
+  color:var(--accent);
+  font-weight:500;
+  margin-bottom:32px;
+  font-family:'Inter',sans-serif;
+}
 
-  @keyframes bounce {
-    0%, 100% { transform: translate(-50%, 0); opacity: .6; }
-    50% { transform: translate(-50%, 8px); opacity: 1; }
-  }
+.hero h1{
+  font-size:clamp(60px,10vw,140px);
+  font-weight:600;
+  letter-spacing:0.04em;
+  margin-bottom:20px;
+  background:linear-gradient(180deg,#F0EDE8 0%,#9a9589 100%);
+  -webkit-background-clip:text;
+  background-clip:text;
+  -webkit-text-fill-color:transparent;
+  font-family:'Cormorant Garamond',serif;
+  white-space:nowrap;
+}
 
-  /* === SECTIONS === */
-  section {
-    padding: 100px 0;
-    border-top: 1px solid var(--line);
-  }
-  section:first-of-type { border-top: none; }
+.hero-sub{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(18px,2.5vw,24px);
+  font-style:italic;
+  color:var(--muted);
+  margin-bottom:40px;
+  font-weight:400;
+}
 
-  .section-eyebrow {
-    font-size: 12px;
-    letter-spacing: 0.3em;
-    text-transform: uppercase;
-    color: var(--accent);
-    margin-bottom: 16px;
-    font-weight: 600;
-  }
+.hero-btn{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:14px 28px;
+  background:transparent;
+  border:1px solid var(--line-accent);
+  border-radius:4px;
+  color:var(--text);
+  font-size:14px;
+  font-weight:500;
+  letter-spacing:0.04em;
+  cursor:pointer;
+  transition:border-color .25s,background .25s,color .25s;
+}
+.hero-btn:hover{border-color:var(--accent);background:rgba(196,98,45,0.08);color:var(--accent)}
 
-  .section-title {
-    font-size: clamp(34px, 5.5vw, 60px);
-    margin-bottom: 24px;
-    max-width: 720px;
-  }
+.hero-scroll{
+  position:absolute;
+  bottom:40px;left:50%;
+  transform:translateX(-50%);
+  z-index:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:8px;
+  color:var(--muted);
+  font-size:10px;
+  letter-spacing:0.3em;
+  text-transform:uppercase;
+}
+.scroll-line{
+  width:1px;height:40px;
+  background:linear-gradient(var(--accent),transparent);
+  animation:scrollAnim 1.8s ease-in-out infinite;
+}
+@keyframes scrollAnim{0%,100%{opacity:.4;transform:scaleY(1)}50%{opacity:1;transform:scaleY(1.2)}}
 
-  .section-lead {
-    color: var(--muted);
-    font-size: 17px;
-    max-width: 640px;
-    margin-bottom: 56px;
-  }
+/* ── ABOUT ───────────────────────────────── */
+.about-text{
+  font-size:17px;
+  font-weight:300;
+  color:#c8c4be;
+  line-height:1.9;
+  max-width:740px;
+  margin-bottom:60px;
+}
+.about-text p+p{margin-top:18px}
 
-  /* === Why Dagestan / Facts === */
-  .facts {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
+.facts-row{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:1px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  overflow:hidden;
+}
+.fact-item{
+  padding:32px 24px;
+  background:var(--bg-card);
+  text-align:center;
+}
+.fact-item:not(:last-child){border-right:1px solid var(--line)}
+.fact-num{
+  font-family:'Cormorant Garamond',serif;
+  font-size:48px;
+  font-weight:600;
+  color:var(--accent);
+  line-height:1;
+  margin-bottom:8px;
+}
+.fact-label{
+  font-size:13px;
+  color:var(--muted);
+  font-weight:300;
+  line-height:1.4;
+}
 
-  .fact {
-    padding: 36px 28px;
-    background: var(--bg-card);
-    border: 1px solid var(--line);
-    border-radius: 18px;
-    position: relative;
-    transition: border-color .3s ease, transform .3s ease;
-  }
-  .fact:hover { border-color: var(--accent); transform: translateY(-3px); }
+/* ── SEASONS ─────────────────────────────── */
+.seasons{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:16px;
+}
+.season-card{
+  background:var(--bg-card);
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:32px 28px;
+  transition:border-color .25s;
+}
+.season-card:hover{border-color:var(--accent)}
+.season-icon{font-size:28px;margin-bottom:14px}
+.season-card h3{
+  font-size:26px;
+  margin-bottom:4px;
+  color:var(--text);
+}
+.season-badge{
+  display:inline-block;
+  font-size:11px;
+  letter-spacing:0.2em;
+  text-transform:uppercase;
+  color:var(--gold);
+  margin-bottom:14px;
+  font-weight:500;
+}
+.season-card p{color:var(--muted);font-size:15px;font-weight:300;line-height:1.75}
 
-  .fact-num {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 56px;
-    color: var(--accent);
-    line-height: 1;
-    margin-bottom: 16px;
-    font-weight: 500;
-  }
-  .fact h3 {
-    font-size: 26px;
-    margin-bottom: 10px;
-  }
-  .fact p { color: var(--muted); font-size: 15.5px; }
+/* ── HOW TO GET ──────────────────────────── */
+.routes{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:12px;
+  margin-bottom:32px;
+}
+.route-card{
+  background:var(--bg-card);
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:20px 24px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:12px;
+  transition:border-color .25s;
+}
+.route-card:hover{border-color:var(--accent)}
+.route-left{display:flex;align-items:center;gap:14px}
+.route-icon{font-size:22px}
+.route-name{
+  font-family:'Cormorant Garamond',serif;
+  font-size:22px;
+  color:var(--text);
+  font-weight:500;
+}
+.route-meta{color:var(--muted);font-size:13px;font-weight:300}
+.route-price{
+  color:var(--accent);
+  font-weight:500;
+  font-size:15px;
+  white-space:nowrap;
+}
 
-  /* === Seasons === */
-  .seasons {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
+.tip-block{
+  padding:20px 24px;
+  background:rgba(196,98,45,0.07);
+  border:1px solid var(--line-accent);
+  border-radius:8px;
+  font-size:14.5px;
+  color:#c8c4be;
+  font-weight:300;
+  line-height:1.7;
+}
 
-  .season {
-    padding: 32px 28px;
-    background: var(--bg-card);
-    border: 1px solid var(--line);
-    border-radius: 18px;
-  }
+/* ── PLACES ──────────────────────────────── */
+.places{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:20px;
+}
+.place-card{
+  background:var(--bg-card);
+  border:1px solid var(--line);
+  border-radius:8px;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  transition:border-color .25s,transform .25s;
+}
+.place-card:hover{border-color:var(--accent);transform:translateY(-3px)}
+.place-header{
+  height:200px;
+  display:flex;
+  align-items:flex-end;
+  padding:20px 22px;
+  position:relative;
+}
+.place-header::after{
+  content:'';
+  position:absolute;inset:0;
+  background:linear-gradient(transparent 30%,rgba(0,0,0,0.7));
+  pointer-events:none;
+}
+.place-num{
+  position:relative;z-index:1;
+  font-size:11px;
+  letter-spacing:0.3em;
+  color:rgba(255,255,255,0.5);
+  font-weight:300;
+}
+.place-body{padding:24px 22px 22px;display:flex;flex-direction:column;flex:1}
+.place-body h3{font-size:26px;margin-bottom:10px;color:var(--text)}
+.place-body p{color:var(--muted);font-size:14.5px;font-weight:300;line-height:1.75;flex:1;margin-bottom:18px}
+.place-map-btn{
+  align-self:flex-start;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:9px 16px;
+  border:1px solid var(--line);
+  border-radius:4px;
+  font-size:13px;
+  font-weight:500;
+  color:var(--muted);
+  transition:border-color .25s,color .25s;
+}
+.place-map-btn:hover{border-color:var(--accent);color:var(--accent)}
 
-  .season-tag {
-    display: inline-block;
-    padding: 6px 14px;
-    background: var(--accent-soft);
-    color: var(--accent);
-    border-radius: 999px;
-    font-size: 12px;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    margin-bottom: 18px;
-    font-weight: 600;
-  }
-  .season h3 { font-size: 28px; margin-bottom: 14px; }
-  .season ul { list-style: none; }
-  .season li {
-    color: var(--muted);
-    padding-left: 22px;
-    position: relative;
-    margin-bottom: 8px;
-    font-size: 15.5px;
-  }
-  .season li::before {
-    content: '';
-    position: absolute;
-    left: 0; top: 12px;
-    width: 8px; height: 1px;
-    background: var(--accent);
-  }
+/* ── FOOD ────────────────────────────────── */
+.food-cards{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:12px;
+  margin-bottom:24px;
+}
+.food-card{
+  background:var(--bg-card);
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:22px 24px;
+  display:flex;
+  align-items:flex-start;
+  gap:18px;
+  transition:border-color .25s;
+}
+.food-card:hover{border-color:var(--accent)}
+.food-icon{font-size:26px;flex-shrink:0;margin-top:2px}
+.food-name{
+  font-family:'Cormorant Garamond',serif;
+  font-size:24px;
+  margin-bottom:4px;
+  font-weight:500;
+}
+.food-desc{color:var(--muted);font-size:14.5px;font-weight:300}
+.food-price{
+  font-size:13px;
+  color:var(--gold);
+  margin-top:4px;
+  font-weight:400;
+}
 
-  /* === How to get === */
-  .getting {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 14px;
-  }
-  .route {
-    padding: 22px 26px;
-    background: var(--bg-card);
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-  .route-from {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 22px;
-    color: var(--text);
-  }
-  .route-arrow { color: var(--accent); font-size: 18px; }
-  .route-info { color: var(--muted); font-size: 14px; }
-  .route-price {
-    color: var(--text);
-    font-weight: 600;
-    font-size: 15px;
-    padding: 6px 14px;
-    background: var(--accent-soft);
-    border-radius: 999px;
-  }
+/* ── BUDGET ──────────────────────────────── */
+.budget-table{
+  width:100%;
+  border-collapse:collapse;
+  background:var(--bg-card);
+  border:1px solid var(--line);
+  border-radius:8px;
+  overflow:hidden;
+}
+.budget-table th{
+  padding:16px 20px;
+  text-align:left;
+  font-family:'Cormorant Garamond',serif;
+  font-size:18px;
+  font-weight:500;
+  color:var(--text);
+  border-bottom:1px solid var(--line);
+  background:rgba(255,255,255,0.02);
+}
+.budget-table td{
+  padding:15px 20px;
+  font-size:14.5px;
+  color:var(--muted);
+  border-bottom:1px solid var(--line);
+  font-weight:300;
+}
+.budget-table td:first-child{color:var(--text);font-weight:400}
+.budget-table tr:last-child td{
+  border-bottom:none;
+  font-weight:700;
+  color:var(--accent);
+  font-size:16px;
+  font-family:'Cormorant Garamond',serif;
+}
+.budget-table tr:last-child td:first-child{color:var(--text)}
+.budget-note{
+  margin-top:16px;
+  font-size:14px;
+  color:var(--muted);
+  font-weight:300;
+}
 
-  /* === Places === */
-  .places {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 18px;
-  }
+/* ── TIPS ────────────────────────────────── */
+.tips{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:14px;
+}
+.tip-card{
+  background:var(--bg-card);
+  border:1px solid var(--line);
+  border-left:2px solid var(--accent);
+  border-radius:8px;
+  padding:22px 24px;
+  display:flex;
+  gap:16px;
+  transition:border-color .25s;
+}
+.tip-card:hover{border-color:var(--accent)}
+.tip-emoji{font-size:22px;flex-shrink:0;margin-top:1px}
+.tip-card h3{
+  font-family:'Inter',sans-serif;
+  font-size:15px;
+  font-weight:500;
+  margin-bottom:5px;
+  letter-spacing:0;
+  color:var(--text);
+}
+.tip-card p{color:var(--muted);font-size:14.5px;font-weight:300;line-height:1.7}
 
-  .place {
-    background: var(--bg-card);
-    border: 1px solid var(--line);
-    border-radius: 18px;
-    padding: 32px 28px;
-    display: flex;
-    flex-direction: column;
-    transition: border-color .3s ease, transform .3s ease;
-  }
-  .place:hover { border-color: var(--accent); transform: translateY(-3px); }
+/* ── TOUR CTA ────────────────────────────── */
+.tour-section{border-top:1px solid var(--line)}
+.tour-card{
+  background:linear-gradient(135deg,#1a0f05,#2d1a0a);
+  border:1px solid var(--line-accent);
+  border-radius:12px;
+  padding:60px 40px;
+  text-align:center;
+  position:relative;
+  overflow:hidden;
+}
+.tour-card::before{
+  content:'';
+  position:absolute;
+  inset:0;
+  background:radial-gradient(ellipse 60% 50% at 50% 100%,rgba(196,98,45,0.15),transparent);
+  pointer-events:none;
+}
+.tour-inner{position:relative;z-index:1;max-width:680px;margin:0 auto}
+.tour-emoji{font-size:48px;margin-bottom:20px;display:block}
+.tour-card h2{
+  font-size:clamp(28px,4.5vw,44px);
+  margin-bottom:24px;
+  color:var(--text);
+}
+.tour-text{
+  color:#c8c4be;
+  font-size:16px;
+  font-weight:300;
+  line-height:1.85;
+  white-space:pre-line;
+  margin-bottom:36px;
+}
+.tour-btns{
+  display:flex;
+  gap:12px;
+  justify-content:center;
+  flex-wrap:wrap;
+  margin-bottom:20px;
+}
+.tour-btn{
+  padding:13px 24px;
+  background:var(--accent);
+  color:#fff;
+  border-radius:4px;
+  font-size:14px;
+  font-weight:500;
+  border:1px solid var(--accent);
+  cursor:pointer;
+  transition:background .25s,transform .2s;
+}
+.tour-btn:hover{background:var(--accent-hover);transform:translateY(-1px)}
+.tour-credit{
+  font-size:13px;
+  color:var(--muted);
+  font-weight:300;
+}
 
-  .place-num {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 14px;
-    letter-spacing: 0.4em;
-    color: var(--accent);
-    margin-bottom: 18px;
-    font-weight: 500;
-  }
-  .place h3 { font-size: 28px; margin-bottom: 12px; }
-  .place p { color: var(--muted); margin-bottom: 22px; flex: 1; font-size: 15.5px; }
+/* ── FOOTER ──────────────────────────────── */
+footer{
+  padding:48px 24px 36px;
+  border-top:1px solid var(--line);
+  text-align:center;
+  color:var(--muted);
+  font-size:14px;
+  font-weight:300;
+  line-height:2;
+}
+footer a{color:var(--accent);font-weight:500}
+footer a:hover{text-decoration:underline}
 
-  .place-map {
-    align-self: flex-start;
-    color: var(--text);
-    font-size: 14px;
-    font-weight: 600;
-    padding: 10px 18px;
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    transition: all .25s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .place-map:hover { border-color: var(--accent); color: var(--accent); }
+/* ── REVEAL ──────────────────────────────── */
+.reveal{
+  opacity:0;
+  transform:translateY(30px);
+  transition:opacity .6s ease,transform .6s ease;
+}
+.reveal.in{opacity:1;transform:translateY(0)}
+.delay-1{transition-delay:.1s}
+.delay-2{transition-delay:.2s}
+.delay-3{transition-delay:.3s}
+.delay-4{transition-delay:.4s}
 
-  /* === Food === */
-  .food {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-  .dish {
-    display: flex;
-    gap: 22px;
-    align-items: baseline;
-    padding: 22px 0;
-    border-bottom: 1px solid var(--line);
-  }
-  .dish:last-child { border-bottom: none; }
-  .dish-name {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 26px;
-    color: var(--text);
-    min-width: 180px;
-    font-weight: 500;
-  }
-  .dish-desc { color: var(--muted); font-size: 15.5px; }
+@media(prefers-reduced-motion:reduce){
+  .reveal{opacity:1;transform:none}
+  .scroll-line{animation:none}
+  html{scroll-behavior:auto}
+}
 
-  /* === Stay === */
-  .stay {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 18px;
-  }
-  .stay-col {
-    padding: 32px 28px;
-    background: var(--bg-card);
-    border: 1px solid var(--line);
-    border-radius: 18px;
-  }
-  .stay-col h3 { font-size: 28px; margin-bottom: 14px; }
-  .stay-col p { color: var(--muted); font-size: 15.5px; margin-bottom: 14px; }
-  .stay-col .meta {
-    display: inline-block;
-    padding: 5px 12px;
-    background: var(--accent-soft);
-    color: var(--accent);
-    border-radius: 999px;
-    font-size: 12px;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    margin-bottom: 14px;
-    font-weight: 600;
-  }
+/* ── RESPONSIVE ──────────────────────────── */
+@media(min-width:640px){
+  .seasons{grid-template-columns:repeat(3,1fr)}
+  .routes{grid-template-columns:repeat(2,1fr)}
+  .places{grid-template-columns:repeat(2,1fr)}
+  .food-cards{grid-template-columns:repeat(2,1fr)}
+  .tips{grid-template-columns:repeat(2,1fr)}
+}
 
-  /* === Budget === */
-  .budget {
-    background: var(--bg-card);
-    border: 1px solid var(--line);
-    border-radius: 18px;
-    overflow: hidden;
-  }
-  .budget-row {
-    display: grid;
-    grid-template-columns: 1.4fr 1fr 1fr 1fr;
-    border-bottom: 1px solid var(--line);
-  }
-  .budget-row:last-child { border-bottom: none; }
-  .budget-row.head { background: rgba(255,255,255,0.02); }
-  .budget-row.head .cell {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 18px;
-    color: var(--text);
-    font-weight: 500;
-  }
-  .cell {
-    padding: 18px 16px;
-    color: var(--muted);
-    font-size: 14.5px;
-    border-right: 1px solid var(--line);
-  }
-  .cell:last-child { border-right: none; }
-  .cell-label {
-    color: var(--text);
-    font-weight: 600;
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 18px;
-  }
-  .cell-total {
-    color: var(--accent);
-    font-weight: 700;
-    font-size: 16px;
-  }
-
-  /* === Tips === */
-  .tips {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 14px;
-  }
-  .tip {
-    padding: 24px 26px;
-    background: var(--bg-card);
-    border: 1px solid var(--line);
-    border-left: 3px solid var(--accent);
-    border-radius: 14px;
-  }
-  .tip h3 {
-    font-family: 'Nunito', sans-serif;
-    font-size: 16px;
-    margin-bottom: 6px;
-    color: var(--text);
-    font-weight: 700;
-    letter-spacing: 0;
-  }
-  .tip p { color: var(--muted); font-size: 15px; }
-
-  /* === Tour CTA === */
-  .tour {
-    border: 1px solid var(--line);
-    background:
-      radial-gradient(ellipse at top right, rgba(196,98,45,0.18), transparent 60%),
-      var(--bg-elev);
-    border-radius: 24px;
-    padding: 60px 40px;
-    text-align: center;
-    position: relative;
-    overflow: hidden;
-  }
-  .tour-emoji { font-size: 44px; margin-bottom: 16px; display: block; }
-  .tour h2 {
-    font-size: clamp(28px, 4.5vw, 44px);
-    margin-bottom: 18px;
-    max-width: 640px;
-    margin-left: auto;
-    margin-right: auto;
-  }
-  .tour p {
-    color: var(--muted);
-    margin-bottom: 32px;
-    max-width: 480px;
-    margin-left: auto;
-    margin-right: auto;
-    font-size: 16px;
-  }
-
-  /* === Footer === */
-  footer {
-    padding: 48px 24px 36px;
-    border-top: 1px solid var(--line);
-    text-align: center;
-    color: var(--muted);
-    font-size: 14px;
-  }
-  footer a { color: var(--accent); font-weight: 600; }
-  footer a:hover { text-decoration: underline; }
-
-  /* === Reveal animation === */
-  .reveal {
-    opacity: 0;
-    transform: translateY(28px);
-    transition: opacity .9s ease, transform .9s ease;
-  }
-  .reveal.in {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  .reveal-delay-1 { transition-delay: 0.08s; }
-  .reveal-delay-2 { transition-delay: 0.16s; }
-  .reveal-delay-3 { transition-delay: 0.24s; }
-
-  @media (prefers-reduced-motion: reduce) {
-    .reveal { opacity: 1; transform: none; }
-    .hero-arrow { animation: none; }
-    html { scroll-behavior: auto; }
-  }
-
-  /* === Responsive === */
-  @media (min-width: 700px) {
-    .facts { grid-template-columns: repeat(3, 1fr); }
-    .seasons { grid-template-columns: repeat(3, 1fr); }
-    .places { grid-template-columns: repeat(2, 1fr); }
-    .stay { grid-template-columns: repeat(2, 1fr); }
-    .tips { grid-template-columns: repeat(2, 1fr); }
-    section { padding: 120px 0; }
-  }
-
-  @media (min-width: 1000px) {
-    .places { grid-template-columns: repeat(3, 1fr); }
-    .tips { grid-template-columns: repeat(2, 1fr); }
-    .tour { padding: 80px 48px; }
-  }
-
-  @media (max-width: 640px) {
-    .budget-row { grid-template-columns: 1fr 1fr; }
-    .budget-row.head { display: none; }
-    .cell {
-      padding: 12px 14px;
-      border-right: none;
-      border-bottom: 1px solid var(--line);
-    }
-    .cell:nth-child(odd) {
-      background: rgba(255,255,255,0.02);
-      font-family: 'Cormorant Garamond', serif;
-      color: var(--text);
-      font-size: 15px;
-    }
-    .cell:nth-child(2n) { border-right: none; }
-    .cell-label { font-size: 16px; }
-    .dish { flex-direction: column; gap: 4px; }
-    .dish-name { min-width: 0; font-size: 22px; }
-  }
+@media(max-width:639px){
+  section{padding:60px 0}
+  .facts-row{grid-template-columns:1fr;gap:0}
+  .fact-item:not(:last-child){border-right:none;border-bottom:1px solid var(--line)}
+  .budget-table th:nth-child(4),
+  .budget-table td:nth-child(4){display:none}
+  .tour-card{padding:40px 24px}
+  .hero h1{white-space:normal}
+}
 </style>
 </head>
 <body>
 
 <!-- HERO -->
-<header class="hero">
+<header class="hero" id="top">
   <div class="hero-inner">
-    <div class="hero-eyebrow">Кавказ · Россия</div>
+    <div class="hero-eyebrow">КАВКАЗ · РОССИЯ · КАК МЕСТНЫЙ</div>
     <h1>ДАГЕСТАН</h1>
-    <p class="hero-sub">Страна гор. Путеводитель <strong>«Как местный»</strong></p>
-    <a href="https://t.me/like_a_local_bot" target="_blank" rel="noopener" class="btn">
-      Открыть бота →
-    </a>
+    <p class="hero-sub">Страна гор. Там, где орлы летают ниже вершин</p>
+    <a href="#about" class="hero-btn">Читать путеводитель ↓</a>
   </div>
-  <div class="hero-arrow">прокрути ниже</div>
+  <div class="hero-scroll">
+    <div class="scroll-line"></div>
+    <span>скролл</span>
+  </div>
 </header>
 
-<!-- WHY -->
-<section id="why">
+<!-- ABOUT -->
+<section id="about">
   <div class="container">
     <div class="reveal">
-      <div class="section-eyebrow">Почему сюда</div>
-      <h2 class="section-title">Три причины влюбиться в Дагестан с первого взгляда</h2>
+      <div class="eyebrow">О направлении</div>
+      <h2 class="section-title">Дагестан</h2>
     </div>
-    <div class="facts">
-      <div class="fact reveal">
-        <div class="fact-num">01</div>
-        <h3>Сулакский каньон</h3>
-        <p>Глубина — 1920 метров. Глубже Гранд-Каньона в Аризоне на 120 метров. Один из самых глубоких в мире.</p>
+    <div class="about-text reveal delay-1">
+      <p>Дагестан — самая многонациональная республика России. Здесь живут более 60 народов, говорящих на 14 официальных языках. Само название переводится с тюркского как «страна гор» — и это абсолютная правда: две трети территории занимают горы Большого Кавказа.</p>
+      <p>На побережье Каспийского моря — песчаные пляжи и субтропический климат. В 150 километрах от берега — горные вершины выше 4000 метров. Между ними — каньоны глубже Гранд-Каньона, заброшенные аулы-призраки, средневековые крепости и бирюзовые реки.</p>
+      <p>Дербент — самый древний город России, которому более 5000 лет. Его цитадель Нарын-Кала внесена в список ЮНЕСКО. А бархан Сарыкум — крупнейшая песчаная дюна Евразии — находится прямо у подножия Кавказских гор.</p>
+      <p>Дагестан не похож ни на что другое в России. Это место, где ты точно не останешься равнодушным.</p>
+    </div>
+    <div class="facts-row reveal delay-2">
+      <div class="fact-item">
+        <div class="fact-num">60+</div>
+        <div class="fact-label">народов<br>живёт здесь</div>
       </div>
-      <div class="fact reveal reveal-delay-1">
-        <div class="fact-num">02</div>
-        <h3>Сарыкум</h3>
-        <p>Крупнейшая дюна Евразии — 262 метра песка прямо у Каспийского моря. Здесь снимали «Белое солнце пустыни».</p>
+      <div class="fact-item">
+        <div class="fact-num">5 000</div>
+        <div class="fact-label">лет<br>Дербенту</div>
       </div>
-      <div class="fact reveal reveal-delay-2">
-        <div class="fact-num">03</div>
-        <h3>Гамсутль</h3>
-        <p>«Дагестанский Мачу-Пикчу» — заброшенное село на высоте 1500 м, вырубленное прямо в скале. Ему более 1500 лет.</p>
+      <div class="fact-item">
+        <div class="fact-num">1 920 м</div>
+        <div class="fact-label">глубина<br>Сулакского каньона</div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- SEASONS -->
+<!-- WHEN -->
 <section id="when">
   <div class="container">
     <div class="reveal">
-      <div class="section-eyebrow">Когда ехать</div>
-      <h2 class="section-title">Лучшее время</h2>
-      <p class="section-lead">В горах своё расписание. Ниже — три окна, в которые стоит лететь.</p>
+      <div class="eyebrow">Планирование</div>
+      <h2 class="section-title">Когда ехать</h2>
     </div>
     <div class="seasons">
-      <div class="season reveal">
-        <span class="season-tag">Май — июнь</span>
-        <h3>Зелёный Дагестан</h3>
-        <ul>
-          <li>Цветение альпийских лугов</li>
-          <li>Полноводные водопады</li>
-          <li>Комфортные +20…+25°C</li>
-          <li>Меньше туристов</li>
-        </ul>
+      <div class="season-card reveal delay-1">
+        <div class="season-icon">🌸</div>
+        <div class="season-badge">Май — Июнь</div>
+        <h3>Идеальный сезон</h3>
+        <p>Горы зелёные, жары нет, туристов мало. +20–25°C в горах, +28–30°C у моря. Лучшее время для пеших маршрутов.</p>
       </div>
-      <div class="season reveal reveal-delay-1">
-        <span class="season-tag">Июль — август</span>
-        <h3>Высокий сезон</h3>
-        <ul>
-          <li>Тёплое Каспийское море</li>
-          <li>Открыты все горные дороги</li>
-          <li>Жара на побережье до +35°C</li>
-          <li>Самые полные автобусы</li>
-        </ul>
+      <div class="season-card reveal delay-2">
+        <div class="season-icon">☀️</div>
+        <div class="season-badge">Июль — Август</div>
+        <h3>Пик сезона</h3>
+        <p>Жарко (+35–40°C у моря), в горах комфортно (+22–28°C). Всё работает, но людей много. Бронируй жильё заранее.</p>
       </div>
-      <div class="season reveal reveal-delay-2">
-        <span class="season-tag">Сентябрь — октябрь</span>
+      <div class="season-card reveal delay-3">
+        <div class="season-icon">🍂</div>
+        <div class="season-badge">Сентябрь — Октябрь</div>
         <h3>Золотая осень</h3>
-        <ul>
-          <li>Лучшие фото — мягкий свет</li>
-          <li>Спелые фрукты на рынках</li>
-          <li>Прохладные вечера, тёплые дни</li>
-          <li>Низкие цены на жильё</li>
-        </ul>
+        <p>Самые красивые пейзажи, туристов меньше, цены ниже. +15–25°C. Лучший выбор для фотографов.</p>
       </div>
     </div>
   </div>
@@ -641,36 +652,53 @@
 <section id="how">
   <div class="container">
     <div class="reveal">
-      <div class="section-eyebrow">Логистика</div>
+      <div class="eyebrow">Логистика</div>
       <h2 class="section-title">Как добраться</h2>
-      <p class="section-lead">Все рейсы — в аэропорт Махачкалы (Уйташ, MCX). Поездом — через станцию Махачкала-1.</p>
+      <p class="section-lead">Главные ворота Дагестана — аэропорт Махачкалы (MCX). Прямые рейсы из большинства городов России.</p>
     </div>
-    <div class="getting">
-      <div class="route reveal">
-        <span class="route-from">Москва</span>
-        <span class="route-arrow">→</span>
-        <span class="route-info">2.5 часа · ежедневно несколько рейсов</span>
-        <span class="route-price">от 4 500 ₽</span>
+    <div class="routes">
+      <div class="route-card reveal">
+        <div class="route-left">
+          <span class="route-icon">✈️</span>
+          <div>
+            <div class="route-name">Из Москвы</div>
+            <div class="route-meta">2.5 часа · Аэрофлот, Победа, S7</div>
+          </div>
+        </div>
+        <div class="route-price">от 4 500 ₽</div>
       </div>
-      <div class="route reveal reveal-delay-1">
-        <span class="route-from">Санкт-Петербург</span>
-        <span class="route-arrow">→</span>
-        <span class="route-info">3 часа · 1–2 рейса в день</span>
-        <span class="route-price">от 6 000 ₽</span>
+      <div class="route-card reveal delay-1">
+        <div class="route-left">
+          <span class="route-icon">✈️</span>
+          <div>
+            <div class="route-name">Из Петербурга</div>
+            <div class="route-meta">3 часа · несколько рейсов в день</div>
+          </div>
+        </div>
+        <div class="route-price">от 5 500 ₽</div>
       </div>
-      <div class="route reveal reveal-delay-2">
-        <span class="route-from">Казань</span>
-        <span class="route-arrow">→</span>
-        <span class="route-info">2 часа · 3–4 рейса в неделю</span>
-        <span class="route-price">от 5 500 ₽</span>
+      <div class="route-card reveal delay-2">
+        <div class="route-left">
+          <span class="route-icon">✈️</span>
+          <div>
+            <div class="route-name">Из Екатеринбурга</div>
+            <div class="route-meta">3.5 часа · 2–3 рейса в неделю</div>
+          </div>
+        </div>
+        <div class="route-price">от 7 000 ₽</div>
       </div>
-      <div class="route reveal reveal-delay-3">
-        <span class="route-from">Сочи / Минводы</span>
-        <span class="route-arrow">→</span>
-        <span class="route-info">1.5 часа · удобная стыковка</span>
-        <span class="route-price">от 4 000 ₽</span>
+      <div class="route-card reveal delay-3">
+        <div class="route-left">
+          <span class="route-icon">🚂</span>
+          <div>
+            <div class="route-name">На поезде из Москвы</div>
+            <div class="route-meta">30–36 часов · через Астрахань</div>
+          </div>
+        </div>
+        <div class="route-price">от 3 000 ₽</div>
       </div>
     </div>
+    <div class="tip-block reveal">💡 В аэропорту сразу договорись с местным водителем — 500–1000 ₽/день. Намного выгоднее такси.</div>
   </div>
 </section>
 
@@ -678,47 +706,122 @@
 <section id="places">
   <div class="container">
     <div class="reveal">
-      <div class="section-eyebrow">Маршрут</div>
+      <div class="eyebrow">Маршрут</div>
       <h2 class="section-title">Главные места</h2>
-      <p class="section-lead">Шесть точек, ради которых сюда едут. По каждой — ссылка на Google Maps.</p>
+      <p class="section-lead">10 точек, которые определяют Дагестан. По каждой — ссылка на карту.</p>
     </div>
     <div class="places">
-      <article class="place reveal">
-        <div class="place-num">N° 01</div>
-        <h3>Сулакский каньон</h3>
-        <p>Бирюзовая река в обрамлении отвесных скал. Лучший вид — с Дубков, на закате. Можно спуститься на катере.</p>
-        <a href="https://maps.app.goo.gl/YrVGqjLsGXVkxGfH7" target="_blank" rel="noopener" class="place-map">Смотреть на карте →</a>
+
+      <article class="place-card reveal">
+        <div class="place-header" style="background:linear-gradient(135deg,#1a3a4a,#2d6b7a)">
+          <span class="place-num">N° 01</span>
+        </div>
+        <div class="place-body">
+          <h3>Сулакский каньон</h3>
+          <p>Глубочайший каньон Европы, 1&nbsp;920 метров. Глубже Гранд-Каньона на 63 метра. Длина 53 км. Бирюзовая вода из-за известняковых примесей. С верхней смотровой парят орлы. Можно спуститься на катере и поесть форель прямо у воды.</p>
+          <a href="https://www.google.com/maps/search/%D0%A1%D1%83%D0%BB%D0%B0%D0%BA%D1%81%D0%BA%D0%B8%D0%B9+%D0%BA%D0%B0%D0%BD%D1%8C%D0%BE%D0%BD+%D0%94%D0%B0%D0%B3%D0%B5%D1%81%D1%82%D0%B0%D0%BD/@43.009444,46.827778,12z" target="_blank" rel="noopener" class="place-map-btn">Смотреть на карте →</a>
+        </div>
       </article>
-      <article class="place reveal reveal-delay-1">
-        <div class="place-num">N° 02</div>
-        <h3>Гамсутль</h3>
-        <p>Аул-призрак на гребне горы. Подъём 40 минут пешком. Каменные стены сливаются со скалой — будто город всегда был частью гор.</p>
-        <a href="https://maps.app.goo.gl/vMWoHrfFJbXsY9Zt5" target="_blank" rel="noopener" class="place-map">Смотреть на карте →</a>
+
+      <article class="place-card reveal delay-1">
+        <div class="place-header" style="background:linear-gradient(135deg,#2d1f0a,#5c3d1a)">
+          <span class="place-num">N° 02</span>
+        </div>
+        <div class="place-body">
+          <h3>Гамсутль</h3>
+          <p>«Дагестанский Мачу-Пикчу» на высоте 1&nbsp;500 метров. Последний житель умер в 2015 году. Каменные дома, мечеть, кладбище застыли во времени. Добираться пешком 40 минут по горной тропе. Никогда не был взят завоевателями.</p>
+          <a href="https://www.google.com/maps/search/%D0%93%D0%B0%D0%BC%D1%81%D1%83%D1%82%D0%BB%D1%8C+%D0%B0%D1%83%D0%BB+%D0%94%D0%B0%D0%B3%D0%B5%D1%81%D1%82%D0%B0%D0%BD/@42.388,46.968,14z" target="_blank" rel="noopener" class="place-map-btn">Смотреть на карте →</a>
+        </div>
       </article>
-      <article class="place reveal reveal-delay-2">
-        <div class="place-num">N° 03</div>
-        <h3>Сарыкумские барханы</h3>
-        <p>Кусок пустыни Каракум посреди Дагестана. Закат с вершины — то, ради чего стоит встать рано. Заповедник, есть тропа.</p>
-        <a href="https://maps.app.goo.gl/QkXh2yNqP3LdF8eJ8" target="_blank" rel="noopener" class="place-map">Смотреть на карте →</a>
+
+      <article class="place-card reveal">
+        <div class="place-header" style="background:linear-gradient(135deg,#3d2800,#7a5200)">
+          <span class="place-num">N° 03</span>
+        </div>
+        <div class="place-body">
+          <h3>Бархан Сарыкум</h3>
+          <p>Крупнейшая дюна Евразии, высота до 262 метров. Пустыня у подножия Кавказских гор. Здесь снимали «Белое солнце пустыни». Лучшие фото — рано утром.</p>
+          <a href="https://www.google.com/maps/search/%D0%B1%D0%B0%D1%80%D1%85%D0%B0%D0%BD+%D0%A1%D0%B0%D1%80%D1%8B%D0%BA%D1%83%D0%BC+%D0%94%D0%B0%D0%B3%D0%B5%D1%81%D1%82%D0%B0%D0%BD/@43.027,47.347,13z" target="_blank" rel="noopener" class="place-map-btn">Смотреть на карте →</a>
+        </div>
       </article>
-      <article class="place reveal">
-        <div class="place-num">N° 04</div>
-        <h3>Гуниб</h3>
-        <p>Высокогорное село с панорамой на километры вокруг. Здесь сдался Шамиль. Воздух — будто разрежён историей.</p>
-        <a href="https://maps.app.goo.gl/bXkN4tGqP8mWvKzn6" target="_blank" rel="noopener" class="place-map">Смотреть на карте →</a>
+
+      <article class="place-card reveal delay-1">
+        <div class="place-header" style="background:linear-gradient(135deg,#1a1a3d,#2d2d6b)">
+          <span class="place-num">N° 04</span>
+        </div>
+        <div class="place-body">
+          <h3>Дербент — Нарын-Кала</h3>
+          <p>Самый древний город России, 5&nbsp;000+ лет. Цитадель в списке ЮНЕСКО. Джума-мечеть 734 года — древнейшая в России. Старый город (7-й магал) — узкие улочки, каменные дворики. Вход 500 ₽.</p>
+          <a href="https://www.google.com/maps/search/%D0%9D%D0%B0%D1%80%D1%8B%D0%BD-%D0%9A%D0%B0%D0%BB%D0%B0+%D0%94%D0%B5%D1%80%D0%B1%D0%B5%D0%BD%D1%82/@42.059,48.286,15z" target="_blank" rel="noopener" class="place-map-btn">Смотреть на карте →</a>
+        </div>
       </article>
-      <article class="place reveal reveal-delay-1">
-        <div class="place-num">N° 05</div>
-        <h3>Водопад Тобот</h3>
-        <p>70 метров воды, падающей со скалы у плато Хунзах. Зимой замерзает в гигантскую ледяную колонну.</p>
-        <a href="https://maps.app.goo.gl/nKjR2pLqX7mYeWs59" target="_blank" rel="noopener" class="place-map">Смотреть на карте →</a>
+
+      <article class="place-card reveal">
+        <div class="place-header" style="background:linear-gradient(135deg,#0a2d1a,#1a5c3d)">
+          <span class="place-num">N° 05</span>
+        </div>
+        <div class="place-body">
+          <h3>Салтинский водопад</h3>
+          <p>Единственный подземный водопад России. Падает с 20 метров сквозь скальное отверстие внутрь пещеры. Путь — 20 минут пешком вдоль горной реки.</p>
+          <a href="https://www.google.com/maps/search/%D0%A1%D0%B0%D0%BB%D1%82%D0%B8%D0%BD%D1%81%D0%BA%D0%B8%D0%B9+%D0%B2%D0%BE%D0%B4%D0%BE%D0%BF%D0%B0%D0%B4+%D0%94%D0%B0%D0%B3%D0%B5%D1%81%D1%82%D0%B0%D0%BD/@42.347,47.083,14z" target="_blank" rel="noopener" class="place-map-btn">Смотреть на карте →</a>
+        </div>
       </article>
-      <article class="place reveal reveal-delay-2">
-        <div class="place-num">N° 06</div>
-        <h3>Дербент</h3>
-        <p>Самый древний город России — 5000 лет. Крепость Нарын-Кала, старый город, шумные базары и Каспий за поворотом.</p>
-        <a href="https://maps.app.goo.gl/LmPqX3nRjY8tWvKz4" target="_blank" rel="noopener" class="place-map">Смотреть на карте →</a>
+
+      <article class="place-card reveal delay-1">
+        <div class="place-header" style="background:linear-gradient(135deg,#1a2d0a,#3d5c1a)">
+          <span class="place-num">N° 06</span>
+        </div>
+        <div class="place-body">
+          <h3>Гуниб</h3>
+          <p>Плато с 300 солнечными днями в году. Историческое место окончания Кавказской войны 1859 года. Виды на горы — одни из лучших в Дагестане. Рядом Гамсутль и красивейший аул Чох.</p>
+          <a href="https://www.google.com/maps/search/%D0%93%D1%83%D0%BD%D0%B8%D0%B1+%D0%94%D0%B0%D0%B3%D0%B5%D1%81%D1%82%D0%B0%D0%BD/@42.388,46.968,13z" target="_blank" rel="noopener" class="place-map-btn">Смотреть на карте →</a>
+        </div>
       </article>
+
+      <article class="place-card reveal">
+        <div class="place-header" style="background:linear-gradient(135deg,#1a0a2d,#3d1a5c)">
+          <span class="place-num">N° 07</span>
+        </div>
+        <div class="place-body">
+          <h3>Водопад Тобот, Хунзах</h3>
+          <p>Плато обрывается 100-метровыми скалами, с края падает водопад. Рядом Матласская каменная чаша — природный амфитеатр. Одно из самых фотогеничных мест Дагестана.</p>
+          <a href="https://www.google.com/maps/search/%D0%B2%D0%BE%D0%B4%D0%BE%D0%BF%D0%B0%D0%B4+%D0%A2%D0%BE%D0%B1%D0%BE%D1%82+%D0%A5%D1%83%D0%BD%D0%B7%D0%B0%D1%85+%D0%94%D0%B0%D0%B3%D0%B5%D1%81%D1%82%D0%B0%D0%BD/@42.554,46.741,13z" target="_blank" rel="noopener" class="place-map-btn">Смотреть на карте →</a>
+        </div>
+      </article>
+
+      <article class="place-card reveal delay-1">
+        <div class="place-header" style="background:linear-gradient(135deg,#1a1a1a,#2d3d4a)">
+          <span class="place-num">N° 08</span>
+        </div>
+        <div class="place-body">
+          <h3>Экраноплан «Лунь»</h3>
+          <p>Советский ракетоносец длиной 74 метра — единственный в мире сохранившийся. Стоит на берегу Каспия в Дербенте. Выглядит как гигантский самолёт-корабль на пляже. Вход бесплатный.</p>
+          <a href="https://www.google.com/maps/search/%D1%8D%D0%BA%D1%80%D0%B0%D0%BD%D0%BE%D0%BF%D0%BB%D0%B0%D0%BD+%D0%9B%D1%83%D0%BD%D1%8C+%D0%94%D0%B5%D1%80%D0%B1%D0%B5%D0%BD%D1%82/@42.074,48.302,14z" target="_blank" rel="noopener" class="place-map-btn">Смотреть на карте →</a>
+        </div>
+      </article>
+
+      <article class="place-card reveal">
+        <div class="place-header" style="background:linear-gradient(135deg,#0a1a2d,#1a3d5c)">
+          <span class="place-num">N° 09</span>
+        </div>
+        <div class="place-body">
+          <h3>Озеро Кезеной-Ам</h3>
+          <p>«Кавказская Швейцария» на высоте 1&nbsp;869 метров. Бирюзовая вода в окружении заснеженных вершин. 191 км от Махачкалы. Лучшее время июнь–сентябрь.</p>
+          <a href="https://www.google.com/maps/search/%D0%9A%D0%B5%D0%B7%D0%B5%D0%BD%D0%BE%D0%B9-%D0%90%D0%BC/@42.687,46.241,12z" target="_blank" rel="noopener" class="place-map-btn">Смотреть на карте →</a>
+        </div>
+      </article>
+
+      <article class="place-card reveal delay-1">
+        <div class="place-header" style="background:linear-gradient(135deg,#2d1a0a,#5c3d1a)">
+          <span class="place-num">N° 10</span>
+        </div>
+        <div class="place-body">
+          <h3>Старый Дербент — 7-й магал</h3>
+          <p>Лабиринт улочек между цитаделью и морем. Дворы, мечети, виноградные лозы, коты на старых стенах. Попробуй дербентский коньяк (завод с 1898 года) и кубачинское серебро.</p>
+          <a href="https://www.google.com/maps/search/7+%D0%BC%D0%B0%D0%B3%D0%B0%D0%BB+%D0%94%D0%B5%D1%80%D0%B1%D0%B5%D0%BD%D1%82/@42.063,48.290,16z" target="_blank" rel="noopener" class="place-map-btn">Смотреть на карте →</a>
+        </div>
+      </article>
+
     </div>
   </div>
 </section>
@@ -727,57 +830,52 @@
 <section id="food">
   <div class="container">
     <div class="reveal">
-      <div class="section-eyebrow">Кухня</div>
+      <div class="eyebrow">Кухня</div>
       <h2 class="section-title">Что попробовать</h2>
-      <p class="section-lead">Дагестанская кухня — про мясо, тесто и щедрость. Пять блюд, мимо которых нельзя.</p>
     </div>
-    <div class="food">
-      <div class="dish reveal">
-        <div class="dish-name">Хинкал</div>
-        <div class="dish-desc">Не путать с хинкали. Это куски теста, отваренные в бульоне, с мясом и чесночным соусом. Главное блюдо региона.</div>
+    <div class="food-cards">
+      <div class="food-card reveal">
+        <span class="food-icon">🍖</span>
+        <div>
+          <div class="food-name">Хинкал</div>
+          <div class="food-desc">Главное блюдо Дагестана. Варёное тесто, баранина, бульон и чесночный соус.</div>
+          <div class="food-price">~300–500 ₽</div>
+        </div>
       </div>
-      <div class="dish reveal reveal-delay-1">
-        <div class="dish-name">Чуду</div>
-        <div class="dish-desc">Тонкая лепёшка с начинкой — мясо, картофель с творогом, тыква, зелень. Едят с чаем, разрывают руками.</div>
+      <div class="food-card reveal delay-1">
+        <span class="food-icon">🫓</span>
+        <div>
+          <div class="food-name">Чуду</div>
+          <div class="food-desc">Тонкие лепёшки с творогом, картошкой или мясом.</div>
+          <div class="food-price">~100–200 ₽</div>
+        </div>
       </div>
-      <div class="dish reveal reveal-delay-2">
-        <div class="dish-name">Курзе</div>
-        <div class="dish-desc">Дагестанские пельмени особой формы — «косичкой». С мясом, творогом или яйцом и зеленью.</div>
+      <div class="food-card reveal delay-2">
+        <span class="food-icon">🥟</span>
+        <div>
+          <div class="food-name">Курзе</div>
+          <div class="food-desc">Дагестанские пельмени с особой защипкой. С мясом, творогом или зеленью.</div>
+          <div class="food-price">~250–400 ₽</div>
+        </div>
       </div>
-      <div class="dish reveal reveal-delay-3">
-        <div class="dish-name">Шашлык из баранины</div>
-        <div class="dish-desc">Молодой барашек, минимум специй, мангал и горы вокруг. Берите в придорожных кафе, а не в Махачкале.</div>
+      <div class="food-card reveal delay-3">
+        <span class="food-icon">🐑</span>
+        <div>
+          <div class="food-name">Шашлык из баранины</div>
+          <div class="food-desc">Местная баранина без запаха, минимальный маринад.</div>
+          <div class="food-price">~500–800 ₽</div>
+        </div>
       </div>
-      <div class="dish reveal">
-        <div class="dish-name">Форель из Сулака</div>
-        <div class="dish-desc">Свежевыловленная, на углях. Подают у подножия каньона. Лучшая — в посёлке Дубки.</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- STAY -->
-<section id="stay">
-  <div class="container">
-    <div class="reveal">
-      <div class="section-eyebrow">Где жить</div>
-      <h2 class="section-title">Махачкала или горы</h2>
-      <p class="section-lead">Два подхода. Первый — удобно. Второй — атмосферно. Лучший вариант — совместить.</p>
-    </div>
-    <div class="stay">
-      <div class="stay-col reveal">
-        <span class="meta">База</span>
-        <h3>Махачкала</h3>
-        <p>Отели и квартиры на любой бюджет, рестораны, набережная Каспия, аэропорт под боком. Из города удобно делать радиальные выезды.</p>
-        <p>Подходит, если: первый раз в Дагестане, путешествуешь без машины, хочешь возвращаться в комфорт каждый вечер.</p>
-      </div>
-      <div class="stay-col reveal reveal-delay-1">
-        <span class="meta">Атмосфера</span>
-        <h3>Горные сёла</h3>
-        <p>Гостевые дома в Гунибе, Чохе, Хунзахе. Печь, домашняя еда, тишина и звёзды размером с кулак. Утром — туман в долине под окном.</p>
-        <p>Подходит, если: ищешь медленные дни, хочешь увидеть Дагестан изнутри, готов к простому быту и душевности хозяев.</p>
+      <div class="food-card reveal">
+        <span class="food-icon">🐟</span>
+        <div>
+          <div class="food-name">Форель из Сулака</div>
+          <div class="food-desc">Только что выловленная, на гриле у реки. Лучшая — в посёлке Дубки.</div>
+          <div class="food-price">~600–900 ₽</div>
+        </div>
       </div>
     </div>
+    <div class="tip-block reveal">🍯 Обязательно попробуй урбеч — густая паста из семян льна или грецких орехов. Местный суперфуд. Отличный сувенир домой.</div>
   </div>
 </section>
 
@@ -785,47 +883,54 @@
 <section id="budget">
   <div class="container">
     <div class="reveal">
-      <div class="section-eyebrow">Сколько это стоит</div>
+      <div class="eyebrow">Финансы</div>
       <h2 class="section-title">Бюджет на 5 дней</h2>
-      <p class="section-lead">Цены на одного человека, без перелёта. Реальные цифры на 2026 год.</p>
+      <p class="section-lead">Один человек, без перелёта. Реальные цифры.</p>
     </div>
-    <div class="budget reveal">
-      <div class="budget-row head">
-        <div class="cell">Статья</div>
-        <div class="cell">Эконом</div>
-        <div class="cell">Комфорт</div>
-        <div class="cell">Премиум</div>
-      </div>
-      <div class="budget-row">
-        <div class="cell cell-label">Жильё</div>
-        <div class="cell">7 500 ₽</div>
-        <div class="cell">17 500 ₽</div>
-        <div class="cell">40 000 ₽</div>
-      </div>
-      <div class="budget-row">
-        <div class="cell cell-label">Транспорт</div>
-        <div class="cell">5 000 ₽</div>
-        <div class="cell">15 000 ₽</div>
-        <div class="cell">30 000 ₽</div>
-      </div>
-      <div class="budget-row">
-        <div class="cell cell-label">Еда</div>
-        <div class="cell">5 000 ₽</div>
-        <div class="cell">10 000 ₽</div>
-        <div class="cell">20 000 ₽</div>
-      </div>
-      <div class="budget-row">
-        <div class="cell cell-label">Экскурсии</div>
-        <div class="cell">2 500 ₽</div>
-        <div class="cell">7 500 ₽</div>
-        <div class="cell">20 000 ₽</div>
-      </div>
-      <div class="budget-row">
-        <div class="cell cell-label">Итого</div>
-        <div class="cell cell-total">~ 20 000 ₽</div>
-        <div class="cell cell-total">~ 50 000 ₽</div>
-        <div class="cell cell-total">~ 110 000 ₽</div>
-      </div>
+    <div class="reveal">
+      <table class="budget-table">
+        <thead>
+          <tr>
+            <th>Статья</th>
+            <th>Эконом</th>
+            <th>Комфорт</th>
+            <th>С туром</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Жильё (5 ночей)</td>
+            <td>7 500 ₽</td>
+            <td>20 000 ₽</td>
+            <td>включено</td>
+          </tr>
+          <tr>
+            <td>Транспорт / экскурсии</td>
+            <td>10 000 ₽</td>
+            <td>20 000 ₽</td>
+            <td>включено</td>
+          </tr>
+          <tr>
+            <td>Питание</td>
+            <td>5 000 ₽</td>
+            <td>10 000 ₽</td>
+            <td>включено</td>
+          </tr>
+          <tr>
+            <td>Фрукты и сувениры</td>
+            <td>3 000 ₽</td>
+            <td>7 000 ₽</td>
+            <td>включено</td>
+          </tr>
+          <tr>
+            <td>ИТОГО</td>
+            <td>~25 000 ₽</td>
+            <td>~57 000 ₽</td>
+            <td>~70 000 ₽</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="budget-note">Перелёт из Москвы: ~5&nbsp;000–12&nbsp;000 ₽ в обе стороны в зависимости от сезона.</p>
     </div>
   </div>
 </section>
@@ -834,68 +939,128 @@
 <section id="tips">
   <div class="container">
     <div class="reveal">
-      <div class="section-eyebrow">Местный знает</div>
-      <h2 class="section-title">5 лайфхаков, которых нет в обычных гайдах</h2>
+      <div class="eyebrow">Местный знает</div>
+      <h2 class="section-title">Лайфхаки</h2>
     </div>
     <div class="tips">
-      <div class="tip reveal">
-        <h3>Уважай традиции</h3>
-        <p>Дагестан — мусульманский регион. Не носи откровенную одежду в сёлах, не пей алкоголь на улице, в мечеть — без обуви и в платке.</p>
+      <div class="tip-card reveal">
+        <span class="tip-emoji">🕌</span>
+        <div>
+          <h3>Уважай традиции</h3>
+          <p>Мусульманский регион. Женщинам в мечетях нужен платок. Не фотографируй людей без разрешения.</p>
+        </div>
       </div>
-      <div class="tip reveal reveal-delay-1">
-        <h3>Носи наличные</h3>
-        <p>В горах банкоматов нет, эквайринг — редкость. Снимай рубли в Махачкале и держи запас. На бензин тоже часто только cash.</p>
+      <div class="tip-card reveal delay-1">
+        <span class="tip-emoji">💵</span>
+        <div>
+          <h3>Наличные обязательны</h3>
+          <p>В горных сёлах нет банкоматов. Снимай деньги в Махачкале или Дербенте.</p>
+        </div>
       </div>
-      <div class="tip reveal reveal-delay-2">
-        <h3>Вставай до тумана</h3>
-        <p>Лучшие виды на Сулакский каньон и Гамсутль — между 6:00 и 9:00. Позже — туман, дымка, толпы. Кофе в термос и поехали.</p>
+      <div class="tip-card reveal">
+        <span class="tip-emoji">🌅</span>
+        <div>
+          <h3>Едь рано утром</h3>
+          <p>Лучшие виды на каньон до 9 утра. Потом дымка и туристы.</p>
+        </div>
       </div>
-      <div class="tip reveal reveal-delay-3">
-        <h3>Договаривайся напрямую</h3>
-        <p>В аэропорту таксисты накручивают х3. Проще — телеграм-чаты местных водителей или гостевой дом, который пришлёт своего человека.</p>
+      <div class="tip-card reveal delay-1">
+        <span class="tip-emoji">🚗</span>
+        <div>
+          <h3>Местный водитель</h3>
+          <p>Договорись в аэропорту за 500–1000 ₽/день. Знает дороги и где поесть по-настоящему.</p>
+        </div>
       </div>
-      <div class="tip reveal">
-        <h3>Скачай карты офлайн</h3>
-        <p>В горах связь пропадает целыми районами. Загрузи Maps.me или офлайн-карту Google заранее, плюс маршруты в любимом приложении.</p>
+      <div class="tip-card reveal">
+        <span class="tip-emoji">📱</span>
+        <div>
+          <h3>Интернет в горах</h3>
+          <p>МТС и Билайн работают лучше других. В ущельях сигнала нет — скачай карты офлайн.</p>
+        </div>
+      </div>
+      <div class="tip-card reveal delay-1">
+        <span class="tip-emoji">👟</span>
+        <div>
+          <h3>Обувь</h3>
+          <p>К водопадам нужна закрытая обувь с нескользящей подошвой. Шлёпки только для пляжа.</p>
+        </div>
+      </div>
+      <div class="tip-card reveal">
+        <span class="tip-emoji">🌡️</span>
+        <div>
+          <h3>Погода меняется быстро</h3>
+          <p>В горах даже летом холодно вечером. Возьми лёгкую куртку.</p>
+        </div>
+      </div>
+      <div class="tip-card reveal delay-1">
+        <span class="tip-emoji">🤝</span>
+        <div>
+          <h3>Гостеприимство</h3>
+          <p>Если пригласили домой — не отказывай. Это большая честь. Всегда принимай угощение.</p>
+        </div>
       </div>
     </div>
   </div>
 </section>
 
 <!-- TOUR CTA -->
-<section id="tour">
+<section class="tour-section" id="tour">
   <div class="container">
-    <div class="tour reveal">
-      <span class="tour-emoji">🎒</span>
-      <h2>Хочешь поехать в&nbsp;Дагестан с&nbsp;группой?</h2>
-      <p>Собираю первую группу — если интересно, оставь заявку в&nbsp;боте.</p>
-      <a href="https://t.me/like_a_local_bot" target="_blank" rel="noopener" class="btn">Оставить заявку →</a>
+    <div class="tour-card reveal">
+      <div class="tour-inner">
+        <span class="tour-emoji">🎒</span>
+        <h2>Хочешь вместе изучить Дагестан?</h2>
+        <div class="tour-text">Меня зовут Кирилл, я основатель «Как местный».
+Думаю собрать небольшую группу и отправиться в Страну гор вместе — с опытными местными гидами-горцами, которые знают каждую тропу и каждый аул.
+
+5 дней · Сулакский каньон · Гамсутль · Дербент · горные сёла · бирюзовая река · форель на углях
+
+Стоимость ~70&nbsp;000 ₽ с человека (без перелёта).
+Включено всё: трансфер по Дагестану, проживание, полное питание, море свежих фруктов и опытный местный гид.
+
+Сейчас проверяю спрос — если наберётся группа, поедем летом или осенью 2026. Никаких обязательств и предоплаты. Просто оставь заявку — я напишу лично когда будут даты.</div>
+        <div class="tour-btns">
+          <a href="https://t.me/like_a_local_bot" target="_blank" rel="noopener" class="tour-btn">Июнь — Июль</a>
+          <a href="https://t.me/like_a_local_bot" target="_blank" rel="noopener" class="tour-btn">Август — Сентябрь</a>
+          <a href="https://t.me/like_a_local_bot" target="_blank" rel="noopener" class="tour-btn">Когда скажешь</a>
+        </div>
+        <div class="tour-credit">Кирилл Андреев · основатель «Как местный»</div>
+      </div>
     </div>
   </div>
 </section>
 
 <footer>
-  <div>Как местный © 2026 · <a href="https://t.me/like_a_local_bot" target="_blank" rel="noopener">@like_a_local_bot</a></div>
+  <div>🎒 Как местный — путеводители для настоящих путешественников</div>
+  <div>© 2026 · <a href="https://t.me/like_a_local_bot" target="_blank" rel="noopener">@like_a_local_bot</a></div>
 </footer>
 
 <script>
-  (function () {
-    if (!('IntersectionObserver' in window)) {
-      document.querySelectorAll('.reveal').forEach(function (el) { el.classList.add('in'); });
-      return;
-    }
-    var io = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('in');
-          io.unobserve(entry.target);
-        }
-      });
-    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+(function(){
+  if(!('IntersectionObserver' in window)){
+    document.querySelectorAll('.reveal').forEach(function(el){el.classList.add('in')});
+    return;
+  }
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      if(entry.isIntersecting){
+        entry.target.classList.add('in');
+        io.unobserve(entry.target);
+      }
+    });
+  },{threshold:0.1,rootMargin:'0px 0px -40px 0px'});
+  document.querySelectorAll('.reveal').forEach(function(el){io.observe(el)});
 
-    document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
-  })();
+  // hero scroll btn
+  var heroBtn=document.querySelector('.hero-btn');
+  if(heroBtn){
+    heroBtn.addEventListener('click',function(e){
+      e.preventDefault();
+      var target=document.getElementById('about');
+      if(target)target.scrollIntoView({behavior:'smooth'});
+    });
+  }
+})();
 </script>
-
 </body>
 </html>
