@@ -6,49 +6,63 @@
 <title>Дагестан — Путеводитель | Как местный</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
-    --bg: #080808;
-    --card: #111111;
-    --border: #222;
+    --bg: #1a1a1a;
+    --card: #242424;
+    --border: #333333;
     --accent: #C4622D;
-    --gold: #8B7355;
     --text: #F0EDE8;
-    --text-muted: #999;
+    --text-muted: #6B6560;
     --max-w: 1100px;
   }
   html { scroll-behavior: smooth; }
-  body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; font-size: 16px; line-height: 1.7; -webkit-font-smoothing: antialiased; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif;
+    font-size: 16px; line-height: 1.7; -webkit-font-smoothing: antialiased;
+  }
 
   /* NAV */
   .site-nav {
     position: sticky; top: 0; z-index: 100;
     display: flex; align-items: center; gap: 24px;
     padding: 0 24px; height: 60px;
-    background: rgba(8,8,8,0.95); backdrop-filter: blur(12px);
+    background: rgba(26,26,26,0.96); backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--border);
   }
-  .nav-logo { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 600; color: var(--text); text-decoration: none; white-space: nowrap; }
+  .nav-logo {
+    font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 600;
+    color: var(--text); text-decoration: none; white-space: nowrap;
+  }
   .nav-links { display: flex; gap: 0; margin-left: auto; }
-  .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 14px; padding: 8px 14px; transition: color 0.2s; }
-  .nav-links a:hover, .nav-links a.active { color: var(--accent); }
+  .nav-links a {
+    color: var(--text-muted); text-decoration: none; font-size: 14px;
+    padding: 8px 14px; transition: color 0.2s;
+  }
+  .nav-links a:hover, .nav-links a.active { color: var(--text); }
   .nav-btn {
-    display: inline-block; padding: 8px 18px;
-    background: var(--accent); color: #fff; text-decoration: none;
-    font-size: 13px; font-weight: 500; border-radius: 4px;
-    transition: background 0.2s; white-space: nowrap;
+    display: inline-block; padding: 8px 18px; background: var(--accent);
+    color: #fff; text-decoration: none; font-size: 13px; font-weight: 500;
+    border-radius: 8px; transition: background 0.2s; white-space: nowrap;
   }
   .nav-btn:hover { background: #a84f23; }
-  .nav-burger { display: none; background: none; border: none; color: var(--text); font-size: 20px; cursor: pointer; padding: 8px; }
+  .nav-burger {
+    display: none; background: none; border: none; color: var(--text);
+    font-size: 20px; cursor: pointer; padding: 8px; margin-left: auto;
+  }
   .mobile-menu {
     display: none; position: fixed; top: 60px; left: 0; right: 0;
-    background: rgba(8,8,8,0.98); border-bottom: 1px solid var(--border);
+    background: rgba(26,26,26,0.99); border-bottom: 1px solid var(--border);
     flex-direction: column; z-index: 99; padding: 16px 24px;
   }
   .mobile-menu.open { display: flex; }
-  .mobile-menu a { color: var(--text-muted); text-decoration: none; padding: 12px 0; font-size: 15px; border-bottom: 1px solid var(--border); transition: color 0.2s; }
+  .mobile-menu a {
+    color: var(--text-muted); text-decoration: none; padding: 13px 0;
+    font-size: 15px; border-bottom: 1px solid var(--border); transition: color 0.2s;
+  }
   .mobile-menu a:last-child { border-bottom: none; }
   .mobile-menu a.active, .mobile-menu a:hover { color: var(--accent); }
 
@@ -62,215 +76,192 @@
     position: absolute; inset: 0; width: 100%; height: 100%;
     object-fit: cover; object-position: center;
   }
-  .hero-fallback {
-    position: absolute; inset: 0;
-    background: linear-gradient(135deg, #0a0a0a, #1a0f05);
-    display: none;
-  }
-  .hero-overlay {
-    position: absolute; inset: 0;
-    background: rgba(0,0,0,0.5);
-  }
+  .hero-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.4); }
   .hero-content {
-    position: relative; z-index: 2;
-    text-align: center; padding: 0 24px;
+    position: relative; z-index: 2; text-align: center; padding: 0 24px;
   }
-  .hero-eyebrow {
-    font-size: 12px; letter-spacing: 4px; color: var(--accent);
-    font-family: 'Inter', sans-serif; font-weight: 500;
-    text-transform: uppercase; margin-bottom: 20px;
+  .hero-tag {
+    display: inline-block; font-size: 11px; letter-spacing: 4px;
+    color: rgba(240,237,232,0.7); font-weight: 500; text-transform: uppercase;
+    margin-bottom: 20px;
   }
   .hero-title {
     font-family: 'Cormorant Garamond', serif;
-    font-size: clamp(60px, 10vw, 140px);
-    font-weight: 600; line-height: 1; color: var(--text);
-    letter-spacing: 2px; margin-bottom: 24px;
+    font-size: clamp(72px, 12vw, 160px);
+    font-weight: 600; line-height: 1; color: #fff;
+    margin-bottom: 20px;
   }
   .hero-sub {
     font-family: 'Cormorant Garamond', serif;
-    font-size: clamp(18px, 3vw, 26px);
-    font-style: italic; color: rgba(240,237,232,0.85);
-    margin-bottom: 48px;
+    font-size: clamp(18px, 2.5vw, 24px); font-style: italic;
+    color: rgba(255,255,255,0.8); margin-bottom: 48px;
   }
   .hero-cta {
     display: inline-block; padding: 14px 32px;
-    border: 1px solid var(--accent); color: var(--text);
-    text-decoration: none; font-size: 14px; border-radius: 4px;
-    transition: background 0.2s, color 0.2s; cursor: pointer; background: transparent;
-    font-family: 'Inter', sans-serif;
+    border: 1px solid rgba(255,255,255,0.5); color: #fff;
+    text-decoration: none; font-size: 15px; border-radius: 8px;
+    transition: background 0.25s, border-color 0.25s; backdrop-filter: blur(4px);
+    background: rgba(255,255,255,0.08);
   }
-  .hero-cta:hover { background: var(--accent); color: #fff; }
-  .scroll-indicator {
-    position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
-    z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 6px;
-  }
-  .scroll-line {
-    width: 1px; height: 40px; background: rgba(240,237,232,0.3);
-    position: relative; overflow: hidden;
-  }
-  .scroll-dot {
-    position: absolute; top: -6px; left: 50%; transform: translateX(-50%);
-    width: 4px; height: 4px; border-radius: 50%; background: var(--accent);
-    animation: scrollDown 1.8s ease-in-out infinite;
-  }
-  @keyframes scrollDown {
-    0% { top: -6px; opacity: 1; }
-    80% { top: 38px; opacity: 0.3; }
-    100% { top: -6px; opacity: 0; }
-  }
+  .hero-cta:hover { background: rgba(255,255,255,0.18); border-color: #fff; }
 
   /* SECTIONS */
-  .section { padding: 100px 24px; }
-  .container { max-width: var(--max-w); margin: 0 auto; }
+  .section { padding: 80px 0; }
+  .container { max-width: var(--max-w); margin: 0 auto; padding: 0 24px; }
   .section-label {
     font-size: 11px; letter-spacing: 4px; color: var(--accent);
-    text-transform: uppercase; font-weight: 500; margin-bottom: 16px;
+    text-transform: uppercase; font-weight: 500; margin-bottom: 12px;
   }
   .section-title {
     font-family: 'Cormorant Garamond', serif;
-    font-size: clamp(32px, 5vw, 56px); font-weight: 600;
-    line-height: 1.1; margin-bottom: 32px; color: var(--text);
-  }
-  .section-sub {
-    font-size: 16px; color: var(--text-muted); margin-bottom: 40px;
+    font-size: clamp(32px, 5vw, 52px); font-weight: 600;
+    line-height: 1.15; margin-bottom: 32px; color: var(--text);
   }
 
   /* ABOUT */
-  .about-text p { color: rgba(240,237,232,0.8); margin-bottom: 20px; font-size: 16px; }
-  .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 56px; }
-  .stat-item { text-align: center; padding: 32px 16px; background: var(--card); border: 1px solid var(--border); border-radius: 4px; }
+  .about-layout {
+    display: grid; grid-template-columns: 3fr 2fr; gap: 64px; align-items: start;
+  }
+  .about-text p {
+    color: rgba(240,237,232,0.8); margin-bottom: 18px; font-size: 16px;
+  }
+  .about-stats { display: flex; flex-direction: column; gap: 0; }
+  .stat-item {
+    padding: 28px 0; border-bottom: 1px solid var(--border);
+  }
+  .stat-item:first-child { border-top: 1px solid var(--border); }
   .stat-num {
     font-family: 'Cormorant Garamond', serif;
-    font-size: clamp(36px, 6vw, 64px); font-weight: 600;
-    color: var(--accent); line-height: 1; margin-bottom: 8px;
+    font-size: clamp(40px, 6vw, 64px); font-weight: 600;
+    color: var(--accent); line-height: 1; margin-bottom: 6px;
   }
   .stat-label { font-size: 13px; color: var(--text-muted); }
 
-  /* SEASONS */
-  .seasons-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-  .season-card {
-    background: var(--card); border: 1px solid var(--border); border-radius: 4px;
-    padding: 28px 24px; transition: border-color 0.2s;
+  /* PLACES GRID — Aviasales style */
+  .places-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 28px;
   }
-  .season-card:hover { border-color: var(--accent); }
-  .season-icon { font-size: 28px; margin-bottom: 12px; }
-  .season-period { font-size: 13px; color: var(--text-muted); margin-bottom: 6px; }
-  .season-badge {
-    display: inline-block; padding: 3px 10px; border-radius: 4px;
-    font-size: 11px; font-weight: 600; letter-spacing: 1px;
-    background: rgba(196,98,45,0.15); color: var(--accent);
-    margin-bottom: 14px;
-  }
-  .season-title {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 22px; font-weight: 600; margin-bottom: 12px;
-  }
-  .season-text { font-size: 14px; color: rgba(240,237,232,0.75); line-height: 1.6; }
-
-  /* HOW TO GET */
-  .transport-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 28px; }
-  .transport-card {
-    background: var(--card); border: 1px solid var(--border); border-radius: 4px;
-    padding: 20px 22px; transition: border-color 0.2s;
-  }
-  .transport-card:hover { border-color: var(--accent); }
-  .transport-icon { font-size: 22px; margin-bottom: 8px; }
-  .transport-title { font-size: 15px; font-weight: 500; margin-bottom: 4px; }
-  .transport-detail { font-size: 13px; color: var(--text-muted); }
-  .lifehack {
-    border-left: 4px solid var(--accent); background: var(--card);
-    padding: 20px 24px; border-radius: 0 4px 4px 0;
-    font-size: 14px; color: rgba(240,237,232,0.85); line-height: 1.6;
-  }
-
-  /* PLACES PREVIEW */
-  .places-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 32px; }
   .place-card {
-    background: var(--card); border: 1px solid var(--border); border-radius: 4px;
-    overflow: hidden; transition: border-color 0.2s;
+    border-radius: 16px; overflow: hidden; position: relative;
+    aspect-ratio: 1/1; cursor: pointer;
   }
-  .place-card:hover { border-color: var(--accent); }
-  .place-header { height: 220px; }
-  .place-body { padding: 20px; }
-  .place-name { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 600; margin-bottom: 6px; }
-  .place-desc { font-size: 14px; color: var(--text-muted); }
+  .place-card img {
+    width: 100%; height: 100%; object-fit: cover;
+    transition: transform 0.35s ease; display: block;
+  }
+  .place-card:hover img { transform: scale(1.06); }
+  .place-card-label {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    padding: 48px 16px 16px;
+    background: linear-gradient(transparent, rgba(0,0,0,0.82));
+    font-size: 15px; font-weight: 600; color: #fff;
+  }
 
-  /* FOOD PREVIEW */
-  .food-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 32px; }
+  /* FOOD HORIZONTAL SCROLL */
+  .food-scroll-wrap {
+    overflow-x: auto; margin: 0 -24px; padding: 0 24px;
+    -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  }
+  .food-scroll-wrap::-webkit-scrollbar { display: none; }
+  .food-scroll {
+    display: flex; gap: 12px; width: max-content; padding-bottom: 8px;
+  }
   .food-card {
-    background: var(--card); border: 1px solid var(--border); border-radius: 4px;
-    padding: 24px 20px; transition: border-color 0.2s;
+    width: 220px; flex-shrink: 0; border-radius: 16px;
+    overflow: hidden; background: var(--card);
+    cursor: pointer; transition: transform 0.25s ease;
   }
-  .food-card:hover { border-color: var(--accent); }
-  .food-icon { font-size: 32px; margin-bottom: 12px; }
-  .food-name { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 600; margin-bottom: 6px; }
-  .food-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 10px; line-height: 1.5; }
-  .food-price { font-size: 13px; color: var(--accent); font-weight: 500; }
+  .food-card:hover { transform: translateY(-4px); }
+  .food-card img {
+    width: 100%; height: 200px; object-fit: cover; display: block;
+  }
+  .food-card-body { padding: 14px 16px 16px; }
+  .food-card-name {
+    font-size: 15px; font-weight: 600; color: var(--text);
+    margin-bottom: 4px;
+  }
+  .food-card-desc { font-size: 13px; color: var(--text-muted); }
 
-  /* TOUR BLOCK */
-  .tour-block {
-    background: linear-gradient(135deg, #1a0f05, #2d1a0a);
-    border: 1px solid rgba(196,98,45,0.4); border-radius: 4px;
-    padding: 60px 48px; text-align: center;
+  /* TOUR CTA */
+  .tour-section {
+    background: #111111; border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border); padding: 80px 24px;
   }
-  .tour-icon { font-size: 40px; margin-bottom: 24px; }
+  .tour-inner {
+    max-width: 640px; margin: 0 auto; text-align: center;
+  }
+  .tour-icon { font-size: 36px; margin-bottom: 20px; }
   .tour-title {
     font-family: 'Cormorant Garamond', serif;
-    font-size: clamp(28px, 4vw, 42px); font-weight: 600;
-    margin-bottom: 20px;
+    font-size: clamp(28px, 4vw, 44px); font-weight: 600;
+    margin-bottom: 20px; line-height: 1.2;
   }
-  .tour-text { font-size: 15px; color: rgba(240,237,232,0.8); max-width: 620px; margin: 0 auto 32px; line-height: 1.8; }
-  .tour-btns { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-bottom: 24px; }
-  .tour-btn {
-    display: inline-block; padding: 12px 24px;
-    border: 1px solid var(--accent); color: var(--text);
-    text-decoration: none; font-size: 14px; border-radius: 4px;
-    transition: background 0.2s, color 0.2s;
+  .tour-text {
+    font-size: 15px; color: rgba(240,237,232,0.75);
+    line-height: 1.85; margin-bottom: 16px;
   }
-  .tour-btn:hover { background: var(--accent); color: #fff; }
+  .tour-program {
+    font-size: 14px; color: rgba(240,237,232,0.6);
+    line-height: 1.7; margin-bottom: 16px;
+  }
+  .tour-price {
+    font-size: 14px; color: rgba(240,237,232,0.7);
+    line-height: 1.7; margin-bottom: 16px;
+  }
+  .tour-disclaimer {
+    font-size: 13px; color: var(--text-muted);
+    line-height: 1.7; margin-bottom: 32px;
+  }
+  .btn-tour {
+    display: inline-block; padding: 15px 40px;
+    background: var(--accent); color: #fff; text-decoration: none;
+    font-size: 16px; font-weight: 500; border-radius: 8px;
+    transition: background 0.2s; margin-bottom: 20px;
+  }
+  .btn-tour:hover { background: #a84f23; }
   .tour-author { font-size: 13px; color: var(--text-muted); }
 
   /* BUTTONS */
   .btn {
     display: inline-block; padding: 13px 28px;
     background: var(--accent); color: #fff; text-decoration: none;
-    font-size: 14px; font-weight: 500; border-radius: 4px;
+    font-size: 14px; font-weight: 500; border-radius: 8px;
     transition: background 0.2s;
   }
   .btn:hover { background: #a84f23; }
   .btn-outline {
-    background: transparent; border: 1px solid var(--accent); color: var(--text);
+    background: transparent; border: 1px solid var(--accent); color: var(--accent);
   }
   .btn-outline:hover { background: var(--accent); color: #fff; }
   .text-center { text-align: center; }
 
   /* FOOTER */
   footer {
-    border-top: 1px solid var(--border); padding: 48px 24px;
-    text-align: center;
+    border-top: 1px solid var(--border); padding: 48px 24px; text-align: center;
   }
-  .footer-logo { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 600; margin-bottom: 16px; }
+  .footer-logo {
+    font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 600;
+    margin-bottom: 16px;
+  }
   .footer-links { margin-bottom: 16px; }
-  .footer-links a { color: var(--text-muted); text-decoration: none; font-size: 13px; margin: 0 10px; transition: color 0.2s; }
+  .footer-links a {
+    color: var(--text-muted); text-decoration: none; font-size: 13px;
+    margin: 0 10px; transition: color 0.2s;
+  }
   .footer-links a:hover { color: var(--accent); }
   .footer-copy { font-size: 12px; color: var(--text-muted); }
 
   /* SCROLL REVEAL */
-  .reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.6s ease, transform 0.6s ease; }
+  .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.6s ease, transform 0.6s ease; }
   .reveal.visible { opacity: 1; transform: none; }
 
   /* RESPONSIVE */
   @media (max-width: 768px) {
     .nav-links, .nav-btn { display: none; }
     .nav-burger { display: block; }
-    .nav-logo { margin-right: auto; }
-    .seasons-grid { grid-template-columns: 1fr; }
-    .transport-grid { grid-template-columns: 1fr; }
-    .places-grid { grid-template-columns: 1fr; }
-    .food-grid { grid-template-columns: 1fr; }
-    .stats-row { grid-template-columns: 1fr; }
-    .tour-block { padding: 40px 24px; }
-    .section { padding: 70px 24px; }
+    .about-layout { grid-template-columns: 1fr; gap: 40px; }
+    .section { padding: 60px 0; }
+    .tour-section { padding: 60px 24px; }
   }
 </style>
 </head>
@@ -283,9 +274,9 @@
     <a href="places.html">Места</a>
     <a href="food.html">Кухня</a>
     <a href="tips.html">Советы</a>
-    <a href="tour.html">Тур с Кириллом</a>
+    <a href="tour.html">Тур</a>
   </div>
-  <a href="https://t.me/like_a_local_bot" class="nav-btn" target="_blank" rel="noopener">Открыть бота</a>
+  <a href="https://t.me/like_a_local_bot" class="nav-btn" target="_blank" rel="noopener">Открыть бота →</a>
   <button class="nav-burger" aria-label="Меню" onclick="toggleMobile()">☰</button>
 </nav>
 <div class="mobile-menu" id="mobileMenu">
@@ -293,217 +284,228 @@
   <a href="places.html">Места</a>
   <a href="food.html">Кухня</a>
   <a href="tips.html">Советы</a>
-  <a href="tour.html">Тур с Кириллом</a>
+  <a href="tour.html">Тур</a>
   <a href="https://t.me/like_a_local_bot" target="_blank" rel="noopener">Открыть бота →</a>
 </div>
 
 <!-- HERO -->
-<section class="hero" id="hero">
+<section class="hero">
   <img
     class="hero-img"
-    src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Sulak_Canyon%2C_Dagestan.jpg/1920px-Sulak_Canyon%2C_Dagestan.jpg"
-    alt="Сулакский каньон, Дагестан"
-    onerror="this.style.display='none'; document.querySelector('.hero-fallback').style.display='block';"
+    src="https://source.unsplash.com/1920x1080/?dagestan,caucasus,mountain"
+    alt="Дагестан, Кавказ"
+    loading="lazy"
+    onerror="this.src='https://source.unsplash.com/800x600/?mountain'"
   >
-  <div class="hero-fallback"></div>
   <div class="hero-overlay"></div>
   <div class="hero-content">
-    <div class="hero-eyebrow">КАВКАЗ · РОССИЯ · КАК МЕСТНЫЙ</div>
-    <h1 class="hero-title">ДАГЕСТАН</h1>
+    <div class="hero-tag">КАВКАЗ · РОССИЯ</div>
+    <h1 class="hero-title">Дагестан</h1>
     <p class="hero-sub">Страна гор. Там, где орлы летают ниже вершин</p>
-    <a class="hero-cta" href="#about" onclick="event.preventDefault(); document.getElementById('about').scrollIntoView({behavior:'smooth'})">Читать путеводитель ↓</a>
-  </div>
-  <div class="scroll-indicator">
-    <div class="scroll-line"><div class="scroll-dot"></div></div>
+    <a class="hero-cta" href="#about">Открыть путеводитель ↓</a>
   </div>
 </section>
 
 <!-- ABOUT -->
 <section class="section" id="about">
   <div class="container">
-    <div class="section-label">О РЕГИОНЕ</div>
-    <h2 class="section-title reveal">Страна гор и народов</h2>
-    <div class="about-text reveal">
-      <p>Дагестан — самая многонациональная республика России. Здесь живут более 60 народов, говорящих на 14 официальных языках. Само название переводится с тюркского как «страна гор» — и это абсолютная правда: две трети территории занимают горы Большого Кавказа.</p>
-      <p>На побережье Каспийского моря — песчаные пляжи и субтропический климат. В 150 километрах от берега — горные вершины выше 4000 метров. Между ними — каньоны глубже Гранд-Каньона, заброшенные аулы-призраки на недоступных скалах, средневековые крепости и бирюзовые реки.</p>
-      <p>Дербент — самый древний город России, которому более 5000 лет. Его цитадель Нарын-Кала внесена в список ЮНЕСКО. А бархан Сарыкум — крупнейшая песчаная дюна Евразии — находится прямо у подножия Кавказских гор, в нескольких километрах от Каспийского моря.</p>
-      <p>Дагестан не похож ни на что другое в России. Здесь тебя накормят до отвала, позовут в гости и покажут места которых нет ни в одном путеводителе. Это место, где ты точно не останешься равнодушным.</p>
-    </div>
-    <div class="stats-row reveal">
-      <div class="stat-item">
-        <div class="stat-num">60+</div>
-        <div class="stat-label">народов и языков</div>
+    <div class="about-layout">
+      <div class="about-left">
+        <div class="section-label reveal">О РЕГИОНЕ</div>
+        <h2 class="section-title reveal">Страна гор и народов</h2>
+        <div class="about-text reveal">
+          <p>Дагестан — самая многонациональная республика России. Здесь живут более 60 народов, говорящих на 14 официальных языках. Само название переводится с тюркского как «страна гор» — и это абсолютная правда: две трети территории занимают горы Большого Кавказа.</p>
+          <p>На побережье Каспийского моря — песчаные пляжи и субтропический климат. В 150 километрах от берега — горные вершины выше 4000 метров. Между ними — каньоны глубже Гранд-Каньона, заброшенные аулы-призраки на недоступных скалах, средневековые крепости и бирюзовые реки.</p>
+          <p>Дербент — самый древний город России, которому более 5000 лет. Его цитадель Нарын-Кала внесена в список ЮНЕСКО. А бархан Сарыкум — крупнейшая песчаная дюна Евразии — находится прямо у подножия Кавказских гор.</p>
+          <p>Дагестан не похож ни на что другое в России. Здесь тебя накормят до отвала, позовут в гости и покажут места которых нет ни в одном путеводителе.</p>
+        </div>
       </div>
-      <div class="stat-item">
-        <div class="stat-num">5 000</div>
-        <div class="stat-label">лет древнейшему городу</div>
+      <div class="about-stats reveal">
+        <div class="stat-item">
+          <div class="stat-num">60+</div>
+          <div class="stat-label">народов</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-num">5 000</div>
+          <div class="stat-label">лет Дербенту</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-num">1 920м</div>
+          <div class="stat-label">глубина каньона</div>
+        </div>
       </div>
-      <div class="stat-item">
-        <div class="stat-num">1 920 м</div>
-        <div class="stat-label">глубина Сулакского каньона</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- SEASONS -->
-<section class="section" style="padding-top:0;">
-  <div class="container">
-    <div class="section-label">СЕЗОНЫ</div>
-    <h2 class="section-title reveal">Когда ехать в Дагестан</h2>
-    <div class="seasons-grid reveal">
-      <div class="season-card">
-        <div class="season-icon">🌸</div>
-        <div class="season-period">Май — Июнь</div>
-        <div class="season-badge">ЛУЧШИЙ СЕЗОН</div>
-        <div class="season-title">Горы зелёные</div>
-        <div class="season-text">Жары нет, туристов мало. +20–25°C в горах, +28–30°C у моря. Все маршруты открыты. Идеально для пеших походов и фото.</div>
-      </div>
-      <div class="season-card">
-        <div class="season-icon">☀️</div>
-        <div class="season-period">Июль — Август</div>
-        <div class="season-badge">ПИК СЕЗОНА</div>
-        <div class="season-title">Жарко, но ярко</div>
-        <div class="season-text">Жарко у моря (+35–40°C), в горах комфортно (+22–28°C). Всё работает, но людей много. Бронируй жильё за 2–3 недели.</div>
-      </div>
-      <div class="season-card">
-        <div class="season-icon">🍂</div>
-        <div class="season-period">Сентябрь — Октябрь</div>
-        <div class="season-badge">ЗОЛОТАЯ ОСЕНЬ</div>
-        <div class="season-title">Красота и тишина</div>
-        <div class="season-text">Самые красивые пейзажи года. Тепло, туристов меньше, цены ниже. +15–25°C. Выбор фотографов и ценителей тишины.</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- HOW TO GET -->
-<section class="section" style="padding-top:0;">
-  <div class="container">
-    <div class="section-label">ЛОГИСТИКА</div>
-    <h2 class="section-title reveal">Как добраться</h2>
-    <p class="section-sub reveal">Главные ворота Дагестана — аэропорт Махачкалы (MCX). Прямые рейсы из большинства городов России.</p>
-    <div class="transport-grid reveal">
-      <div class="transport-card">
-        <div class="transport-icon">✈️</div>
-        <div class="transport-title">Из Москвы</div>
-        <div class="transport-detail">от 4 500 ₽ · 2.5 часа · Аэрофлот / Победа / S7</div>
-      </div>
-      <div class="transport-card">
-        <div class="transport-icon">✈️</div>
-        <div class="transport-title">Из Петербурга</div>
-        <div class="transport-detail">от 5 500 ₽ · 3 часа</div>
-      </div>
-      <div class="transport-card">
-        <div class="transport-icon">✈️</div>
-        <div class="transport-title">Из Екатеринбурга</div>
-        <div class="transport-detail">от 7 000 ₽ · 3.5 часа</div>
-      </div>
-      <div class="transport-card">
-        <div class="transport-icon">🚂</div>
-        <div class="transport-title">Поезд из Москвы</div>
-        <div class="transport-detail">от 3 000 ₽ · 30–36 часов</div>
-      </div>
-    </div>
-    <div class="lifehack reveal">
-      💡 Лайфхак: в аэропорту сразу договорись с местным водителем — 500–1000 ₽/день за трансфер по горам. Намного выгоднее такси и удобнее экскурсионных автобусов.
     </div>
   </div>
 </section>
 
 <!-- PLACES PREVIEW -->
-<section class="section" style="padding-top:0;">
+<section class="section" style="padding-top: 0;">
   <div class="container">
-    <div class="section-label">ДОСТОПРИМЕЧАТЕЛЬНОСТИ</div>
+    <div class="section-label reveal">МЕСТА</div>
     <h2 class="section-title reveal">Главные места</h2>
-    <p class="section-sub reveal">10 мест которые нужно увидеть</p>
     <div class="places-grid reveal">
       <div class="place-card">
-        <div class="place-header" style="background: linear-gradient(135deg, #1a3a4a, #2d6b7a);"></div>
-        <div class="place-body">
-          <div class="place-name">Сулакский каньон</div>
-          <div class="place-desc">Глубочайший каньон Европы, 1920м</div>
-        </div>
+        <img
+          src="https://source.unsplash.com/800x600/?canyon,turquoise,river,caucasus"
+          alt="Сулакский каньон"
+          loading="lazy"
+          onerror="this.src='https://source.unsplash.com/800x600/?mountain'"
+        >
+        <div class="place-card-label">Сулакский каньон</div>
       </div>
       <div class="place-card">
-        <div class="place-header" style="background: linear-gradient(135deg, #2d1f0a, #5c3d1a);"></div>
-        <div class="place-body">
-          <div class="place-name">Гамсутль</div>
-          <div class="place-desc">Аул-призрак на высоте 1500м</div>
-        </div>
+        <img
+          src="https://source.unsplash.com/800x600/?abandoned,village,mountain,ruins"
+          alt="Гамсутль"
+          loading="lazy"
+          onerror="this.src='https://source.unsplash.com/800x600/?mountain'"
+        >
+        <div class="place-card-label">Гамсутль</div>
       </div>
       <div class="place-card">
-        <div class="place-header" style="background: linear-gradient(135deg, #3d2800, #7a5200);"></div>
-        <div class="place-body">
-          <div class="place-name">Бархан Сарыкум</div>
-          <div class="place-desc">Крупнейшая дюна Евразии</div>
-        </div>
+        <img
+          src="https://source.unsplash.com/800x600/?sand,dune,desert,mountain"
+          alt="Бархан Сарыкум"
+          loading="lazy"
+          onerror="this.src='https://source.unsplash.com/800x600/?mountain'"
+        >
+        <div class="place-card-label">Бархан Сарыкум</div>
       </div>
       <div class="place-card">
-        <div class="place-header" style="background: linear-gradient(135deg, #1a1a3d, #2d2d6b);"></div>
-        <div class="place-body">
-          <div class="place-name">Дербент</div>
-          <div class="place-desc">Древнейший город России, 5000 лет</div>
-        </div>
+        <img
+          src="https://source.unsplash.com/800x600/?ancient,fortress,citadel"
+          alt="Дербент"
+          loading="lazy"
+          onerror="this.src='https://source.unsplash.com/800x600/?mountain'"
+        >
+        <div class="place-card-label">Дербент</div>
+      </div>
+      <div class="place-card">
+        <img
+          src="https://source.unsplash.com/800x600/?waterfall,cave,underground"
+          alt="Салтинский водопад"
+          loading="lazy"
+          onerror="this.src='https://source.unsplash.com/800x600/?mountain'"
+        >
+        <div class="place-card-label">Салтинский водопад</div>
+      </div>
+      <div class="place-card">
+        <img
+          src="https://source.unsplash.com/800x600/?mountain,plateau,caucasus"
+          alt="Гуниб"
+          loading="lazy"
+          onerror="this.src='https://source.unsplash.com/800x600/?mountain'"
+        >
+        <div class="place-card-label">Гуниб</div>
       </div>
     </div>
     <div class="text-center reveal">
-      <a href="places.html" class="btn">Все 10 мест →</a>
+      <a href="places.html" class="btn">Все места →</a>
     </div>
   </div>
 </section>
 
 <!-- FOOD PREVIEW -->
-<section class="section" style="padding-top:0;">
+<section class="section" style="padding-top: 0;">
   <div class="container">
-    <div class="section-label">КУХНЯ</div>
+    <div class="section-label reveal">КУХНЯ</div>
     <h2 class="section-title reveal">Что попробовать</h2>
-    <div class="food-grid reveal">
+  </div>
+  <div class="food-scroll-wrap reveal">
+    <div class="food-scroll">
       <div class="food-card">
-        <div class="food-icon">🍖</div>
-        <div class="food-name">Хинкал</div>
-        <div class="food-desc">Главное блюдо Дагестана</div>
-        <div class="food-price">~300–500 ₽</div>
+        <img
+          src="https://source.unsplash.com/400x400/?georgian,food,meat,dumpling"
+          alt="Хинкал"
+          loading="lazy"
+          onerror="this.src='https://source.unsplash.com/800x600/?mountain'"
+        >
+        <div class="food-card-body">
+          <div class="food-card-name">Хинкал</div>
+          <div class="food-card-desc">Главное блюдо Дагестана</div>
+        </div>
       </div>
       <div class="food-card">
-        <div class="food-icon">🫓</div>
-        <div class="food-name">Чуду</div>
-        <div class="food-desc">Тонкие лепёшки с начинкой</div>
-        <div class="food-price">~100–200 ₽</div>
+        <img
+          src="https://source.unsplash.com/400x400/?flatbread,caucasus,food"
+          alt="Чуду"
+          loading="lazy"
+          onerror="this.src='https://source.unsplash.com/800x600/?mountain'"
+        >
+        <div class="food-card-body">
+          <div class="food-card-name">Чуду</div>
+          <div class="food-card-desc">Лепёшки с начинкой</div>
+        </div>
       </div>
       <div class="food-card">
-        <div class="food-icon">🐟</div>
-        <div class="food-name">Форель из Сулака</div>
-        <div class="food-desc">Прямо у реки</div>
-        <div class="food-price">~600–900 ₽</div>
+        <img
+          src="https://source.unsplash.com/400x400/?dumplings,asian,food"
+          alt="Курзе"
+          loading="lazy"
+          onerror="this.src='https://source.unsplash.com/800x600/?mountain'"
+        >
+        <div class="food-card-body">
+          <div class="food-card-name">Курзе</div>
+          <div class="food-card-desc">Дагестанские пельмени</div>
+        </div>
+      </div>
+      <div class="food-card">
+        <img
+          src="https://source.unsplash.com/400x400/?lamb,shashlik,bbq,grill"
+          alt="Шашлык"
+          loading="lazy"
+          onerror="this.src='https://source.unsplash.com/800x600/?mountain'"
+        >
+        <div class="food-card-body">
+          <div class="food-card-name">Шашлык</div>
+          <div class="food-card-desc">Баранина без запаха</div>
+        </div>
+      </div>
+      <div class="food-card">
+        <img
+          src="https://source.unsplash.com/400x400/?trout,grilled,fish,river"
+          alt="Форель"
+          loading="lazy"
+          onerror="this.src='https://source.unsplash.com/800x600/?mountain'"
+        >
+        <div class="food-card-body">
+          <div class="food-card-name">Форель из Сулака</div>
+          <div class="food-card-desc">Прямо у реки</div>
+        </div>
       </div>
     </div>
-    <div class="text-center reveal">
+  </div>
+  <div class="container" style="margin-top: 24px;">
+    <div class="text-center">
       <a href="food.html" class="btn btn-outline">Вся кухня →</a>
     </div>
   </div>
 </section>
 
-<!-- TOUR BLOCK -->
-<section class="section" style="padding-top:0;">
-  <div class="container">
-    <div class="tour-block reveal">
-      <div class="tour-icon">🎒</div>
-      <h2 class="tour-title">Хочешь вместе изучить Дагестан?</h2>
-      <p class="tour-text">
-        Меня зовут Кирилл, я основатель «Как местный».<br><br>
-        Думаю собрать небольшую группу и отправиться в Страну гор вместе — с опытными местными гидами-горцами, которые знают каждую тропу и каждый аул.<br><br>
-        5 дней · Сулакский каньон · Гамсутль · Дербент · горные сёла · бирюзовая река · форель на углях<br><br>
-        Стоимость ~70 000 ₽ с человека (без перелёта). Включено всё: трансфер по Дагестану, проживание, полное питание, море свежих фруктов и опытный местный гид.<br><br>
-        Сейчас проверяю спрос — если наберётся группа, поедем летом или осенью 2026. Никаких обязательств и предоплаты. Просто оставь заявку — я напишу лично когда будут даты.
-      </p>
-      <div class="tour-btns">
-        <a href="https://t.me/like_a_local_bot" class="tour-btn" target="_blank" rel="noopener">Июнь — Июль</a>
-        <a href="https://t.me/like_a_local_bot" class="tour-btn" target="_blank" rel="noopener">Август — Сентябрь</a>
-        <a href="https://t.me/like_a_local_bot" class="tour-btn" target="_blank" rel="noopener">Удобно любое время</a>
-      </div>
-      <div class="tour-author">Кирилл Андреев · основатель «Как местный»</div>
-    </div>
+<!-- TOUR CTA -->
+<section class="tour-section">
+  <div class="tour-inner reveal">
+    <div class="tour-icon">🎒</div>
+    <h2 class="tour-title">Хочешь вместе изучить Дагестан?</h2>
+    <p class="tour-text">
+      Меня зовут Кирилл, я основатель «Как местный».
+    </p>
+    <p class="tour-text">
+      Думаю собрать небольшую группу и отправиться в Страну гор вместе — с опытными местными гидами-горцами, которые знают каждую тропу и каждый аул.
+    </p>
+    <p class="tour-program">
+      5 дней · Сулакский каньон · Гамсутль · Дербент · горные сёла · бирюзовая река · форель на углях
+    </p>
+    <p class="tour-price">
+      Стоимость ~70 000 ₽ с человека (без перелёта).<br>
+      Включено всё: трансфер, проживание, полное питание, море фруктов, гид.
+    </p>
+    <p class="tour-disclaimer">
+      Сейчас проверяю спрос — если наберётся группа, поедем летом или осенью 2026.
+      Никаких обязательств и предоплаты. Просто оставь заявку — я напишу лично когда будут даты.
+    </p>
+    <a href="https://t.me/like_a_local_bot" class="btn-tour" target="_blank" rel="noopener">Хочу в тур →</a>
+    <div class="tour-author">Кирилл Андреев · основатель «Как местный»</div>
   </div>
 </section>
 
@@ -525,8 +527,7 @@
 
 <script>
   function toggleMobile() {
-    const m = document.getElementById('mobileMenu');
-    m.classList.toggle('open');
+    document.getElementById('mobileMenu').classList.toggle('open');
   }
   document.addEventListener('click', function(e) {
     const menu = document.getElementById('mobileMenu');
@@ -537,9 +538,23 @@
   });
 
   const observer = new IntersectionObserver((entries) => {
-    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
+    entries.forEach((entry, i) => {
+      if (entry.isIntersecting) {
+        setTimeout(() => {
+          entry.target.style.opacity = '1';
+          entry.target.style.transform = 'translateY(0)';
+        }, i * 80);
+        observer.unobserve(entry.target);
+      }
+    });
   }, { threshold: 0.1 });
-  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  document.querySelectorAll('.reveal').forEach(el => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(30px)';
+    el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+    observer.observe(el);
+  });
 </script>
 </body>
 </html>
