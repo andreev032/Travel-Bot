@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Советы по Дагестану | Как местный</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #080808; --card: #111111; --border: #222;
+    --accent: #C4622D; --gold: #8B7355; --text: #F0EDE8;
+    --text-muted: #999; --max-w: 1100px;
+  }
+  html { scroll-behavior: smooth; }
+  body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; font-size: 16px; line-height: 1.7; -webkit-font-smoothing: antialiased; }
+
+  .site-nav { position: sticky; top: 0; z-index: 100; display: flex; align-items: center; gap: 24px; padding: 0 24px; height: 60px; background: rgba(8,8,8,0.95); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
+  .nav-logo { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 600; color: var(--text); text-decoration: none; white-space: nowrap; }
+  .nav-links { display: flex; gap: 0; margin-left: auto; }
+  .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 14px; padding: 8px 14px; transition: color 0.2s; }
+  .nav-links a:hover, .nav-links a.active { color: var(--accent); }
+  .nav-btn { display: inline-block; padding: 8px 18px; background: var(--accent); color: #fff; text-decoration: none; font-size: 13px; font-weight: 500; border-radius: 4px; transition: background 0.2s; white-space: nowrap; }
+  .nav-btn:hover { background: #a84f23; }
+  .nav-burger { display: none; background: none; border: none; color: var(--text); font-size: 20px; cursor: pointer; padding: 8px; }
+  .mobile-menu { display: none; position: fixed; top: 60px; left: 0; right: 0; background: rgba(8,8,8,0.98); border-bottom: 1px solid var(--border); flex-direction: column; z-index: 99; padding: 16px 24px; }
+  .mobile-menu.open { display: flex; }
+  .mobile-menu a { color: var(--text-muted); text-decoration: none; padding: 12px 0; font-size: 15px; border-bottom: 1px solid var(--border); transition: color 0.2s; }
+  .mobile-menu a:last-child { border-bottom: none; }
+  .mobile-menu a.active, .mobile-menu a:hover { color: var(--accent); }
+
+  .page-hero { padding: 80px 24px 60px; text-align: center; border-bottom: 1px solid var(--border); }
+  .section-label { font-size: 11px; letter-spacing: 4px; color: var(--accent); text-transform: uppercase; font-weight: 500; margin-bottom: 16px; }
+  .page-title { font-family: 'Cormorant Garamond', serif; font-size: clamp(36px, 6vw, 64px); font-weight: 600; margin-bottom: 16px; }
+  .page-sub { font-size: 16px; color: var(--text-muted); max-width: 560px; margin: 0 auto; }
+
+  .section { padding: 80px 24px; }
+  .section-title { font-family: 'Cormorant Garamond', serif; font-size: clamp(28px, 4vw, 42px); font-weight: 600; margin-bottom: 32px; }
+  .container { max-width: var(--max-w); margin: 0 auto; }
+
+  /* TRADITIONS BLOCK */
+  .traditions-block {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 4px; padding: 40px; margin-bottom: 60px;
+  }
+  .traditions-intro {
+    font-size: 15px; color: rgba(240,237,232,0.85); line-height: 1.8;
+    margin-bottom: 32px; border-bottom: 1px solid var(--border); padding-bottom: 32px;
+  }
+  .traditions-group { margin-bottom: 28px; }
+  .traditions-group:last-child { margin-bottom: 0; }
+  .traditions-group-title {
+    font-size: 12px; letter-spacing: 3px; color: var(--accent);
+    font-weight: 600; text-transform: uppercase; margin-bottom: 14px;
+  }
+  .traditions-list { list-style: none; }
+  .traditions-list li {
+    font-size: 14px; color: rgba(240,237,232,0.8);
+    padding: 6px 0; padding-left: 20px; position: relative; line-height: 1.6;
+  }
+  .traditions-list li::before {
+    content: '•'; position: absolute; left: 0; color: var(--accent);
+  }
+
+  /* LIFEHACKS GRID */
+  .tips-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+  .tip-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 4px;
+    padding: 24px; transition: border-color 0.2s;
+  }
+  .tip-card:hover { border-color: var(--accent); }
+  .tip-icon { font-size: 24px; margin-bottom: 12px; }
+  .tip-title { font-size: 15px; font-weight: 600; margin-bottom: 8px; color: var(--text); }
+  .tip-text { font-size: 14px; color: rgba(240,237,232,0.72); line-height: 1.65; }
+
+  .reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.6s ease, transform 0.6s ease; }
+  .reveal.visible { opacity: 1; transform: none; }
+
+  footer { border-top: 1px solid var(--border); padding: 48px 24px; text-align: center; }
+  .footer-logo { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 600; margin-bottom: 16px; }
+  .footer-links { margin-bottom: 16px; }
+  .footer-links a { color: var(--text-muted); text-decoration: none; font-size: 13px; margin: 0 10px; transition: color 0.2s; }
+  .footer-links a:hover { color: var(--accent); }
+  .footer-copy { font-size: 12px; color: var(--text-muted); }
+
+  @media (max-width: 768px) {
+    .nav-links, .nav-btn { display: none; }
+    .nav-burger { display: block; }
+    .nav-logo { margin-right: auto; }
+    .tips-grid { grid-template-columns: 1fr; }
+    .traditions-block { padding: 24px; }
+    .section { padding: 60px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="site-nav">
+  <a href="index.html" class="nav-logo">🎒 Как местный</a>
+  <div class="nav-links">
+    <a href="index.html">О регионе</a>
+    <a href="places.html">Места</a>
+    <a href="food.html">Кухня</a>
+    <a href="tips.html" class="active">Советы</a>
+    <a href="tour.html">Тур с Кириллом</a>
+  </div>
+  <a href="https://t.me/like_a_local_bot" class="nav-btn" target="_blank" rel="noopener">Открыть бота</a>
+  <button class="nav-burger" aria-label="Меню" onclick="toggleMobile()">☰</button>
+</nav>
+<div class="mobile-menu" id="mobileMenu">
+  <a href="index.html">О регионе</a>
+  <a href="places.html">Места</a>
+  <a href="food.html">Кухня</a>
+  <a href="tips.html" class="active">Советы</a>
+  <a href="tour.html">Тур с Кириллом</a>
+  <a href="https://t.me/like_a_local_bot" target="_blank" rel="noopener">Открыть бота →</a>
+</div>
+
+<div class="page-hero">
+  <div class="section-label">СОВЕТЫ</div>
+  <h1 class="page-title">Знает местный</h1>
+  <p class="page-sub">То чего нет в обычных путеводителях</p>
+</div>
+
+<section class="section">
+  <div class="container">
+
+    <div class="section-label">ТРАДИЦИИ И УВАЖЕНИЕ</div>
+    <h2 class="section-title reveal">Культура и уважение</h2>
+    <div class="traditions-block reveal">
+      <p class="traditions-intro">
+        Дагестан — мусульманский регион с сильными традициями. Местные жители очень гостеприимны, но ожидают взаимного уважения. Это не рекомендации — это уважение к культуре людей которые тебя принимают.
+      </p>
+
+      <div class="traditions-group">
+        <div class="traditions-group-title">ЖЕНЩИНАМ</div>
+        <ul class="traditions-list">
+          <li>Плечи и декольте закрыты <strong>ВСЕГДА</strong> — не только в мечети, но и в сёлах и горных аулах</li>
+          <li>Короткие юбки, шорты, открытые топы неуместны вне пляжа</li>
+          <li>В мечеть — обязательно платок и одежда до щиколоток</li>
+          <li>Купальник — только на пляже, не на улице города и не в сёлах</li>
+        </ul>
+      </div>
+
+      <div class="traditions-group">
+        <div class="traditions-group-title">МУЖЧИНАМ</div>
+        <ul class="traditions-list">
+          <li>Шорты только ниже колен, в сёлах лучше брюки</li>
+          <li>В мечеть — длинные брюки, плечи закрыты</li>
+          <li>Майки-безрукавки в населённых пунктах — неуважение</li>
+        </ul>
+      </div>
+
+      <div class="traditions-group">
+        <div class="traditions-group-title">ВСЕМ</div>
+        <ul class="traditions-list">
+          <li>Не фотографируй людей без разрешения — особенно женщин</li>
+          <li>Не входи в мечеть во время намаза если не мусульманин</li>
+          <li>Алкоголь в общественных местах — табу</li>
+          <li>Громкая музыка и шумное поведение в сёлах — неуважение к местным</li>
+          <li>Если пригласили домой — не отказывай. Это большая честь.</li>
+          <li>Всегда принимай угощение — отказ обижает хозяина</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="section-label">ПРАКТИЧЕСКИЕ СОВЕТЫ</div>
+    <h2 class="section-title reveal">8 лайфхаков от местных</h2>
+    <div class="tips-grid">
+      <div class="tip-card reveal">
+        <div class="tip-icon">💵</div>
+        <div class="tip-title">Наличные обязательны</div>
+        <div class="tip-text">В горных сёлах нет банкоматов и терминалов. Снимай деньги в Махачкале или Дербенте перед поездкой в горы.</div>
+      </div>
+      <div class="tip-card reveal">
+        <div class="tip-icon">🌅</div>
+        <div class="tip-title">Едь рано утром</div>
+        <div class="tip-text">Лучшие виды на Сулакский каньон до 9 утра. Потом появляется дымка и туристы. Рассвет над горами — это отдельное впечатление.</div>
+      </div>
+      <div class="tip-card reveal">
+        <div class="tip-icon">🚗</div>
+        <div class="tip-title">Местный водитель</div>
+        <div class="tip-text">Договорись в аэропорту за 500–1000 ₽/день. Он знает дороги, объездные пути, где поесть по-настоящему и куда не стоит ехать.</div>
+      </div>
+      <div class="tip-card reveal">
+        <div class="tip-icon">📱</div>
+        <div class="tip-title">Интернет в горах</div>
+        <div class="tip-text">МТС и Билайн работают лучше других. В глубоких ущельях сигнала нет совсем. Скачай карты офлайн заранее — Maps.me или Google Maps.</div>
+      </div>
+      <div class="tip-card reveal">
+        <div class="tip-icon">👟</div>
+        <div class="tip-title">Обувь важна</div>
+        <div class="tip-text">К водопадам и в горные аулы нужна закрытая обувь с нескользящей подошвой. Часть пути идёт по мокрым камням и грунту.</div>
+      </div>
+      <div class="tip-card reveal">
+        <div class="tip-icon">🌡️</div>
+        <div class="tip-title">Погода меняется быстро</div>
+        <div class="tip-text">В горах даже в июле вечером может быть +10°C. Возьми лёгкую куртку и дождевик даже если прогноз хороший.</div>
+      </div>
+      <div class="tip-card reveal">
+        <div class="tip-icon">🏖</div>
+        <div class="tip-title">Пляж</div>
+        <div class="tip-text">Центральный пляж Махачкалы не подходит для купания. Лучшие варианты: пляжи Каспийска, Избербаша и прибрежных сёл.</div>
+      </div>
+      <div class="tip-card reveal">
+        <div class="tip-icon">📸</div>
+        <div class="tip-title">Дроны</div>
+        <div class="tip-text">В горах снимают свободно. Вблизи пограничных зон (Кезеной-Ам) могут быть ограничения. В городах спрашивай разрешение.</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-logo">🎒 Как местный</div>
+    <p style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">Путеводители для настоящих путешественников</p>
+    <div class="footer-links">
+      <a href="index.html">О регионе</a>
+      <a href="places.html">Места</a>
+      <a href="food.html">Кухня</a>
+      <a href="tips.html">Советы</a>
+      <a href="tour.html">Тур с Кириллом</a>
+    </div>
+    <div class="footer-copy">© 2026 · <a href="https://t.me/like_a_local_bot" style="color:var(--text-muted); text-decoration:none;" target="_blank" rel="noopener">@like_a_local_bot</a></div>
+  </div>
+</footer>
+
+<script>
+  function toggleMobile() {
+    document.getElementById('mobileMenu').classList.toggle('open');
+  }
+  document.addEventListener('click', function(e) {
+    const menu = document.getElementById('mobileMenu');
+    const burger = document.querySelector('.nav-burger');
+    if (!menu.contains(e.target) && !burger.contains(e.target)) menu.classList.remove('open');
+  });
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>

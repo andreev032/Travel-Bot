@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>10 мест Дагестана | Как местный</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #080808; --card: #111111; --border: #222;
+    --accent: #C4622D; --gold: #8B7355; --text: #F0EDE8;
+    --text-muted: #999; --max-w: 1100px;
+  }
+  html { scroll-behavior: smooth; }
+  body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; font-size: 16px; line-height: 1.7; -webkit-font-smoothing: antialiased; }
+
+  .site-nav {
+    position: sticky; top: 0; z-index: 100;
+    display: flex; align-items: center; gap: 24px;
+    padding: 0 24px; height: 60px;
+    background: rgba(8,8,8,0.95); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-logo { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 600; color: var(--text); text-decoration: none; white-space: nowrap; }
+  .nav-links { display: flex; gap: 0; margin-left: auto; }
+  .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 14px; padding: 8px 14px; transition: color 0.2s; }
+  .nav-links a:hover, .nav-links a.active { color: var(--accent); }
+  .nav-btn { display: inline-block; padding: 8px 18px; background: var(--accent); color: #fff; text-decoration: none; font-size: 13px; font-weight: 500; border-radius: 4px; transition: background 0.2s; white-space: nowrap; }
+  .nav-btn:hover { background: #a84f23; }
+  .nav-burger { display: none; background: none; border: none; color: var(--text); font-size: 20px; cursor: pointer; padding: 8px; }
+  .mobile-menu { display: none; position: fixed; top: 60px; left: 0; right: 0; background: rgba(8,8,8,0.98); border-bottom: 1px solid var(--border); flex-direction: column; z-index: 99; padding: 16px 24px; }
+  .mobile-menu.open { display: flex; }
+  .mobile-menu a { color: var(--text-muted); text-decoration: none; padding: 12px 0; font-size: 15px; border-bottom: 1px solid var(--border); transition: color 0.2s; }
+  .mobile-menu a:last-child { border-bottom: none; }
+  .mobile-menu a.active, .mobile-menu a:hover { color: var(--accent); }
+
+  .page-hero { padding: 80px 24px 60px; text-align: center; border-bottom: 1px solid var(--border); }
+  .section-label { font-size: 11px; letter-spacing: 4px; color: var(--accent); text-transform: uppercase; font-weight: 500; margin-bottom: 16px; }
+  .page-title { font-family: 'Cormorant Garamond', serif; font-size: clamp(36px, 6vw, 64px); font-weight: 600; margin-bottom: 16px; }
+  .page-sub { font-size: 16px; color: var(--text-muted); max-width: 560px; margin: 0 auto; }
+
+  .section { padding: 80px 24px; }
+  .container { max-width: var(--max-w); margin: 0 auto; }
+
+  .places-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
+  .place-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 4px;
+    overflow: hidden; transition: border-color 0.2s;
+  }
+  .place-card:hover { border-color: var(--accent); }
+  .place-num {
+    position: absolute; top: 16px; left: 16px;
+    font-family: 'Cormorant Garamond', serif; font-size: 13px;
+    color: rgba(255,255,255,0.6); font-weight: 600; letter-spacing: 1px;
+  }
+  .place-header { height: 240px; position: relative; }
+  .place-body { padding: 24px; }
+  .place-name { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 600; margin-bottom: 12px; }
+  .place-desc { font-size: 14px; color: rgba(240,237,232,0.75); line-height: 1.7; margin-bottom: 20px; }
+  .map-btn {
+    display: inline-block; padding: 9px 18px;
+    border: 1px solid var(--border); color: var(--text-muted);
+    text-decoration: none; font-size: 13px; border-radius: 4px;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .map-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.6s ease, transform 0.6s ease; }
+  .reveal.visible { opacity: 1; transform: none; }
+
+  footer { border-top: 1px solid var(--border); padding: 48px 24px; text-align: center; }
+  .footer-logo { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 600; margin-bottom: 16px; }
+  .footer-links { margin-bottom: 16px; }
+  .footer-links a { color: var(--text-muted); text-decoration: none; font-size: 13px; margin: 0 10px; transition: color 0.2s; }
+  .footer-links a:hover { color: var(--accent); }
+  .footer-copy { font-size: 12px; color: var(--text-muted); }
+
+  @media (max-width: 768px) {
+    .nav-links, .nav-btn { display: none; }
+    .nav-burger { display: block; }
+    .nav-logo { margin-right: auto; }
+    .places-grid { grid-template-columns: 1fr; }
+    .section { padding: 60px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="site-nav">
+  <a href="index.html" class="nav-logo">🎒 Как местный</a>
+  <div class="nav-links">
+    <a href="index.html">О регионе</a>
+    <a href="places.html" class="active">Места</a>
+    <a href="food.html">Кухня</a>
+    <a href="tips.html">Советы</a>
+    <a href="tour.html">Тур с Кириллом</a>
+  </div>
+  <a href="https://t.me/like_a_local_bot" class="nav-btn" target="_blank" rel="noopener">Открыть бота</a>
+  <button class="nav-burger" aria-label="Меню" onclick="toggleMobile()">☰</button>
+</nav>
+<div class="mobile-menu" id="mobileMenu">
+  <a href="index.html">О регионе</a>
+  <a href="places.html" class="active">Места</a>
+  <a href="food.html">Кухня</a>
+  <a href="tips.html">Советы</a>
+  <a href="tour.html">Тур с Кириллом</a>
+  <a href="https://t.me/like_a_local_bot" target="_blank" rel="noopener">Открыть бота →</a>
+</div>
+
+<div class="page-hero">
+  <div class="section-label">ДОСТОПРИМЕЧАТЕЛЬНОСТИ</div>
+  <h1 class="page-title">10 мест которые нужно увидеть</h1>
+  <p class="page-sub">От глубочайшего каньона Европы до древнейшего города России</p>
+</div>
+
+<section class="section">
+  <div class="container">
+    <div class="places-grid">
+
+      <div class="place-card reveal">
+        <div class="place-header" style="background: linear-gradient(135deg, #1a3a4a, #2d6b7a);">
+          <div class="place-num">01</div>
+        </div>
+        <div class="place-body">
+          <div class="place-name">Сулакский каньон</div>
+          <div class="place-desc">Глубочайший каньон Европы — 1 920 метров. Глубже Гранд-Каньона на 63 метра. Длина 53 км. Бирюзовая вода реки из-за известняковых примесей. С верхней смотровой парят орлы. Можно спуститься на катере и поесть форель прямо у воды. 100 км от Махачкалы.</div>
+          <a href="https://www.google.com/maps/search/Сулакский+каньон+Дагестан/@43.009444,46.827778,12z" class="map-btn" target="_blank" rel="noopener">📍 Смотреть на карте</a>
+        </div>
+      </div>
+
+      <div class="place-card reveal">
+        <div class="place-header" style="background: linear-gradient(135deg, #2d1f0a, #5c3d1a);">
+          <div class="place-num">02</div>
+        </div>
+        <div class="place-body">
+          <div class="place-name">Гамсутль</div>
+          <div class="place-desc">«Дагестанский Мачу-Пикчу» на высоте 1 500 метров. Последний житель умер в 2015 году. Каменные дома, мечеть, кладбище застыли во времени. Пешком 40 минут по горной тропе от аула Чох. Никогда не был взят завоевателями — слишком неприступное место.</div>
+          <a href="https://www.google.com/maps/search/Гамсутль+аул+Дагестан/@42.388,46.968,14z" class="map-btn" target="_blank" rel="noopener">📍 Смотреть на карте</a>
+        </div>
+      </div>
+
+      <div class="place-card reveal">
+        <div class="place-header" style="background: linear-gradient(135deg, #3d2800, #7a5200);">
+          <div class="place-num">03</div>
+        </div>
+        <div class="place-body">
+          <div class="place-name">Бархан Сарыкум</div>
+          <div class="place-desc">Крупнейшая песчаная дюна Евразии — высота до 262 метров. Пустыня у подножия Кавказских гор в нескольких километрах от Каспия. Здесь снимали «Белое солнце пустыни». Деревянный настил и смотровые площадки. Лучшие фото — рано утром.</div>
+          <a href="https://www.google.com/maps/search/бархан+Сарыкум+Дагестан/@43.027,47.347,13z" class="map-btn" target="_blank" rel="noopener">📍 Смотреть на карте</a>
+        </div>
+      </div>
+
+      <div class="place-card reveal">
+        <div class="place-header" style="background: linear-gradient(135deg, #1a1a3d, #2d2d6b);">
+          <div class="place-num">04</div>
+        </div>
+        <div class="place-body">
+          <div class="place-name">Дербент — Нарын-Кала</div>
+          <div class="place-desc">Самый древний город России — более 5 000 лет. Цитадель в списке ЮНЕСКО. Джума-мечеть 734 года — древнейшая в России. Старый город (7-й магал) — узкие улочки, каменные дворики, арабские надписи. Вход в цитадель 500 ₽.</div>
+          <a href="https://www.google.com/maps/search/Нарын-Кала+Дербент/@42.059,48.286,15z" class="map-btn" target="_blank" rel="noopener">📍 Смотреть на карте</a>
+        </div>
+      </div>
+
+      <div class="place-card reveal">
+        <div class="place-header" style="background: linear-gradient(135deg, #0a2d1a, #1a5c3d);">
+          <div class="place-num">05</div>
+        </div>
+        <div class="place-body">
+          <div class="place-name">Салтинский водопад</div>
+          <div class="place-desc">Единственный подземный водопад России — падает с 20 метров сквозь скальное отверстие внутрь пещеры. Летом здесь прохладно и влажно. 150 км от Махачкалы через Гимринский тоннель (4.3 км — самый длинный горный тоннель России). К водопаду 20 минут пешком вдоль реки.</div>
+          <a href="https://www.google.com/maps/search/Салтинский+водопад+Дагестан/@42.347,47.083,14z" class="map-btn" target="_blank" rel="noopener">📍 Смотреть на карте</a>
+        </div>
+      </div>
+
+      <div class="place-card reveal">
+        <div class="place-header" style="background: linear-gradient(135deg, #1a2d0a, #3d5c1a);">
+          <div class="place-num">06</div>
+        </div>
+        <div class="place-body">
+          <div class="place-name">Гуниб</div>
+          <div class="place-desc">Плато с 300 солнечными днями в году. Здесь в 1859 году завершилась Кавказская война — имам Шамиль сдался русским войскам. Виды на горы — одни из лучших в Дагестане. В 10 минутах езды — Гамсутль и красивейший аул Чох.</div>
+          <a href="https://www.google.com/maps/search/Гуниб+Дагестан/@42.388,46.968,13z" class="map-btn" target="_blank" rel="noopener">📍 Смотреть на карте</a>
+        </div>
+      </div>
+
+      <div class="place-card reveal">
+        <div class="place-header" style="background: linear-gradient(135deg, #1a0a2d, #3d1a5c);">
+          <div class="place-num">07</div>
+        </div>
+        <div class="place-body">
+          <div class="place-name">Водопад Тобот, Хунзах</div>
+          <div class="place-desc">Хунзахское плато обрывается 100-метровыми скалами. С края плато падает водопад Тобот. Рядом — Матласская каменная чаша, природный амфитеатр из скал. Одно из самых фотогеничных мест Дагестана.</div>
+          <a href="https://www.google.com/maps/search/водопад+Тобот+Хунзах+Дагестан/@42.554,46.741,13z" class="map-btn" target="_blank" rel="noopener">📍 Смотреть на карте</a>
+        </div>
+      </div>
+
+      <div class="place-card reveal">
+        <div class="place-header" style="background: linear-gradient(135deg, #1a1a1a, #2d3d4a);">
+          <div class="place-num">08</div>
+        </div>
+        <div class="place-body">
+          <div class="place-name">Экраноплан «Лунь»</div>
+          <div class="place-desc">Советский ракетоносец длиной 74 метра — единственный сохранившийся в мире. Стоит на берегу Каспия в Дербенте. Построен в 1980-е для уничтожения авианосцев НАТО. Выглядит как гигантский самолёт-корабль на пляже. Вход бесплатный.</div>
+          <a href="https://www.google.com/maps/search/экраноплан+Лунь+Дербент/@42.074,48.302,14z" class="map-btn" target="_blank" rel="noopener">📍 Смотреть на карте</a>
+        </div>
+      </div>
+
+      <div class="place-card reveal">
+        <div class="place-header" style="background: linear-gradient(135deg, #0a1a2d, #1a3d5c);">
+          <div class="place-num">09</div>
+        </div>
+        <div class="place-body">
+          <div class="place-name">Озеро Кезеной-Ам</div>
+          <div class="place-desc">«Кавказская Швейцария» на высоте 1 869 метров. Бирюзовая вода в окружении заснеженных вершин. Одновременно на территории Дагестана и Чечни. 191 км от Махачкалы. Лучшее время: июнь–сентябрь.</div>
+          <a href="https://www.google.com/maps/search/Кезеной-Ам/@42.687,46.241,12z" class="map-btn" target="_blank" rel="noopener">📍 Смотреть на карте</a>
+        </div>
+      </div>
+
+      <div class="place-card reveal">
+        <div class="place-header" style="background: linear-gradient(135deg, #2d1a0a, #5c3d1a);">
+          <div class="place-num">10</div>
+        </div>
+        <div class="place-body">
+          <div class="place-name">Старый Дербент — 7-й магал</div>
+          <div class="place-desc">Лабиринт улочек между цитаделью и морем. Дворы, мечети, виноградные лозы, коты на старых стенах. Улица 7-й магал — главная артерия Старого города. Дербентский коньяк (завод с 1898 года), кубачинское серебро, табасаранские ковры.</div>
+          <a href="https://www.google.com/maps/search/7+магал+Дербент/@42.063,48.290,16z" class="map-btn" target="_blank" rel="noopener">📍 Смотреть на карте</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-logo">🎒 Как местный</div>
+    <p style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">Путеводители для настоящих путешественников</p>
+    <div class="footer-links">
+      <a href="index.html">О регионе</a>
+      <a href="places.html">Места</a>
+      <a href="food.html">Кухня</a>
+      <a href="tips.html">Советы</a>
+      <a href="tour.html">Тур с Кириллом</a>
+    </div>
+    <div class="footer-copy">© 2026 · <a href="https://t.me/like_a_local_bot" style="color:var(--text-muted); text-decoration:none;" target="_blank" rel="noopener">@like_a_local_bot</a></div>
+  </div>
+</footer>
+
+<script>
+  function toggleMobile() {
+    document.getElementById('mobileMenu').classList.toggle('open');
+  }
+  document.addEventListener('click', function(e) {
+    const menu = document.getElementById('mobileMenu');
+    const burger = document.querySelector('.nav-burger');
+    if (!menu.contains(e.target) && !burger.contains(e.target)) menu.classList.remove('open');
+  });
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
