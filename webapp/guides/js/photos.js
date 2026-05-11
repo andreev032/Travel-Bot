@@ -1,79 +1,78 @@
 /**
- * Like a Local — Photo Loader
- * Автоматически загружает фото из Unsplash по ключевым словам.
- * Используется во всех путеводителях.
- *
- * Использование:
- * <div class="photo-card" data-photo="dagestan,sulak,canyon" data-alt="Сулакский каньон"></div>
- *
- * Или для фоновых изображений:
- * <div class="hero" data-photo-bg="dagestan,mountains"></div>
+ * Like a Local — Photo Loader v2
+ * Официальный Unsplash API — фото по ключевым словам.
  */
 
 const PhotoLoader = {
 
-  // Базовый URL Unsplash (без API ключа, для статичных сайтов)
-  baseUrl: 'https://source.unsplash.com/featured',
+  accessKey: 'LH6QxsT5fjQWGYWOM4OroLi8FicJsEv-wTHXAksJM_c',
 
-  // Кэш загруженных фото чтобы не дублировать запросы
   cache: {},
 
-  /**
-   * Генерирует URL фото по ключевым словам
-   * @param {string} keywords - через запятую, напр. "dagestan,canyon,sulak"
-   * @param {number} width - ширина
-   * @param {number} height - высота
-   * @param {number} seed - уникальное число чтобы разные карточки получили разные фото
-   */
-  url(keywords, width = 800, height = 500, seed = 0) {
-    // Добавляем seed чтобы разные карточки с похожими тегами получили разные фото
-    const cacheBust = seed > 0 ? `&sig=${seed}` : '';
-    return `${this.baseUrl}/${width}x${height}/?${encodeURIComponent(keywords)}${cacheBust}`;
+  async fetchPhoto(keywords, w, h, index) {
+    const cacheKey = keywords + index;
+    if (this.cache[cacheKey]) return this.cache[cacheKey];
+
+    const query = encodeURIComponent(keywords);
+    const page = (index % 10) + 1;
+    const url = `https://api.unsplash.com/photos/random?query=${query}&orientation=landscape&client_id=${this.accessKey}`;
+
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('API error');
+      const data = await res.json();
+      const imgUrl = data.urls.regular;
+      this.cache[cacheKey] = imgUrl;
+      return imgUrl;
+    } catch (e) {
+      return null;
+    }
   },
 
-  /**
-   * Инициализация — находит все элементы с data-photo и data-photo-bg
-   * и подставляет фото автоматически
-   */
-  init() {
-    // Карточки с тегом <img> внутри или сам img
-    document.querySelectorAll('[data-photo]').forEach((el, index) => {
-      const keywords = el.getAttribute('data-photo');
-      const alt = el.getAttribute('data-alt') || keywords;
-      const width = parseInt(el.getAttribute('data-photo-w') || '800');
-      const height = parseInt(el.getAttribute('data-photo-h') || '500');
+  async init() {
+    const photoEls = document.querySelectorAll('[data-photo]');
+    const bgEls = document.querySelectorAll('[data-photo-bg]');
 
-      const img = document.createElement('img');
-      img.src = this.url(keywords, width, height, index + 1);
-      img.alt = alt;
-      img.loading = 'lazy';
-      img.onerror = function() {
-        this.onerror = null;
-        this.style.background = '#f0ece8';
-        this.style.display = 'block';
-        this.removeAttribute('src');
-      };
+    await Promise.all([
+      ...Array.from(photoEls).map(async (el, i) => {
+        const keywords = el.getAttribute('data-photo');
+        const alt = el.getAttribute('data-alt') || keywords;
+        const w = parseInt(el.getAttribute('data-photo-w') || '800');
+        const h = parseInt(el.getAttribute('data-photo-h') || '500');
 
-      // Применяем класс из атрибута или дефолтный
-      const imgClass = el.getAttribute('data-photo-class') || 'auto-photo';
-      img.className = imgClass;
+        const imgUrl = await this.fetchPhoto(keywords, w, h, i);
 
-      el.prepend(img);
-    });
+        const img = document.createElement('img');
+        img.alt = alt;
+        img.loading = 'lazy';
+        img.className = 'auto-photo';
 
-    // Фоновые изображения для hero-секций
-    document.querySelectorAll('[data-photo-bg]').forEach((el, index) => {
-      const keywords = el.getAttribute('data-photo-bg');
-      const width = parseInt(el.getAttribute('data-photo-w') || '1600');
-      const height = parseInt(el.getAttribute('data-photo-h') || '900');
-      const imgUrl = this.url(keywords, width, height, index + 100);
+        if (imgUrl) {
+          img.src = imgUrl;
+        } else {
+          img.style.background = '#f0ece8';
+        }
 
-      el.style.backgroundImage = `url('${imgUrl}')`;
-      el.style.backgroundSize = 'cover';
-      el.style.backgroundPosition = 'center';
-    });
+        img.onerror = function() {
+          this.onerror = null;
+          this.style.background = '#f0ece8';
+          this.removeAttribute('src');
+        };
+
+        el.prepend(img);
+      }),
+
+      ...Array.from(bgEls).map(async (el, i) => {
+        const keywords = el.getAttribute('data-photo-bg');
+        const imgUrl = await this.fetchPhoto(keywords, 1600, 900, i + 100);
+        if (imgUrl) {
+          el.style.backgroundImage = `url('${imgUrl}')`;
+          el.style.backgroundSize = 'cover';
+          el.style.backgroundPosition = 'center';
+        }
+      })
+    ]);
   }
 };
 
-// Автозапуск после загрузки DOM
 document.addEventListener('DOMContentLoaded', () => PhotoLoader.init());
