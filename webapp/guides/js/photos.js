@@ -2,7 +2,7 @@ const PhotoLoader = {
 
   accessKey: 'LH6QxsT5fjQWGYWOM4OroLi8FicJsEv-wTHXAksJM_c',
   cachePrefix: 'lal_photo_',
-  cacheTTL: 7 * 24 * 60 * 60 * 1000, // 7 дней
+  cacheTTL: 100 * 365 * 24 * 60 * 60 * 1000, // 100 лет
 
   getCached(key) {
     try {
