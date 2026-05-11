@@ -124,7 +124,27 @@ async def init_db(app) -> None:
                     created_at  TIMESTAMP DEFAULT NOW()
                 )
             """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS waters (
+                    id         SERIAL PRIMARY KEY,
+                    name       TEXT NOT NULL,
+                    type       TEXT NOT NULL CHECK (type IN ('ocean', 'sea', 'river')),
+                    ocean_id   INTEGER REFERENCES waters(id),
+                    countries  TEXT[],
+                    length_km  INTEGER,
+                    fun_fact   TEXT
+                )
+            """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS user_waters (
+                    user_id    BIGINT NOT NULL,
+                    water_id   INTEGER NOT NULL REFERENCES waters(id),
+                    visited_at TIMESTAMP DEFAULT NOW(),
+                    PRIMARY KEY (user_id, water_id)
+                )
+            """)
         conn.commit()
+        _populate_waters_if_empty(conn)
         with conn.cursor() as cur:
             cur.execute("SELECT COUNT(*) FROM users")
             n_users = cur.fetchone()[0]
@@ -137,6 +157,164 @@ async def init_db(app) -> None:
         raise
     finally:
         conn.close()
+
+
+def _populate_waters_if_empty(conn) -> None:
+    """Заполняет таблицу waters данными, если она пустая."""
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT COUNT(*) FROM waters")
+            if cur.fetchone()[0] > 0:
+                return
+
+            # 5 океанов
+            oceans = [
+                ("Тихий океан",             ["Россия","США","Канада","Япония","Китай","Австралия","Новая Зеландия","Мексика","Индонезия","Филиппины","Чили","Перу","Эквадор","Колумбия","Панама","Коста-Рика","Никарагуа","Гондурас","Гватемала","Папуа Новая Гвинея","Фиджи","Вануату","Тонга","Самоа","Микронезия","Палау","Соломоновы острова","Тувалу","Кирибати","Маршалловы острова","Науру"]),
+                ("Атлантический океан",     ["Россия","Норвегия","Дания","Германия","Нидерланды","Бельгия","Франция","Испания","Португалия","Марокко","Мавритания","Сенегал","Гамбия","Гвинея-Бисау","Гвинея","Сьерра-Леоне","Либерия","Кот-д'Ивуар","Гана","Того","Бенин","Нигерия","Камерун","Габон","ДРК","Конго","Ангола","Намибия","ЮАР","Бразилия","Аргентина","Уругвай","США","Канада","Мексика","Куба","Ямайка","Гаити"]),
+                ("Индийский океан",         ["ЮАР","Мозамбик","Танзания","Кения","Сомали","Джибути","Эритрея","Судан","Египет","Саудовская Аравия","Йемен","Оман","ОАЭ","Пакистан","Индия","Шри-Ланка","Бангладеш","Мьянма","Таиланд","Малайзия","Индонезия","Австралия","Мадагаскар","Мальдивы","Сейшелы","Коморы","Маврикий"]),
+                ("Северный Ледовитый океан",["Россия","Канада","США","Норвегия","Дания","Исландия","Гренландия","Финляндия","Швеция"]),
+                ("Южный океан",             ["Антарктида"]),
+            ]
+            ocean_ids = {}
+            for name, countries in oceans:
+                cur.execute(
+                    "INSERT INTO waters (name, type, ocean_id, countries) VALUES (%s, 'ocean', NULL, %s) RETURNING id",
+                    (name, countries)
+                )
+                ocean_ids[name] = cur.fetchone()[0]
+
+            pid = ocean_ids["Тихий океан"]
+            atl = ocean_ids["Атлантический океан"]
+            ind = ocean_ids["Индийский океан"]
+            arc = ocean_ids["Северный Ледовитый океан"]
+            sou = ocean_ids["Южный океан"]
+
+            seas = [
+                # Тихий океан
+                ("Берингово море",            pid, ["Россия","США"]),
+                ("Охотское море",             pid, ["Россия","Япония"]),
+                ("Японское море",             pid, ["Россия","КНДР","Южная Корея","Япония"]),
+                ("Восточно-Китайское море",   pid, ["Китай","Япония","Тайвань","Южная Корея"]),
+                ("Жёлтое море",               pid, ["Китай","Южная Корея","КНДР"]),
+                ("Южно-Китайское море",       pid, ["Китай","Вьетнам","Филиппины","Малайзия","Бруней","Индонезия","Тайвань"]),
+                ("Филиппинское море",         pid, ["Филиппины","Тайвань","Япония","Палау","Марианские острова"]),
+                ("Сулавесийское море",        pid, ["Индонезия","Малайзия","Филиппины"]),
+                ("Молуккское море",           pid, ["Индонезия"]),
+                ("Яванское море",             pid, ["Индонезия"]),
+                ("Море Флорес",               pid, ["Индонезия"]),
+                ("Море Банда",                pid, ["Индонезия"]),
+                ("Море Саву",                 pid, ["Индонезия","Тимор-Лесте"]),
+                ("Тиморское море",            pid, ["Австралия","Индонезия","Тимор-Лесте"]),
+                ("Арафурское море",           pid, ["Австралия","Индонезия","Папуа Новая Гвинея"]),
+                ("Коралловое море",           pid, ["Австралия","Папуа Новая Гвинея","Соломоновы острова","Вануату"]),
+                ("Тасманово море",            pid, ["Австралия","Новая Зеландия"]),
+                ("Море Соломона",             pid, ["Папуа Новая Гвинея","Соломоновы острова"]),
+                ("Море Фиджи",                pid, ["Фиджи","Вануату","Тонга"]),
+                ("Хальмахерское море",        pid, ["Индонезия"]),
+                # Атлантический океан
+                ("Балтийское море",           atl, ["Россия","Эстония","Латвия","Литва","Польша","Германия","Дания","Швеция","Финляндия"]),
+                ("Северное море",             atl, ["Великобритания","Норвегия","Дания","Германия","Нидерланды","Бельгия","Франция"]),
+                ("Норвежское море",           atl, ["Норвегия","Исландия"]),
+                ("Ирландское море",           atl, ["Великобритания","Ирландия"]),
+                ("Кельтское море",            atl, ["Великобритания","Ирландия","Франция"]),
+                ("Карибское море",            atl, ["Куба","Ямайка","Гаити","Доминиканская Республика","Мексика","Белиз","Гватемала","Гондурас","Никарагуа","Коста-Рика","Панама","Колумбия","Венесуэла","Тринидад и Тобаго"]),
+                ("Мексиканский залив",        atl, ["США","Мексика","Куба"]),
+                ("Саргассово море",           atl, ["США"]),
+                ("Море Лабрадор",             atl, ["Канада","Гренландия"]),
+                ("Залив Гудзона",             atl, ["Канада"]),
+                ("Бискайский залив",          atl, ["Испания","Франция"]),
+                ("Залив Святого Лаврентия",  atl, ["Канада"]),
+                ("Гвинейский залив",          atl, ["Нигерия","Гана","Кот-д'Ивуар","Камерун","Экваториальная Гвинея","Габон","Сан-Томе и Принсипи","Бенин","Того"]),
+                ("Чёрное море",               atl, ["Россия","Украина","Румыния","Болгария","Турция","Грузия"]),
+                ("Азовское море",             atl, ["Россия","Украина"]),
+                ("Мраморное море",            atl, ["Турция"]),
+                ("Средиземное море",          atl, ["Испания","Франция","Монако","Италия","Словения","Хорватия","Босния и Герцеговина","Черногория","Албания","Греция","Турция","Сирия","Ливан","Израиль","Египет","Ливия","Тунис","Алжир","Марокко","Мальта","Кипр"]),
+                ("Эгейское море",             atl, ["Греция","Турция"]),
+                ("Адриатическое море",        atl, ["Италия","Словения","Хорватия","Босния и Герцеговина","Черногория","Албания"]),
+                ("Ионическое море",           atl, ["Италия","Греция","Албания"]),
+                ("Тирренское море",           atl, ["Италия","Франция"]),
+                ("Лигурийское море",          atl, ["Италия","Франция","Монако"]),
+                ("Алборанское море",          atl, ["Испания","Марокко","Алжир"]),
+                ("Мёртвое море",              atl, ["Иордания","Израиль","Палестина"]),
+                ("Море Скоша",                atl, ["Антарктида","Аргентина","Чили"]),
+                # Индийский океан
+                ("Красное море",              ind, ["Египет","Саудовская Аравия","Иордания","Израиль","Судан","Джибути","Эритрея","Йемен"]),
+                ("Аравийское море",           ind, ["Индия","Пакистан","Оман","Йемен","Сомали","Иран","Мальдивы"]),
+                ("Персидский залив",          ind, ["Иран","Ирак","Кувейт","Саудовская Аравия","Бахрейн","Катар","ОАЭ","Оман"]),
+                ("Оманский залив",            ind, ["Оман","ОАЭ","Иран","Пакистан"]),
+                ("Аденский залив",            ind, ["Йемен","Джибути","Сомали"]),
+                ("Бенгальский залив",         ind, ["Бангладеш","Индия","Мьянма","Шри-Ланка","Таиланд","Индонезия","Малайзия"]),
+                ("Андаманское море",          ind, ["Мьянма","Таиланд","Малайзия","Индия","Индонезия"]),
+                ("Лаккадивское море",         ind, ["Индия","Мальдивы","Шри-Ланка"]),
+                ("Цейлонское море",           ind, ["Индия","Шри-Ланка"]),
+                ("Мозамбикский пролив",       ind, ["Мозамбик","Мадагаскар"]),
+                ("Большой Австралийский залив", ind, ["Австралия"]),
+                # Северный Ледовитый океан
+                ("Баренцево море",            arc, ["Россия","Норвегия"]),
+                ("Карское море",              arc, ["Россия"]),
+                ("Море Лаптевых",             arc, ["Россия"]),
+                ("Восточно-Сибирское море",   arc, ["Россия"]),
+                ("Чукотское море",            arc, ["Россия","США"]),
+                ("Море Бофорта",              arc, ["Канада","США"]),
+                ("Море Линкольна",            arc, ["Канада","Гренландия"]),
+                ("Белое море",                arc, ["Россия"]),
+                ("Море Баффина",              arc, ["Канада","Гренландия"]),
+                ("Гренландское море",         arc, ["Гренландия","Исландия","Норвегия","Россия"]),
+                # Южный океан
+                ("Море Уэдделла",             sou, ["Антарктида"]),
+                ("Море Беллинсгаузена",       sou, ["Антарктида"]),
+                ("Море Амундсена",            sou, ["Антарктида"]),
+                ("Море Росса",                sou, ["Антарктида"]),
+                ("Море Содружества",          sou, ["Антарктида"]),
+                ("Море Дейвиса",              sou, ["Антарктида"]),
+                ("Море Лазарева",             sou, ["Антарктида"]),
+                ("Море Рисер-Ларсена",        sou, ["Антарктида"]),
+                ("Море Космонавтов",          sou, ["Антарктида"]),
+                ("Море Дюрвиля",              sou, ["Антарктида"]),
+            ]
+            for name, ocean_id, countries in seas:
+                cur.execute(
+                    "INSERT INTO waters (name, type, ocean_id, countries) VALUES (%s, 'sea', %s, %s)",
+                    (name, ocean_id, countries)
+                )
+
+            rivers = [
+                ("Амазонка",   None, 6992,  ["Бразилия","Перу","Колумбия"],                                                                              "Крупнейшая река мира по полноводности"),
+                ("Нил",        None, 6650,  ["Египет","Судан","Эфиопия","Уганда","Руанда","Бурунди","ДРК","Танзания","Кения"],                           "Самая длинная река Африки"),
+                ("Янцзы",      None, 6300,  ["Китай"],                                                                                                   "Самая длинная река Азии"),
+                ("Миссисипи",  None, 6275,  ["США","Канада"],                                                                                            "Главная река Северной Америки"),
+                ("Енисей",     None, 5539,  ["Россия","Монголия"],                                                                                       "Самая полноводная река России"),
+                ("Хуанхэ",     None, 5464,  ["Китай"],                                                                                                   "Колыбель китайской цивилизации"),
+                ("Обь",        None, 5410,  ["Россия","Казахстан"],                                                                                      "Самая длинная река России"),
+                ("Конго",      None, 4700,  ["ДРК","Конго","ЦАР","Ангола","Замбия","Камерун"],                                                           "Самая глубокая река мира"),
+                ("Амур",       None, 4444,  ["Россия","Китай"],                                                                                          "Образует границу России и Китая"),
+                ("Лена",       None, 4400,  ["Россия"],                                                                                                  "Главная река Восточной Сибири"),
+                ("Меконг",     None, 4350,  ["Китай","Мьянма","Таиланд","Лаос","Камбоджа","Вьетнам"],                                                   "Главная река Юго-Восточной Азии"),
+                ("Маккензи",   None, 4241,  ["Канада"],                                                                                                  "Самая длинная река Канады"),
+                ("Нигер",      None, 4184,  ["Гвинея","Мали","Нигер","Бенин","Нигерия"],                                                                "Главная река Западной Африки"),
+                ("Иртыш",      None, 4248,  ["Китай","Казахстан","Россия"],                                                                              "Главный приток Оби"),
+                ("Парана",     None, 4880,  ["Бразилия","Аргентина","Парагвай","Уругвай","Боливия"],                                                     "Вторая по длине река Южной Америки"),
+                ("Волга",      None, 3530,  ["Россия"],                                                                                                  "Главная река Европы"),
+                ("Замбези",    None, 2574,  ["Замбия","Ангола","Зимбабве","Мозамбик","Ботсвана","Намибия"],                                              "Река водопада Виктория"),
+                ("Инд",        None, 3180,  ["Пакистан","Индия","Китай","Афганистан"],                                                                   "Главная река Пакистана"),
+                ("Ганг",       None, 2525,  ["Индия","Бангладеш"],                                                                                       "Священная река Индии"),
+                ("Дунай",      None, 2860,  ["Германия","Австрия","Словакия","Венгрия","Хорватия","Сербия","Болгария","Румыния","Молдова","Украина"],     "Протекает через 10 стран"),
+                ("Евфрат",     None, 2800,  ["Турция","Сирия","Ирак"],                                                                                   "Колыбель древних цивилизаций"),
+                ("Колорадо",   None, 2333,  ["США","Мексика"],                                                                                           "Вырезал Гранд-Каньон за миллионы лет"),
+                ("Ориноко",    None, 2410,  ["Венесуэла","Колумбия"],                                                                                    "Главная река Венесуэлы"),
+                ("Рейн",       None, 1230,  ["Швейцария","Австрия","Германия","Франция","Нидерланды"],                                                   "Экономическая артерия Западной Европы"),
+                ("Тигр",       None, 1900,  ["Турция","Сирия","Ирак"],                                                                                   "Река Месопотамии"),
+            ]
+            for name, ocean_id, length_km, countries, fun_fact in rivers:
+                cur.execute(
+                    "INSERT INTO waters (name, type, ocean_id, countries, length_km, fun_fact) VALUES (%s, 'river', %s, %s, %s, %s)",
+                    (name, ocean_id, countries, length_km, fun_fact)
+                )
+        conn.commit()
+        logger.info("waters: таблица заполнена данными ✓")
+    except Exception as e:
+        logger.error("_populate_waters_if_empty: %s: %s", type(e).__name__, e)
+        conn.rollback()
 
 
 async def record_user(user_id: int, username: str | None, first_name: str | None) -> None:
@@ -286,6 +464,8 @@ def is_premium(user_id: int) -> bool:
     """Читает is_premium и premium_expires_at из БД каждый раз.
     Если premium_expires_at истёк — сбрасывает is_premium=FALSE и возвращает False.
     Иначе возвращает значение is_premium из БД."""
+    if user_id == ADMIN_ID:
+        return True
     try:
         conn = get_db_connection()
         try:
@@ -682,7 +862,8 @@ MAIN_MENU, ANSWERING, HELP_MENU, HELP_TOPIC, TRANSLATING, VISA_MENU, VISA_CATEGO
     COUNTRY_OF_DAY, \
     SHOP_MENU, SHOP_TYPING, \
     EVENTS_MENU, EVENTS_TOPIC, \
-    WEATHER_INPUT = range(41)
+    WEATHER_INPUT, \
+    WATERS_MENU, WATERS_REF_TYPE, WATERS_REF_LIST, WATERS_MY_TYPE, WATERS_MY_LIST = range(46)
 
 # Замени на реальный HTTPS-URL после деплоя webapp/index.html
 WEBAPP_URL      = "https://andreev032.github.io/Travel-Bot/"
@@ -1006,7 +1187,8 @@ def get_folder_mytrips_kb(user_id: int | None = None):
              gated("🏛 Мои достопримечательности",            ATTRACTIONS_URL)],
             [gated("📊 Моя статистика",                       STATS_URL),
              KeyboardButton("📏 Калькулятор расстояний",      web_app=WebAppInfo(url=DISTANCE_URL))],
-            [gated("📖 Дневник путешественника",              DIARY_URL)],
+            [gated("📖 Дневник путешественника",              DIARY_URL),
+             KeyboardButton("🌊 Океаны, моря и реки")],
             [KeyboardButton("◀️ Назад"),                      KeyboardButton(HOME_BTN)],
         ],
         resize_keyboard=True,
@@ -3985,6 +4167,8 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=get_folder_mytrips_kb(update.effective_user.id),
         )
         return MAIN_MENU
+    elif text == "🌊 Океаны, моря и реки":
+        return await show_waters_menu(update, context)
     elif text == "📚 Знания":
         await update.message.reply_text(
             "📚 *Знания*\n\nВыбери раздел:",
@@ -9009,6 +9193,524 @@ async def userstats_command(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     await update.message.reply_text(text, parse_mode="Markdown")
 
 
+# ── WATERS: DB helpers ───────────────────────────────────────────────────────
+
+def waters_get_all(water_type: str) -> list[dict]:
+    try:
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT id, name, ocean_id, countries, length_km, fun_fact FROM waters WHERE type=%s ORDER BY id",
+                    (water_type,)
+                )
+                rows = cur.fetchall()
+        finally:
+            conn.close()
+        return [{"id": r[0], "name": r[1], "ocean_id": r[2], "countries": r[3] or [], "length_km": r[4], "fun_fact": r[5]} for r in rows]
+    except Exception as e:
+        logger.error("waters_get_all: %s: %s", type(e).__name__, e)
+        return []
+
+
+def waters_get_by_id(water_id: int) -> dict | None:
+    try:
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT id, name, type, ocean_id, countries, length_km, fun_fact FROM waters WHERE id=%s",
+                    (water_id,)
+                )
+                r = cur.fetchone()
+        finally:
+            conn.close()
+        if not r:
+            return None
+        return {"id": r[0], "name": r[1], "type": r[2], "ocean_id": r[3], "countries": r[4] or [], "length_km": r[5], "fun_fact": r[6]}
+    except Exception as e:
+        logger.error("waters_get_by_id: %s: %s", type(e).__name__, e)
+        return None
+
+
+def waters_get_by_name(name: str, water_type: str) -> dict | None:
+    try:
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT id, name, type, ocean_id, countries, length_km, fun_fact FROM waters WHERE name=%s AND type=%s",
+                    (name, water_type)
+                )
+                r = cur.fetchone()
+        finally:
+            conn.close()
+        if not r:
+            return None
+        return {"id": r[0], "name": r[1], "type": r[2], "ocean_id": r[3], "countries": r[4] or [], "length_km": r[5], "fun_fact": r[6]}
+    except Exception as e:
+        logger.error("waters_get_by_name: %s: %s", type(e).__name__, e)
+        return None
+
+
+def waters_get_seas_for_ocean(ocean_id: int) -> list[dict]:
+    try:
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT id, name, countries FROM waters WHERE type='sea' AND ocean_id=%s ORDER BY id",
+                    (ocean_id,)
+                )
+                rows = cur.fetchall()
+        finally:
+            conn.close()
+        return [{"id": r[0], "name": r[1], "countries": r[2] or []} for r in rows]
+    except Exception as e:
+        logger.error("waters_get_seas_for_ocean: %s: %s", type(e).__name__, e)
+        return []
+
+
+def user_waters_get_ids(user_id: int) -> set[int]:
+    try:
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT water_id FROM user_waters WHERE user_id=%s", (user_id,))
+                rows = cur.fetchall()
+        finally:
+            conn.close()
+        return {r[0] for r in rows}
+    except Exception as e:
+        logger.error("user_waters_get_ids: %s: %s", type(e).__name__, e)
+        return set()
+
+
+def user_waters_toggle(user_id: int, water_id: int) -> None:
+    try:
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT 1 FROM user_waters WHERE user_id=%s AND water_id=%s",
+                    (user_id, water_id)
+                )
+                if cur.fetchone():
+                    cur.execute("DELETE FROM user_waters WHERE user_id=%s AND water_id=%s", (user_id, water_id))
+                else:
+                    cur.execute("INSERT INTO user_waters (user_id, water_id) VALUES (%s, %s) ON CONFLICT DO NOTHING", (user_id, water_id))
+            conn.commit()
+        finally:
+            conn.close()
+    except Exception as e:
+        logger.error("user_waters_toggle: %s: %s", type(e).__name__, e)
+
+
+def user_waters_stats(user_id: int) -> dict:
+    try:
+        visited = user_waters_get_ids(user_id)
+        oceans  = waters_get_all('ocean')
+        seas    = waters_get_all('sea')
+        rivers  = waters_get_all('river')
+        return {
+            "oceans_visited":  sum(1 for o in oceans  if o["id"] in visited),
+            "oceans_total":    len(oceans),
+            "seas_visited":    sum(1 for s in seas    if s["id"] in visited),
+            "seas_total":      len(seas),
+            "rivers_visited":  sum(1 for r in rivers  if r["id"] in visited),
+            "rivers_total":    len(rivers),
+        }
+    except Exception as e:
+        logger.error("user_waters_stats: %s: %s", type(e).__name__, e)
+        return {"oceans_visited": 0, "oceans_total": 0, "seas_visited": 0, "seas_total": 0, "rivers_visited": 0, "rivers_total": 0}
+
+
+# ── WATERS: keyboards ─────────────────────────────────────────────────────────
+
+def _waters_type_kb(back_state: str = "waters_menu") -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(
+        [["🌍 Океаны", "🌊 Моря", "🏞 Реки"], ["◀️ Назад", HOME_BTN]],
+        resize_keyboard=True, one_time_keyboard=True,
+    )
+
+
+def _waters_nav_kb() -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(
+        [["◀️ Назад", HOME_BTN]],
+        resize_keyboard=True, one_time_keyboard=True,
+    )
+
+
+def _split_into_rows(items: list[str], cols: int = 2) -> list[list[str]]:
+    rows = []
+    for i in range(0, len(items), cols):
+        rows.append(items[i:i + cols])
+    return rows
+
+
+# ── WATERS: show_folder_mytrips helper ───────────────────────────────────────
+
+async def show_folder_mytrips(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    context.user_data.clear()
+    await update.message.reply_text(
+        "🗺 *Мои путешествия*\n\nВыбери раздел:",
+        parse_mode="Markdown",
+        reply_markup=get_folder_mytrips_kb(update.effective_user.id),
+    )
+    return MAIN_MENU
+
+
+# ── WATERS: WATERS_MENU ───────────────────────────────────────────────────────
+
+async def show_waters_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    context.user_data.pop("wr_mode", None)
+    context.user_data.pop("wr_sel_id", None)
+    context.user_data.pop("wr_ocean_id", None)
+    await update.message.reply_text(
+        "🌊 *Океаны, моря и реки*\n\nУзнай всё о водах планеты и отметь где ты побывал.",
+        parse_mode="Markdown",
+        reply_markup=ReplyKeyboardMarkup(
+            [["📖 Справочник", "✅ Мои отметки ⭐"], ["◀️ Назад", HOME_BTN]],
+            resize_keyboard=True, one_time_keyboard=True,
+        ),
+    )
+    return WATERS_MENU
+
+
+async def waters_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    text = update.message.text
+    if text == HOME_BTN:
+        return await go_home(update, context)
+    if text == "◀️ Назад":
+        return await show_folder_mytrips(update, context)
+    if text == "📖 Справочник":
+        return await show_waters_ref_type(update, context)
+    if text == "✅ Мои отметки ⭐":
+        return await show_waters_my_type(update, context)
+    return await show_waters_menu(update, context)
+
+
+# ── WATERS: WATERS_REF_TYPE ───────────────────────────────────────────────────
+
+async def show_waters_ref_type(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    await update.message.reply_text(
+        "📖 *Справочник*\n\nВыбери категорию:",
+        parse_mode="Markdown",
+        reply_markup=_waters_type_kb(),
+    )
+    return WATERS_REF_TYPE
+
+
+async def waters_ref_type_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    text = update.message.text
+    if text == HOME_BTN:
+        return await go_home(update, context)
+    if text == "◀️ Назад":
+        return await show_waters_menu(update, context)
+    if text == "🌍 Океаны":
+        context.user_data["wr_mode"] = "ocean_list"
+        return await _render_waters_ref(update, context)
+    if text == "🌊 Моря":
+        context.user_data["wr_mode"] = "sea_ocean_select"
+        return await _render_waters_ref(update, context)
+    if text == "🏞 Реки":
+        context.user_data["wr_mode"] = "river_list"
+        return await _render_waters_ref(update, context)
+    return await show_waters_ref_type(update, context)
+
+
+# ── WATERS: WATERS_REF_LIST ───────────────────────────────────────────────────
+
+async def _render_waters_ref(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    mode = context.user_data.get("wr_mode", "ocean_list")
+
+    if mode == "ocean_list":
+        oceans = waters_get_all("ocean")
+        names  = [o["name"] for o in oceans]
+        kb     = _split_into_rows(names, 1) + [["◀️ Назад", HOME_BTN]]
+        await update.message.reply_text(
+            "🌍 *Выбери океан:*",
+            parse_mode="Markdown",
+            reply_markup=ReplyKeyboardMarkup(kb, resize_keyboard=True, one_time_keyboard=True),
+        )
+
+    elif mode == "ocean_detail":
+        ocean = waters_get_by_id(context.user_data.get("wr_sel_id", 0))
+        if not ocean:
+            return await show_waters_ref_type(update, context)
+        seas  = waters_get_seas_for_ocean(ocean["id"])
+        text  = f"🌍 *{ocean['name']}*\n\n"
+        if ocean["countries"]:
+            text += f"Омывает страны: {', '.join(ocean['countries'])}\n\n"
+        if seas:
+            text += f"Моря {ocean['name'].split()[0].lower()} океана:\n"
+            text += "\n".join(f"• {s['name']}" for s in seas)
+        await update.message.reply_text(text, parse_mode="Markdown", reply_markup=_waters_nav_kb())
+
+    elif mode == "sea_ocean_select":
+        oceans = waters_get_all("ocean")
+        names  = [o["name"] for o in oceans]
+        kb     = _split_into_rows(names, 1) + [["◀️ Назад", HOME_BTN]]
+        await update.message.reply_text(
+            "🌊 *Моря — выбери океан:*",
+            parse_mode="Markdown",
+            reply_markup=ReplyKeyboardMarkup(kb, resize_keyboard=True, one_time_keyboard=True),
+        )
+
+    elif mode == "sea_list":
+        ocean_id = context.user_data.get("wr_ocean_id", 0)
+        ocean    = waters_get_by_id(ocean_id)
+        seas     = waters_get_seas_for_ocean(ocean_id)
+        header   = f"🌊 *Моря {ocean['name'].split()[0].lower() if ocean else ''}:*"
+        names    = [s["name"] for s in seas]
+        kb       = _split_into_rows(names, 2) + [["◀️ Назад", HOME_BTN]]
+        await update.message.reply_text(
+            header, parse_mode="Markdown",
+            reply_markup=ReplyKeyboardMarkup(kb, resize_keyboard=True, one_time_keyboard=True),
+        )
+
+    elif mode == "sea_detail":
+        sea = waters_get_by_id(context.user_data.get("wr_sel_id", 0))
+        if not sea:
+            context.user_data["wr_mode"] = "sea_list"
+            return await _render_waters_ref(update, context)
+        text = f"🌊 *{sea['name']}*\n\n"
+        if sea["countries"]:
+            text += f"Омывает страны: {', '.join(sea['countries'])}"
+        await update.message.reply_text(text, parse_mode="Markdown", reply_markup=_waters_nav_kb())
+
+    elif mode == "river_list":
+        rivers = waters_get_all("river")
+        names  = [r["name"] for r in rivers]
+        kb     = _split_into_rows(names, 2) + [["◀️ Назад", HOME_BTN]]
+        await update.message.reply_text(
+            "🏞 *Выбери реку:*",
+            parse_mode="Markdown",
+            reply_markup=ReplyKeyboardMarkup(kb, resize_keyboard=True, one_time_keyboard=True),
+        )
+
+    elif mode == "river_detail":
+        river = waters_get_by_id(context.user_data.get("wr_sel_id", 0))
+        if not river:
+            context.user_data["wr_mode"] = "river_list"
+            return await _render_waters_ref(update, context)
+        text = f"🏞 *{river['name']}*\n\n"
+        if river["length_km"]:
+            text += f"Длина: {river['length_km']:,} км\n".replace(",", " ")
+        if river["countries"]:
+            text += f"Протекает через: {', '.join(river['countries'])}\n"
+        if river["fun_fact"]:
+            text += f"\nФакт: {river['fun_fact']}"
+        await update.message.reply_text(text, parse_mode="Markdown", reply_markup=_waters_nav_kb())
+
+    return WATERS_REF_LIST
+
+
+async def waters_ref_list_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    text = update.message.text
+    if text == HOME_BTN:
+        return await go_home(update, context)
+    mode = context.user_data.get("wr_mode", "ocean_list")
+
+    if text == "◀️ Назад":
+        if mode in ("ocean_list", "sea_ocean_select", "river_list"):
+            return await show_waters_ref_type(update, context)
+        if mode == "ocean_detail":
+            context.user_data["wr_mode"] = "ocean_list"
+            return await _render_waters_ref(update, context)
+        if mode == "sea_list":
+            context.user_data["wr_mode"] = "sea_ocean_select"
+            return await _render_waters_ref(update, context)
+        if mode == "sea_detail":
+            context.user_data["wr_mode"] = "sea_list"
+            return await _render_waters_ref(update, context)
+        if mode == "river_detail":
+            context.user_data["wr_mode"] = "river_list"
+            return await _render_waters_ref(update, context)
+        return await show_waters_ref_type(update, context)
+
+    if mode == "ocean_list":
+        ocean = waters_get_by_name(text, "ocean")
+        if ocean:
+            context.user_data["wr_mode"]   = "ocean_detail"
+            context.user_data["wr_sel_id"] = ocean["id"]
+            return await _render_waters_ref(update, context)
+
+    elif mode == "sea_ocean_select":
+        ocean = waters_get_by_name(text, "ocean")
+        if ocean:
+            context.user_data["wr_mode"]     = "sea_list"
+            context.user_data["wr_ocean_id"] = ocean["id"]
+            return await _render_waters_ref(update, context)
+
+    elif mode == "sea_list":
+        sea = waters_get_by_name(text, "sea")
+        if sea:
+            context.user_data["wr_mode"]   = "sea_detail"
+            context.user_data["wr_sel_id"] = sea["id"]
+            return await _render_waters_ref(update, context)
+
+    elif mode == "river_list":
+        river = waters_get_by_name(text, "river")
+        if river:
+            context.user_data["wr_mode"]   = "river_detail"
+            context.user_data["wr_sel_id"] = river["id"]
+            return await _render_waters_ref(update, context)
+
+    return await _render_waters_ref(update, context)
+
+
+# ── WATERS: WATERS_MY_TYPE ────────────────────────────────────────────────────
+
+async def show_waters_my_type(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    user_id = update.effective_user.id
+    if not is_premium(user_id):
+        await update.message.reply_text(
+            "⭐ *Мои отметки* — это премиум-функция\n\n"
+            "Отмечай посещённые океаны, моря и реки с подпиской Как местный Премиум.",
+            parse_mode="Markdown",
+            reply_markup=ReplyKeyboardMarkup(
+                [["⭐ Премиум"], ["◀️ Назад", HOME_BTN]],
+                resize_keyboard=True, one_time_keyboard=True,
+            ),
+        )
+        return WATERS_MY_TYPE
+    st   = user_waters_stats(user_id)
+    text = (
+        f"🌍 Океанов: {st['oceans_visited']} из {st['oceans_total']}\n"
+        f"🌊 Морей: {st['seas_visited']} из {st['seas_total']}\n"
+        f"🏞 Рек: {st['rivers_visited']} из {st['rivers_total']}\n\n"
+        "Выбери категорию:"
+    )
+    await update.message.reply_text(
+        text,
+        reply_markup=_waters_type_kb(),
+    )
+    return WATERS_MY_TYPE
+
+
+async def waters_my_type_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    text = update.message.text
+    if text == HOME_BTN:
+        return await go_home(update, context)
+    if text == "◀️ Назад":
+        return await show_waters_menu(update, context)
+    if text == "⭐ Премиум":
+        await _send_premium_lock(update)
+        return WATERS_MY_TYPE
+    if not is_premium(update.effective_user.id):
+        return await show_waters_my_type(update, context)
+    if text == "🌍 Океаны":
+        context.user_data["wm_mode"] = "ocean_list"
+        return await _render_waters_my(update, context)
+    if text == "🌊 Моря":
+        context.user_data["wm_mode"] = "sea_ocean_select"
+        return await _render_waters_my(update, context)
+    if text == "🏞 Реки":
+        context.user_data["wm_mode"] = "river_list"
+        return await _render_waters_my(update, context)
+    return await show_waters_my_type(update, context)
+
+
+# ── WATERS: WATERS_MY_LIST ────────────────────────────────────────────────────
+
+async def _render_waters_my(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    user_id  = update.effective_user.id
+    mode     = context.user_data.get("wm_mode", "ocean_list")
+    visited  = user_waters_get_ids(user_id)
+
+    if mode == "ocean_list":
+        oceans = waters_get_all("ocean")
+        rows   = [[f"{'✅' if o['id'] in visited else '◻️'} {o['name']}"] for o in oceans]
+        rows  += [["◀️ Назад", HOME_BTN]]
+        await update.message.reply_text(
+            "🌍 *Мои океаны* — нажми чтобы отметить:",
+            parse_mode="Markdown",
+            reply_markup=ReplyKeyboardMarkup(rows, resize_keyboard=True, one_time_keyboard=True),
+        )
+
+    elif mode == "sea_ocean_select":
+        oceans = waters_get_all("ocean")
+        names  = [o["name"] for o in oceans]
+        kb     = _split_into_rows(names, 1) + [["◀️ Назад", HOME_BTN]]
+        await update.message.reply_text(
+            "🌊 *Мои моря — выбери океан:*",
+            parse_mode="Markdown",
+            reply_markup=ReplyKeyboardMarkup(kb, resize_keyboard=True, one_time_keyboard=True),
+        )
+
+    elif mode == "sea_list":
+        ocean_id = context.user_data.get("wm_ocean_id", 0)
+        ocean    = waters_get_by_id(ocean_id)
+        seas     = waters_get_seas_for_ocean(ocean_id)
+        header   = f"🌊 *Моря {ocean['name'].split()[0].lower() if ocean else ''}:*"
+        rows     = [[f"{'✅' if s['id'] in visited else '◻️'} {s['name']}"] for s in seas]
+        rows    += [["◀️ Назад", HOME_BTN]]
+        await update.message.reply_text(
+            header, parse_mode="Markdown",
+            reply_markup=ReplyKeyboardMarkup(rows, resize_keyboard=True, one_time_keyboard=True),
+        )
+
+    elif mode == "river_list":
+        rivers = waters_get_all("river")
+        rows   = [[f"{'✅' if r['id'] in visited else '◻️'} {r['name']}"] for r in rivers]
+        rows  += [["◀️ Назад", HOME_BTN]]
+        await update.message.reply_text(
+            "🏞 *Мои реки* — нажми чтобы отметить:",
+            parse_mode="Markdown",
+            reply_markup=ReplyKeyboardMarkup(rows, resize_keyboard=True, one_time_keyboard=True),
+        )
+
+    return WATERS_MY_LIST
+
+
+async def waters_my_list_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    text    = update.message.text
+    user_id = update.effective_user.id
+    if text == HOME_BTN:
+        return await go_home(update, context)
+
+    mode = context.user_data.get("wm_mode", "ocean_list")
+
+    if text == "◀️ Назад":
+        if mode in ("ocean_list", "sea_ocean_select", "river_list"):
+            return await show_waters_my_type(update, context)
+        if mode == "sea_list":
+            context.user_data["wm_mode"] = "sea_ocean_select"
+            return await _render_waters_my(update, context)
+        return await show_waters_my_type(update, context)
+
+    # Strip checkbox prefix and match item
+    clean = text.lstrip("✅◻️ ").strip()
+
+    if mode == "ocean_list":
+        ocean = waters_get_by_name(clean, "ocean")
+        if ocean:
+            user_waters_toggle(user_id, ocean["id"])
+        return await _render_waters_my(update, context)
+
+    elif mode == "sea_ocean_select":
+        ocean = waters_get_by_name(clean, "ocean")
+        if ocean:
+            context.user_data["wm_mode"]     = "sea_list"
+            context.user_data["wm_ocean_id"] = ocean["id"]
+        return await _render_waters_my(update, context)
+
+    elif mode == "sea_list":
+        sea = waters_get_by_name(clean, "sea")
+        if sea:
+            user_waters_toggle(user_id, sea["id"])
+        return await _render_waters_my(update, context)
+
+    elif mode == "river_list":
+        river = waters_get_by_name(clean, "river")
+        if river:
+            user_waters_toggle(user_id, river["id"])
+        return await _render_waters_my(update, context)
+
+    return await _render_waters_my(update, context)
+
+
 async def post_init(app: Application) -> None:
     """Called by PTB after initialize() — set bot commands, verify channel, launch scheduler."""
     global _main_event_loop
@@ -9234,6 +9936,26 @@ def main():
                 home,
                 MessageHandler(filters.Regex("^◀️ Назад$"), show_folder_planning),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, weather_show),
+            ],
+            WATERS_MENU: [
+                home,
+                MessageHandler(filters.TEXT & ~filters.COMMAND, waters_menu_handler),
+            ],
+            WATERS_REF_TYPE: [
+                home,
+                MessageHandler(filters.TEXT & ~filters.COMMAND, waters_ref_type_handler),
+            ],
+            WATERS_REF_LIST: [
+                home,
+                MessageHandler(filters.TEXT & ~filters.COMMAND, waters_ref_list_handler),
+            ],
+            WATERS_MY_TYPE: [
+                home,
+                MessageHandler(filters.TEXT & ~filters.COMMAND, waters_my_type_handler),
+            ],
+            WATERS_MY_LIST: [
+                home,
+                MessageHandler(filters.TEXT & ~filters.COMMAND, waters_my_list_handler),
             ],
         },
         fallbacks=[
