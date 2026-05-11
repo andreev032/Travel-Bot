@@ -1,314 +1,322 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Дагестанская кухня | Как местный</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --bg: #1a1a1a; --card: #242424; --border: #333333;
-    --accent: #C4622D; --text: #F0EDE8; --text-muted: #6B6560; --max-w: 1100px;
-  }
-  html { scroll-behavior: smooth; }
-  body {
-    background: var(--bg); color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif;
-    font-size: 16px; line-height: 1.7; -webkit-font-smoothing: antialiased;
-  }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Кухня Дагестана | Как местный</title>
+  <meta name="description" content="Что попробовать в Дагестане: хинкал, чуду, урбеч, шашлык из баранины, форель на углях. Что привезти домой." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #ffffff;
+      --text: #111111;
+      --muted: #6f6f6f;
+      --line: #e8e8e8;
+      --accent: #C4622D;
+      --accent-dark: #a24e22;
+      --accent-bg: #fff7f1;
+      --shadow: 0 10px 30px rgba(17,17,17,.06);
+      --shadow-hover: 0 20px 40px rgba(17,17,17,.10);
+      --radius: 16px;
+      --radius-lg: 28px;
+      --container: 1180px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0 }
+    html { scroll-behavior: smooth }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Manrope', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    img { max-width: 100%; display: block }
+    a { color: inherit; text-decoration: none }
+    .container { width: min(var(--container), calc(100% - 32px)); margin: 0 auto }
 
-  .site-nav {
-    position: sticky; top: 0; z-index: 100;
-    display: flex; align-items: center; gap: 24px;
-    padding: 0 24px; height: 60px;
-    background: rgba(26,26,26,0.96); backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--border);
-  }
-  .nav-logo { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 600; color: var(--text); text-decoration: none; white-space: nowrap; }
-  .nav-links { display: flex; gap: 0; margin-left: auto; }
-  .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 14px; padding: 8px 14px; transition: color 0.2s; }
-  .nav-links a:hover, .nav-links a.active { color: var(--text); }
-  .nav-btn { display: inline-block; padding: 8px 18px; background: var(--accent); color: #fff; text-decoration: none; font-size: 13px; font-weight: 500; border-radius: 8px; transition: background 0.2s; white-space: nowrap; }
-  .nav-btn:hover { background: #a84f23; }
-  .nav-burger { display: none; background: none; border: none; color: var(--text); font-size: 20px; cursor: pointer; padding: 8px; margin-left: auto; }
-  .mobile-menu { display: none; position: fixed; top: 60px; left: 0; right: 0; background: rgba(26,26,26,0.99); border-bottom: 1px solid var(--border); flex-direction: column; z-index: 99; padding: 16px 24px; }
-  .mobile-menu.open { display: flex; }
-  .mobile-menu a { color: var(--text-muted); text-decoration: none; padding: 13px 0; font-size: 15px; border-bottom: 1px solid var(--border); transition: color 0.2s; }
-  .mobile-menu a:last-child { border-bottom: none; }
-  .mobile-menu a.active, .mobile-menu a:hover { color: var(--accent); }
+    /* TOPBAR */
+    .topbar {
+      position: sticky; top: 0; z-index: 1000;
+      background: rgba(255,255,255,.92);
+      backdrop-filter: saturate(180%) blur(14px);
+      -webkit-backdrop-filter: saturate(180%) blur(14px);
+      border-bottom: 1px solid rgba(17,17,17,.06);
+    }
+    .topbar-inner {
+      display: flex; align-items: center; gap: 16px;
+      min-height: 72px; max-width: 1180px; margin: 0 auto; padding: 0 24px;
+    }
+    .brand { font-family: 'Unbounded', sans-serif; font-size: 15px; font-weight: 700; color: #111; white-space: nowrap }
+    .nav-links { display: flex; gap: 0; margin-left: auto }
+    .nav-links a { color: var(--muted); font-size: 14px; font-weight: 500; padding: 8px 12px; transition: color .2s }
+    .nav-links a:hover, .nav-links a.active { color: var(--text) }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      border: none; border-radius: 999px; padding: 11px 20px;
+      font: 600 14px/1 'Manrope', sans-serif; cursor: pointer; transition: .25s ease;
+      text-decoration: none; white-space: nowrap;
+    }
+    .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 8px 20px rgba(196,98,45,.22) }
+    .btn-primary:hover { background: var(--accent-dark); transform: translateY(-1px) }
+    .burger { display: none; background: none; border: none; cursor: pointer; padding: 8px; color: var(--text); font-size: 22px; line-height: 1 }
+    .mobile-menu {
+      display: none; position: fixed; top: 72px; left: 0; right: 0;
+      background: rgba(255,255,255,.98);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--line);
+      flex-direction: column; z-index: 999; padding: 16px 24px;
+    }
+    .mobile-menu.open { display: flex }
+    .mobile-menu a { color: var(--muted); padding: 13px 0; font-size: 15px; font-weight: 500; border-bottom: 1px solid var(--line); transition: color .2s }
+    .mobile-menu a:last-child { border-bottom: none }
+    .mobile-menu a:hover, .mobile-menu a.active { color: var(--accent) }
 
-  /* FOOD HERO */
-  .food-hero {
-    position: relative; height: 400px; overflow: hidden;
-    border-bottom: 1px solid var(--border);
-  }
-  .food-hero img {
-    width: 100%; height: 100%; object-fit: cover; object-position: center;
-  }
-  .food-hero-overlay {
-    position: absolute; inset: 0; background: rgba(0,0,0,0.5);
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    text-align: center; padding: 0 24px;
-  }
-  .section-label { font-size: 11px; letter-spacing: 4px; color: var(--accent); text-transform: uppercase; font-weight: 500; margin-bottom: 12px; }
-  .page-title { font-family: 'Cormorant Garamond', serif; font-size: clamp(36px, 6vw, 64px); font-weight: 600; margin-bottom: 12px; color: #fff; }
-  .page-sub { font-size: 16px; color: rgba(255,255,255,0.75); max-width: 480px; }
+    /* PAGE HERO */
+    .page-hero { padding: 72px 0 56px; border-bottom: 1px solid var(--line) }
+    .eyebrow { display: inline-block; margin-bottom: 12px; color: var(--accent); font-size: 13px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase }
+    .page-title { font-family: 'Unbounded', sans-serif; font-size: clamp(36px, 6vw, 72px); font-weight: 900; letter-spacing: -0.06em; line-height: .95; margin: 0 0 14px }
+    .page-sub { color: var(--muted); font-size: 18px; line-height: 1.6; max-width: 600px; margin: 0 }
 
-  .section { padding: 72px 24px; }
-  .section-title { font-family: 'Cormorant Garamond', serif; font-size: clamp(28px, 4vw, 44px); font-weight: 600; margin-bottom: 32px; }
-  .container { max-width: var(--max-w); margin: 0 auto; }
+    /* SECTION */
+    .section { padding: 72px 0 }
+    .section-title { font-family: 'Unbounded', sans-serif; margin: 0 0 12px; font-size: clamp(28px, 3.5vw, 48px); line-height: 1.02; letter-spacing: -0.05em; font-weight: 900 }
+    .section-lead { margin: 0 0 32px; color: var(--muted); font-size: 17px; line-height: 1.6 }
 
-  /* FOOD GRID */
-  .food-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 40px; }
-  .food-card {
-    background: var(--card); border-radius: 16px; overflow: hidden;
-    transition: transform 0.25s ease;
-  }
-  .food-card:hover { transform: translateY(-4px); }
-  .food-card img {
-    width: 100%; height: 220px; object-fit: cover; display: block;
-    transition: transform 0.35s ease;
-  }
-  .food-card:hover img { transform: scale(1.04); }
-  .food-card-body { padding: 18px 20px 22px; }
-  .food-card-name { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 600; margin-bottom: 8px; }
-  .food-card-desc { font-size: 14px; color: rgba(240,237,232,0.72); line-height: 1.65; margin-bottom: 10px; }
-  .food-card-price { font-size: 13px; color: var(--accent); font-weight: 500; }
+    /* FOOD ROW */
+    .food-row {
+      display: grid; grid-auto-flow: column;
+      grid-auto-columns: minmax(260px, 290px);
+      gap: 18px; overflow-x: auto; padding-bottom: 12px;
+      scroll-snap-type: x proximity;
+    }
+    .food-row::-webkit-scrollbar { height: 6px }
+    .food-row::-webkit-scrollbar-thumb { background: #e6c8b8; border-radius: 999px }
+    .food-card {
+      scroll-snap-align: start;
+      border: 1px solid var(--line); border-radius: var(--radius);
+      overflow: hidden; background: #fff;
+      transition: transform .3s ease, box-shadow .3s ease;
+    }
+    .food-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover) }
+    .food-image { width: 100%; height: 200px; object-fit: cover; background: #ececec }
+    .food-body { padding: 18px }
+    .food-title { margin: 0 0 8px; font-family: 'Unbounded', sans-serif; font-size: 16px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2 }
+    .food-desc { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.6 }
 
-  /* LIFEHACK */
-  .lifehack {
-    border-left: 3px solid var(--accent); background: var(--card);
-    padding: 18px 22px; border-radius: 0 12px 12px 0;
-    font-size: 14px; color: rgba(240,237,232,0.85); line-height: 1.65;
-    margin-bottom: 60px;
-  }
+    /* LIFEHACK */
+    .lifehack {
+      margin-top: 24px; padding: 18px 22px;
+      border-left: 3px solid var(--accent);
+      background: var(--accent-bg); border-radius: 0 var(--radius) var(--radius) 0;
+      font-size: 15px; line-height: 1.65; color: #3d3d3d;
+    }
 
-  /* SOUVENIRS */
-  .souvenirs-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-  .souvenir-card {
-    background: var(--card); border-radius: 16px;
-    padding: 24px 20px; text-align: center; transition: transform 0.25s ease;
-  }
-  .souvenir-card:hover { transform: translateY(-4px); }
-  .souvenir-icon { font-size: 32px; margin-bottom: 12px; }
-  .souvenir-name { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 600; margin-bottom: 8px; }
-  .souvenir-desc { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+    /* SOUVENIRS */
+    .souvenirs-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 28px }
+    .souvenir-card {
+      background: #fff; border: 1px solid var(--line); border-radius: var(--radius);
+      padding: 28px 22px; text-align: center;
+      transition: transform .3s ease, box-shadow .3s ease;
+    }
+    .souvenir-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover) }
+    .souvenir-icon { font-size: 36px; margin-bottom: 14px }
+    .souvenir-name { font-family: 'Unbounded', sans-serif; font-size: 15px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 10px }
+    .souvenir-desc { font-size: 14px; color: var(--muted); line-height: 1.55 }
 
-  .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.6s ease, transform 0.6s ease; }
-  .reveal.visible { opacity: 1; transform: none; }
+    /* FOOTER */
+    .footer { border-top: 1px solid var(--line); padding: 28px 0 40px; color: var(--muted) }
+    .footer-inner { display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap }
+    .footer-brand { font-family: 'Unbounded', sans-serif; font-weight: 700; color: #222; font-size: 14px; margin-bottom: 4px }
+    .footer-sub { font-size: 13px }
 
-  footer { border-top: 1px solid var(--border); padding: 48px 24px; text-align: center; }
-  .footer-logo { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 600; margin-bottom: 16px; }
-  .footer-links { margin-bottom: 16px; }
-  .footer-links a { color: var(--text-muted); text-decoration: none; font-size: 13px; margin: 0 10px; transition: color 0.2s; }
-  .footer-links a:hover { color: var(--accent); }
-  .footer-copy { font-size: 12px; color: var(--text-muted); }
+    /* ANIMATIONS */
+    .reveal { opacity: 0; transform: translateY(24px); transition: opacity .7s ease, transform .7s ease; will-change: opacity, transform }
+    .reveal.is-visible { opacity: 1; transform: translateY(0) }
 
-  @media (max-width: 768px) {
-    .nav-links, .nav-btn { display: none; }
-    .nav-burger { display: block; }
-    .food-grid { grid-template-columns: 1fr; }
-    .souvenirs-grid { grid-template-columns: 1fr; }
-    .section { padding: 52px 24px; }
-    .food-hero { height: 280px; }
-  }
-</style>
+    @media (max-width: 760px) {
+      .topbar-inner { min-height: 66px }
+      .nav-links { display: none }
+      .burger { display: block; margin-left: auto }
+      .topbar-actions .btn-primary { padding: 10px 16px; font-size: 13px }
+      .food-row { grid-auto-columns: minmax(230px, 82vw) }
+      .souvenirs-grid { grid-template-columns: 1fr }
+      .section { padding: 52px 0 }
+      .page-hero { padding: 52px 0 40px }
+    }
+    @media (max-width: 520px) {
+      .container { width: min(var(--container), calc(100% - 20px)) }
+      .footer-inner { flex-direction: column; align-items: flex-start }
+    }
+  </style>
 </head>
 <body>
 
-<nav class="site-nav">
-  <a href="index.html" class="nav-logo">🎒 Как местный</a>
-  <div class="nav-links">
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="index.html">Как местный</a>
+      <nav class="nav-links" aria-label="Разделы">
+        <a href="index.html">О регионе</a>
+        <a href="places.html">Места</a>
+        <a href="food.html" class="active">Кухня</a>
+        <a href="tips.html">Советы</a>
+        <a href="tour.html">Тур</a>
+      </nav>
+      <div style="display:flex;align-items:center;gap:10px">
+        <a class="btn btn-primary" href="https://t.me/like_a_local_bot" target="_blank" rel="noopener noreferrer">Открыть бота</a>
+      </div>
+      <button class="burger" aria-label="Открыть меню" onclick="document.getElementById('mobileMenu').classList.toggle('open')">&#9776;</button>
+    </div>
+  </header>
+
+  <nav class="mobile-menu" id="mobileMenu" aria-label="Мобильное меню">
     <a href="index.html">О регионе</a>
     <a href="places.html">Места</a>
     <a href="food.html" class="active">Кухня</a>
     <a href="tips.html">Советы</a>
     <a href="tour.html">Тур</a>
+    <a href="https://t.me/like_a_local_bot" target="_blank" rel="noopener noreferrer" style="color:var(--accent);font-weight:700">Открыть бота →</a>
+  </nav>
+
+  <div class="page-hero">
+    <div class="container reveal">
+      <div class="eyebrow">Что попробовать</div>
+      <h1 class="page-title">Кухня Дагестана</h1>
+      <p class="page-sub">В Дагестан стоит ехать не только за видами. Здесь важно пробовать — простая еда, после которой сложно остаться равнодушным.</p>
+    </div>
   </div>
-  <a href="https://t.me/like_a_local_bot" class="nav-btn" target="_blank" rel="noopener">Открыть бота →</a>
-  <button class="nav-burger" aria-label="Меню" onclick="toggleMobile()">☰</button>
-</nav>
-<div class="mobile-menu" id="mobileMenu">
-  <a href="index.html">О регионе</a>
-  <a href="places.html">Места</a>
-  <a href="food.html" class="active">Кухня</a>
-  <a href="tips.html">Советы</a>
-  <a href="tour.html">Тур</a>
-  <a href="https://t.me/like_a_local_bot" target="_blank" rel="noopener">Открыть бота →</a>
-</div>
 
-<!-- HERO -->
-<div class="food-hero">
-  <img
-    src="https://source.unsplash.com/1920x600/?caucasus,food,table"
-    alt="Дагестанская кухня"
-    loading="lazy"
-    onerror="this.src='https://source.unsplash.com/800x600/?mountain'"
-  >
-  <div class="food-hero-overlay">
-    <div class="section-label">КУХНЯ</div>
-    <h1 class="page-title">Дагестанская кухня</h1>
-    <p class="page-sub">Здесь едят много, вкусно и дёшево. Порции огромные.</p>
-  </div>
-</div>
+  <section class="section">
+    <div class="container">
+      <div class="reveal">
+        <h2 class="section-title">5 блюд, которые нужно попробовать</h2>
+        <p class="section-lead">Порции огромные, цены низкие. Смело заказывай меньше, чем думаешь — один хинкал на двоих это нормально.</p>
+      </div>
 
-<section class="section">
-  <div class="container">
+      <div class="food-row" aria-label="Блюда дагестанской кухни">
 
-    <div class="food-grid">
-      <div class="food-card reveal">
-        <img
-          src="https://source.unsplash.com/400x400/?georgian,food,meat,dumpling"
-          alt="Хинкал"
-          loading="lazy"
-          onerror="this.src='https://source.unsplash.com/800x600/?mountain'"
-        >
-        <div class="food-card-body">
-          <div class="food-card-name">Хинкал</div>
-          <div class="food-card-desc">Главное блюдо Дагестана. Варёное тесто (у каждого народа своё: аварский — пышный, даргинский — слоёный), баранина, бульон и чесночный соус. Всё подаётся отдельно.</div>
-          <div class="food-card-price">~300–500 ₽</div>
-        </div>
+        <article class="food-card reveal">
+          <img class="food-image" loading="lazy"
+            src="https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80"
+            alt="Хинкал аварский"
+            onerror="this.onerror=null;this.style.background='#ececec'" />
+          <div class="food-body">
+            <h3 class="food-title">Хинкал аварский</h3>
+            <p class="food-desc">Не путать с грузинским хинкали! Тесто + баранина + чеснок + томатный соус. Главное блюдо Дагестана — у каждого народа своя версия.</p>
+          </div>
+        </article>
+
+        <article class="food-card reveal">
+          <img class="food-image" loading="lazy"
+            src="https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=800&q=80"
+            alt="Чуду"
+            onerror="this.onerror=null;this.style.background='#ececec'" />
+          <div class="food-body">
+            <h3 class="food-title">Чуду</h3>
+            <p class="food-desc">Тонкие лепёшки с начинкой — творог и зелень, мясо или тыква. Пекут на сухой сковороде. Лучший перекус в дороге между локациями.</p>
+          </div>
+        </article>
+
+        <article class="food-card reveal">
+          <img class="food-image" loading="lazy"
+            src="https://images.unsplash.com/photo-1526318896980-cf78c088247c?auto=format&fit=crop&w=800&q=80"
+            alt="Урбеч"
+            onerror="this.onerror=null;this.style.background='#ececec'" />
+          <div class="food-body">
+            <h3 class="food-title">Урбеч</h3>
+            <p class="food-desc">Паста из молотых семян льна, конопли или орехов. Энергетическая бомба горцев — с мёдом на хлеб. Лучший сувенир из Дагестана.</p>
+          </div>
+        </article>
+
+        <article class="food-card reveal">
+          <img class="food-image" loading="lazy"
+            src="https://images.unsplash.com/photo-1529193591184-b1d58069ecdd?auto=format&fit=crop&w=800&q=80"
+            alt="Шашлык из баранины"
+            onerror="this.onerror=null;this.style.background='#ececec'" />
+          <div class="food-body">
+            <h3 class="food-title">Шашлык из баранины</h3>
+            <p class="food-desc">Баранина на углях — здесь её готовят иначе. Маринад минимальный, мясо говорит само за себя. Классика горного ужина под открытым небом.</p>
+          </div>
+        </article>
+
+        <article class="food-card reveal">
+          <img class="food-image" loading="lazy"
+            src="https://images.unsplash.com/photo-1510130387422-82bed34b37e9?auto=format&fit=crop&w=800&q=80"
+            alt="Форель на углях"
+            onerror="this.onerror=null;this.style.background='#ececec'" />
+          <div class="food-body">
+            <h3 class="food-title">Форель на углях</h3>
+            <p class="food-desc">Дагестанские реки богаты форелью. Едят прямо у воды — только что поймали, сразу на мангал. Лучшая — в посёлке Дубки у Сулакского каньона.</p>
+          </div>
+        </article>
+
       </div>
-      <div class="food-card reveal">
-        <img
-          src="https://source.unsplash.com/400x400/?flatbread,caucasus,food"
-          alt="Чуду"
-          loading="lazy"
-          onerror="this.src='https://source.unsplash.com/800x600/?mountain'"
-        >
-        <div class="food-card-body">
-          <div class="food-card-name">Чуду</div>
-          <div class="food-card-desc">Тонкие лепёшки на сухой сковороде. Начинки: творог с зеленью, картошка, мясо. Везде и всегда свежие.</div>
-          <div class="food-card-price">~100–200 ₽</div>
-        </div>
+
+      <div class="lifehack reveal">
+        🍽 Лайфхак от местных: порции в дагестанских кафе огромные — заказывай меньше, чем думаешь. Один хинкал на двоих — это нормально. И не отказывайся от угощения хозяина дома — это обидит его.
       </div>
-      <div class="food-card reveal">
-        <img
-          src="https://source.unsplash.com/400x400/?dumplings,asian,food"
-          alt="Курзе"
-          loading="lazy"
-          onerror="this.src='https://source.unsplash.com/800x600/?mountain'"
-        >
-        <div class="food-card-body">
-          <div class="food-card-name">Курзе</div>
-          <div class="food-card-desc">Дагестанские пельмени с особой защипкой. Начинка: мясо, творог или зелень.</div>
-          <div class="food-card-price">~250–400 ₽</div>
-        </div>
+    </div>
+  </section>
+
+  <section class="section" style="background:#fafafa; border-top:1px solid var(--line); border-bottom:1px solid var(--line)">
+    <div class="container">
+      <div class="reveal">
+        <div class="eyebrow">Сувениры</div>
+        <h2 class="section-title">Что привезти</h2>
+        <p class="section-lead">Три вещи, которые везут из Дагестана все без исключения.</p>
       </div>
-      <div class="food-card reveal">
-        <img
-          src="https://source.unsplash.com/400x400/?lamb,shashlik,bbq,grill"
-          alt="Шашлык"
-          loading="lazy"
-          onerror="this.src='https://source.unsplash.com/800x600/?mountain'"
-        >
-        <div class="food-card-body">
-          <div class="food-card-name">Шашлык из баранины</div>
-          <div class="food-card-desc">Местная баранина особенная, без запаха. Маринад минимальный — только соль, лук, специи.</div>
-          <div class="food-card-price">~500–800 ₽</div>
+
+      <div class="souvenirs-grid">
+        <div class="souvenir-card reveal">
+          <div class="souvenir-icon">🍯</div>
+          <div class="souvenir-name">Урбеч</div>
+          <p class="souvenir-desc">В банках, везут все. Несколько видов — льняной, ореховый, подсолнечный. Самый популярный сувенир из Дагестана. Продаётся везде.</p>
         </div>
-      </div>
-      <div class="food-card reveal">
-        <img
-          src="https://source.unsplash.com/400x400/?trout,grilled,fish,river"
-          alt="Форель"
-          loading="lazy"
-          onerror="this.src='https://source.unsplash.com/800x600/?mountain'"
-        >
-        <div class="food-card-body">
-          <div class="food-card-name">Форель из Сулака</div>
-          <div class="food-card-desc">Только что выловленная, на гриле прямо у реки. Лучшая — в посёлке Дубки у каньона.</div>
-          <div class="food-card-price">~600–900 ₽</div>
+        <div class="souvenir-card reveal">
+          <div class="souvenir-icon">🥃</div>
+          <div class="souvenir-name">Коньяк «Дагестан»</div>
+          <p class="souvenir-desc">Легенда советских времён. Дербентский коньячный завод работает с 1898 года — один из старейших в России.</p>
         </div>
-      </div>
-      <div class="food-card reveal">
-        <img
-          src="https://source.unsplash.com/400x400/?nuts,seeds,paste,healthy"
-          alt="Урбеч"
-          loading="lazy"
-          onerror="this.src='https://source.unsplash.com/800x600/?mountain'"
-        >
-        <div class="food-card-body">
-          <div class="food-card-name">Урбеч</div>
-          <div class="food-card-desc">Густая паста из семян льна, подсолнечника или грецких орехов. Местный суперфуд. Отличный сувенир.</div>
-          <div class="food-card-price">~200–400 ₽ за баночку</div>
+        <div class="souvenir-card reveal">
+          <div class="souvenir-icon">💍</div>
+          <div class="souvenir-name">Кубачинское серебро</div>
+          <p class="souvenir-desc">Ручная работа ювелиров аула Кубачи. Украшения, кинжалы, посуда с гравировкой — каждое изделие уникально.</p>
         </div>
       </div>
     </div>
+  </section>
 
-    <div class="lifehack reveal">
-      🍽 Порции в дагестанских кафе огромные — заказывай меньше чем думаешь. Один хинкал на двоих — это нормально.
-    </div>
-
-    <div class="section-label reveal">СУВЕНИРЫ</div>
-    <h2 class="section-title reveal">Что привезти домой</h2>
-    <div class="souvenirs-grid reveal">
-      <div class="souvenir-card">
-        <div class="souvenir-icon">🍯</div>
-        <div class="souvenir-name">Урбеч</div>
-        <div class="souvenir-desc">Несколько видов, везде продаётся. Самый популярный сувенир из Дагестана.</div>
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div>
+        <div class="footer-brand">Как местный</div>
+        <div class="footer-sub">© 2026 · <a href="https://t.me/like_a_local_bot" target="_blank" rel="noopener noreferrer" style="color:var(--accent);font-weight:600">@like_a_local_bot</a> · Путеводители</div>
       </div>
-      <div class="souvenir-card">
-        <div class="souvenir-icon">🍷</div>
-        <div class="souvenir-name">Дербентский коньяк</div>
-        <div class="souvenir-desc">Завод работает с 1898 года. Один из старейших коньячных заводов России.</div>
-      </div>
-      <div class="souvenir-card">
-        <div class="souvenir-icon">🌰</div>
-        <div class="souvenir-name">Грецкие орехи</div>
-        <div class="souvenir-desc">Знаменитые дербентские, самые вкусные. Продаются на рынках города.</div>
-      </div>
+      <nav style="display:flex;gap:18px;flex-wrap:wrap">
+        <a href="index.html" style="font-size:14px;font-weight:500;color:var(--muted)">О регионе</a>
+        <a href="places.html" style="font-size:14px;font-weight:500;color:var(--muted)">Места</a>
+        <a href="tips.html" style="font-size:14px;font-weight:500;color:var(--muted)">Советы</a>
+        <a href="tour.html" style="font-size:14px;font-weight:500;color:var(--muted)">Тур</a>
+      </nav>
     </div>
+  </footer>
 
-  </div>
-</section>
-
-<footer>
-  <div class="container">
-    <div class="footer-logo">🎒 Как местный</div>
-    <p style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">Путеводители для настоящих путешественников</p>
-    <div class="footer-links">
-      <a href="index.html">О регионе</a>
-      <a href="places.html">Места</a>
-      <a href="food.html">Кухня</a>
-      <a href="tips.html">Советы</a>
-      <a href="tour.html">Тур с Кириллом</a>
-    </div>
-    <div class="footer-copy">© 2026 · <a href="https://t.me/like_a_local_bot" style="color:var(--text-muted); text-decoration:none;" target="_blank" rel="noopener">@like_a_local_bot</a></div>
-  </div>
-</footer>
-
-<script>
-  function toggleMobile() {
-    document.getElementById('mobileMenu').classList.toggle('open');
-  }
-  document.addEventListener('click', function(e) {
-    const menu = document.getElementById('mobileMenu');
-    const burger = document.querySelector('.nav-burger');
-    if (!menu.contains(e.target) && !burger.contains(e.target)) menu.classList.remove('open');
-  });
-
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach((entry, i) => {
-      if (entry.isIntersecting) {
-        setTimeout(() => {
-          entry.target.style.opacity = '1';
-          entry.target.style.transform = 'translateY(0)';
-        }, i * 80);
-        observer.unobserve(entry.target);
-      }
-    });
-  }, { threshold: 0.1 });
-
-  document.querySelectorAll('.reveal').forEach(el => {
-    el.style.opacity = '0';
-    el.style.transform = 'translateY(30px)';
-    el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-    observer.observe(el);
-  });
-</script>
+  <script>
+    (function () {
+      const burger = document.querySelector('.burger');
+      const mobileMenu = document.getElementById('mobileMenu');
+      document.addEventListener('click', function (e) {
+        if (mobileMenu && !mobileMenu.contains(e.target) && !burger.contains(e.target)) {
+          mobileMenu.classList.remove('open');
+        }
+      });
+      const obs = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) { e.target.classList.add('is-visible'); obs.unobserve(e.target); }
+        });
+      }, { threshold: 0.14, rootMargin: '0px 0px -40px 0px' });
+      document.querySelectorAll('.reveal').forEach(function (el) { obs.observe(el); });
+    })();
+  </script>
 </body>
 </html>
