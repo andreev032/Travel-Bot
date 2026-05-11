@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Места Дагестана | Как местный</title>
-  <meta name="description" content="6 главных мест Дагестана: Сулакский каньон, Гамсутль, Дербент, Бархан Сарыкум, Каспий, Кубачи." />
+  <meta name="description" content="6 главных мест Дагестана: Сулакский каньон, Гамсутль, Дербент, Бархан Сарыкум, Каспий, Кубачи. Активности и приключения." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -49,9 +49,8 @@
     }
     .brand { font-family: 'Unbounded', sans-serif; font-size: 15px; font-weight: 700; color: #111; white-space: nowrap }
     .nav-links { display: flex; gap: 0; margin-left: auto }
-    .nav-links a { color: var(--muted); font-size: 14px; font-weight: 500; padding: 8px 12px; transition: color .2s }
+    .nav-links a { color: var(--muted); font-size: 12px; font-weight: 500; padding: 6px 7px; transition: color .2s }
     .nav-links a:hover, .nav-links a.active { color: var(--text) }
-    .topbar-actions { display: flex; align-items: center; gap: 10px }
     .btn {
       display: inline-flex; align-items: center; justify-content: center; gap: 8px;
       border: none; border-radius: 999px; padding: 11px 20px;
@@ -67,6 +66,7 @@
       backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
       border-bottom: 1px solid var(--line);
       flex-direction: column; z-index: 999; padding: 16px 24px;
+      overflow-y: auto; max-height: calc(100vh - 72px);
     }
     .mobile-menu.open { display: flex }
     .mobile-menu a { color: var(--muted); padding: 13px 0; font-size: 15px; font-weight: 500; border-bottom: 1px solid var(--line); transition: color .2s }
@@ -84,6 +84,8 @@
 
     /* SECTION */
     .section { padding: 72px 0 80px }
+    .section-title { font-family: 'Unbounded', sans-serif; margin: 0 0 12px; font-size: clamp(28px, 3.5vw, 48px); line-height: 1.02; letter-spacing: -0.05em; font-weight: 900 }
+    .section-lead { margin: 0 0 28px; color: var(--muted); font-size: 17px; line-height: 1.6 }
 
     /* PLACES GRID */
     .places-grid {
@@ -114,6 +116,19 @@
     }
     .map-link:hover { background: var(--accent); color: #fff; border-color: var(--accent) }
 
+    /* ACTIVITIES GRID */
+    .activities-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 28px }
+    .activity-card {
+      background: #fff; border: 1px solid var(--line); border-radius: var(--radius);
+      padding: 26px 22px; text-align: center;
+      transition: transform .3s ease, box-shadow .3s ease;
+    }
+    .activity-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover) }
+    .activity-emoji { font-size: 36px; margin-bottom: 14px }
+    .activity-name { font-family: 'Unbounded', sans-serif; font-size: 15px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 10px; line-height: 1.2 }
+    .activity-desc { font-size: 14px; color: var(--muted); line-height: 1.55 }
+    .activity-badge { display: inline-block; margin-top: 12px; padding: 6px 12px; background: var(--accent-bg); border: 1px solid #f1d8ca; border-radius: 999px; font-size: 12px; font-weight: 700; color: var(--accent) }
+
     /* FOOTER */
     .footer { border-top: 1px solid var(--line); padding: 28px 0 40px; color: var(--muted) }
     .footer-inner { display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap }
@@ -128,13 +143,19 @@
       .topbar-inner { min-height: 66px }
       .nav-links { display: none }
       .burger { display: block; margin-left: auto }
+      .mobile-menu { top: 66px }
       .topbar-actions .btn-primary { padding: 10px 16px; font-size: 13px }
       .places-grid { grid-template-columns: 1fr }
       .place-card:first-child { grid-column: span 1 }
       .place-card:first-child .place-image { height: 240px }
       .place-image { height: 200px }
+      .activities-grid { grid-template-columns: 1fr }
       .section { padding: 52px 0 64px }
       .page-hero { padding: 52px 0 40px }
+    }
+    @media (max-width: 600px) {
+      .places-grid { grid-template-columns: 1fr }
+      .activities-grid { grid-template-columns: 1fr }
     }
     @media (max-width: 520px) {
       .container { width: min(var(--container), calc(100% - 20px)) }
@@ -151,11 +172,14 @@
       <nav class="nav-links" aria-label="Разделы">
         <a href="index.html">О регионе</a>
         <a href="places.html" class="active">Места</a>
+        <a href="places.html#activities">Активности</a>
         <a href="food.html">Кухня</a>
+        <a href="food.html#restaurants">Рестораны</a>
+        <a href="hotels.html">Отели</a>
         <a href="tips.html">Советы</a>
         <a href="tour.html">Тур</a>
       </nav>
-      <div class="topbar-actions">
+      <div style="display:flex;align-items:center;gap:10px">
         <a class="btn btn-primary" href="https://t.me/like_a_local_bot" target="_blank" rel="noopener noreferrer">Открыть бота</a>
       </div>
       <button class="burger" aria-label="Открыть меню" onclick="document.getElementById('mobileMenu').classList.toggle('open')">&#9776;</button>
@@ -165,7 +189,10 @@
   <nav class="mobile-menu" id="mobileMenu" aria-label="Мобильное меню">
     <a href="index.html">О регионе</a>
     <a href="places.html" class="active">Места</a>
+    <a href="places.html#activities">Активности</a>
     <a href="food.html">Кухня</a>
+    <a href="food.html#restaurants">Рестораны</a>
+    <a href="hotels.html">Отели</a>
     <a href="tips.html">Советы</a>
     <a href="tour.html">Тур</a>
     <a href="https://t.me/like_a_local_bot" target="_blank" rel="noopener noreferrer" style="color:var(--accent);font-weight:700">Открыть бота →</a>
@@ -191,7 +218,7 @@
           <div class="place-body">
             <div class="place-num">01</div>
             <h2 class="place-title">Сулакский каньон</h2>
-            <p class="place-desc">Один из глубочайших каньонов мира — 1920 метров. Смотровая в Дубках, прогулки на лодке по бирюзовой реке Сулак. Форель прямо у воды. 100 км от Махачкалы.</p>
+            <p class="place-desc">Один из глубочайших каньонов мира — 1920 метров. Смотровая в посёлке Дубки, прогулки на лодке по бирюзовой реке Сулак. Форель прямо у воды. 100 км от Махачкалы.</p>
             <div class="place-footer">
               <span class="place-tag">🗓 Лучшее время: май–октябрь</span>
               <a class="map-link" href="https://www.google.com/maps/search/Сулакский+каньон/@43.0,46.8,10z" target="_blank" rel="noopener noreferrer">📍 На карте</a>
@@ -283,6 +310,69 @@
     </div>
   </section>
 
+  <section id="activities" class="section" style="background:#fafafa; border-top:1px solid var(--line); border-bottom:1px solid var(--line)">
+    <div class="container">
+      <div class="reveal">
+        <div class="eyebrow">Активный отдых</div>
+        <h2 class="section-title">Активности</h2>
+        <p class="section-lead">7 способов почувствовать Дагестан иначе — с воды, из седла и с высоты.</p>
+      </div>
+
+      <div class="activities-grid">
+
+        <div class="activity-card reveal">
+          <div class="activity-emoji">🪂</div>
+          <div class="activity-name">Зиплайн над каньоном</div>
+          <p class="activity-desc">Полёт над Сулакским каньоном, трасса 1,5 км. Адреналин гарантирован — под тобой пропасть глубиной почти 2 км.</p>
+          <div class="activity-badge">Сулакский каньон</div>
+        </div>
+
+        <div class="activity-card reveal">
+          <div class="activity-emoji">🚣</div>
+          <div class="activity-name">Рафтинг по Сулаку</div>
+          <p class="activity-desc">Сплав по реке Сулак с порогами 3–4 категории сложности. Инструктор и всё снаряжение включены. Май–октябрь.</p>
+          <div class="activity-badge">Река Сулак</div>
+        </div>
+
+        <div class="activity-card reveal">
+          <div class="activity-emoji">⛵</div>
+          <div class="activity-name">Катер по каньону</div>
+          <p class="activity-desc">Моторная лодка по бирюзовой воде Сулакского каньона. Смотровые точки, которые недоступны с берега. 1–2 часа прогулки.</p>
+          <div class="activity-badge">Сулакский каньон</div>
+        </div>
+
+        <div class="activity-card reveal">
+          <div class="activity-emoji">🚙</div>
+          <div class="activity-name">Джиппинг в горах</div>
+          <p class="activity-desc">Маршруты по горным дорогам, куда обычная машина не проедет. Доступ к отдалённым аулам и видовым точкам. Группы до 6 человек.</p>
+          <div class="activity-badge">Горный Дагестан</div>
+        </div>
+
+        <div class="activity-card reveal">
+          <div class="activity-emoji">🐴</div>
+          <div class="activity-name">Конная прогулка</div>
+          <p class="activity-desc">Маршруты по горным тропам от 1 до 3 часов. Инструктор сопровождает. Подходит для новичков — лошади спокойные и приученные.</p>
+          <div class="activity-badge">Гунибский район</div>
+        </div>
+
+        <div class="activity-card reveal">
+          <div class="activity-emoji">🎯</div>
+          <div class="activity-name">Тарзанка над ущельем</div>
+          <p class="activity-desc">Прыжок над горным ущельем с высоты 40 метров. Страховка надёжная, впечатления — максимальные. Для любителей острых ощущений.</p>
+          <div class="activity-badge">Горный Дагестан</div>
+        </div>
+
+        <div class="activity-card reveal">
+          <div class="activity-emoji">🏄</div>
+          <div class="activity-name">Сапборд</div>
+          <p class="activity-desc">SUP-сёрфинг по Каспийскому морю или горному озеру. Прокат досок и базовый инструктаж на месте. Тихо, красиво, доступно каждому.</p>
+          <div class="activity-badge">Каспий · горные озёра</div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
   <footer class="footer">
     <div class="container footer-inner">
       <div>
@@ -292,6 +382,7 @@
       <nav style="display:flex;gap:18px;flex-wrap:wrap">
         <a href="index.html" style="font-size:14px;font-weight:500;color:var(--muted)">О регионе</a>
         <a href="food.html" style="font-size:14px;font-weight:500;color:var(--muted)">Кухня</a>
+        <a href="hotels.html" style="font-size:14px;font-weight:500;color:var(--muted)">Отели</a>
         <a href="tips.html" style="font-size:14px;font-weight:500;color:var(--muted)">Советы</a>
         <a href="tour.html" style="font-size:14px;font-weight:500;color:var(--muted)">Тур</a>
       </nav>
