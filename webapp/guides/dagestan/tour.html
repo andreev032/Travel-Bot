@@ -1,359 +1,427 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Тур с Кириллом — Дагестан | Как местный</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --bg: #1a1a1a; --card: #242424; --border: #333333;
-    --accent: #C4622D; --text: #F0EDE8; --text-muted: #6B6560; --max-w: 1100px;
-  }
-  html { scroll-behavior: smooth; }
-  body {
-    background: var(--bg); color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif;
-    font-size: 16px; line-height: 1.7; -webkit-font-smoothing: antialiased;
-  }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Тур с Кириллом — Дагестан | Как местный</title>
+  <meta name="description" content="Авторский тур в Дагестан с Кириллом Андреевым. 5 дней, до 10 человек, ~70 000 ₽. Лето/осень 2026." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #ffffff;
+      --text: #111111;
+      --muted: #6f6f6f;
+      --line: #e8e8e8;
+      --accent: #C4622D;
+      --accent-dark: #a24e22;
+      --accent-bg: #fff7f1;
+      --shadow: 0 10px 30px rgba(17,17,17,.06);
+      --shadow-hover: 0 20px 40px rgba(17,17,17,.10);
+      --radius: 16px;
+      --radius-lg: 28px;
+      --container: 1180px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0 }
+    html { scroll-behavior: smooth }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Manrope', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    img { max-width: 100%; display: block }
+    a { color: inherit; text-decoration: none }
+    .container { width: min(var(--container), calc(100% - 32px)); margin: 0 auto }
 
-  .site-nav {
-    position: sticky; top: 0; z-index: 100;
-    display: flex; align-items: center; gap: 24px;
-    padding: 0 24px; height: 60px;
-    background: rgba(26,26,26,0.96); backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--border);
-  }
-  .nav-logo { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 600; color: var(--text); text-decoration: none; white-space: nowrap; }
-  .nav-links { display: flex; gap: 0; margin-left: auto; }
-  .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 14px; padding: 8px 14px; transition: color 0.2s; }
-  .nav-links a:hover, .nav-links a.active { color: var(--text); }
-  .nav-btn { display: inline-block; padding: 8px 18px; background: var(--accent); color: #fff; text-decoration: none; font-size: 13px; font-weight: 500; border-radius: 8px; transition: background 0.2s; white-space: nowrap; }
-  .nav-btn:hover { background: #a84f23; }
-  .nav-burger { display: none; background: none; border: none; color: var(--text); font-size: 20px; cursor: pointer; padding: 8px; margin-left: auto; }
-  .mobile-menu { display: none; position: fixed; top: 60px; left: 0; right: 0; background: rgba(26,26,26,0.99); border-bottom: 1px solid var(--border); flex-direction: column; z-index: 99; padding: 16px 24px; }
-  .mobile-menu.open { display: flex; }
-  .mobile-menu a { color: var(--text-muted); text-decoration: none; padding: 13px 0; font-size: 15px; border-bottom: 1px solid var(--border); transition: color 0.2s; }
-  .mobile-menu a:last-child { border-bottom: none; }
-  .mobile-menu a.active, .mobile-menu a:hover { color: var(--accent); }
+    /* TOPBAR */
+    .topbar {
+      position: sticky; top: 0; z-index: 1000;
+      background: rgba(255,255,255,.92);
+      backdrop-filter: saturate(180%) blur(14px);
+      -webkit-backdrop-filter: saturate(180%) blur(14px);
+      border-bottom: 1px solid rgba(17,17,17,.06);
+    }
+    .topbar-inner {
+      display: flex; align-items: center; gap: 16px;
+      min-height: 72px; max-width: 1180px; margin: 0 auto; padding: 0 24px;
+    }
+    .brand { font-family: 'Unbounded', sans-serif; font-size: 15px; font-weight: 700; color: #111; white-space: nowrap }
+    .nav-links { display: flex; gap: 0; margin-left: auto }
+    .nav-links a { color: var(--muted); font-size: 14px; font-weight: 500; padding: 8px 12px; transition: color .2s }
+    .nav-links a:hover, .nav-links a.active { color: var(--text) }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      border: none; border-radius: 999px; padding: 11px 20px;
+      font: 600 14px/1 'Manrope', sans-serif; cursor: pointer; transition: .25s ease;
+      text-decoration: none; white-space: nowrap;
+    }
+    .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 8px 20px rgba(196,98,45,.22) }
+    .btn-primary:hover { background: var(--accent-dark); transform: translateY(-1px) }
+    .btn-lg { padding: 16px 36px; font-size: 16px }
+    .burger { display: none; background: none; border: none; cursor: pointer; padding: 8px; color: var(--text); font-size: 22px; line-height: 1 }
+    .mobile-menu {
+      display: none; position: fixed; top: 72px; left: 0; right: 0;
+      background: rgba(255,255,255,.98);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--line);
+      flex-direction: column; z-index: 999; padding: 16px 24px;
+    }
+    .mobile-menu.open { display: flex }
+    .mobile-menu a { color: var(--muted); padding: 13px 0; font-size: 15px; font-weight: 500; border-bottom: 1px solid var(--line); transition: color .2s }
+    .mobile-menu a:last-child { border-bottom: none }
+    .mobile-menu a:hover, .mobile-menu a.active { color: var(--accent) }
 
-  .page-hero {
-    padding: 80px 24px 64px; text-align: center;
-    border-bottom: 1px solid var(--border);
-  }
-  .section-label { font-size: 11px; letter-spacing: 4px; color: var(--accent); text-transform: uppercase; font-weight: 500; margin-bottom: 12px; }
-  .page-title { font-family: 'Cormorant Garamond', serif; font-size: clamp(36px, 6vw, 64px); font-weight: 600; margin-bottom: 14px; }
-  .page-sub { font-size: 16px; color: var(--text-muted); max-width: 560px; margin: 0 auto; }
+    /* PAGE HERO */
+    .page-hero { padding: 72px 0 56px; border-bottom: 1px solid var(--line) }
+    .eyebrow { display: inline-block; margin-bottom: 12px; color: var(--accent); font-size: 13px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase }
+    .page-title { font-family: 'Unbounded', sans-serif; font-size: clamp(34px, 5.5vw, 68px); font-weight: 900; letter-spacing: -0.06em; line-height: .95; margin: 0 0 14px }
+    .page-sub { color: var(--muted); font-size: 18px; line-height: 1.6; max-width: 640px; margin: 0 0 28px }
 
-  .section { padding: 72px 24px; }
-  .section-title { font-family: 'Cormorant Garamond', serif; font-size: clamp(28px, 4vw, 44px); font-weight: 600; margin-bottom: 32px; }
-  .container { max-width: var(--max-w); margin: 0 auto; }
+    /* SECTION */
+    .section { padding: 72px 0 }
+    .section-title { font-family: 'Unbounded', sans-serif; margin: 0 0 24px; font-size: clamp(24px, 3vw, 40px); line-height: 1.05; letter-spacing: -0.05em; font-weight: 900 }
 
-  /* INTRO */
-  .intro-block {
-    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
-    padding: 40px; margin-bottom: 60px; font-size: 15px;
-    color: rgba(240,237,232,0.85); line-height: 1.9;
-  }
+    /* TOUR INTRO */
+    .tour-intro {
+      background: radial-gradient(circle at top right, rgba(196,98,45,.07), transparent 40%),
+        linear-gradient(180deg, #fffaf7 0%, #fff 100%);
+      border: 1px solid #efd9cd; border-radius: var(--radius-lg);
+      padding: 34px; display: grid; grid-template-columns: 1.2fr .8fr; gap: 28px; align-items: start;
+      margin-top: 32px;
+    }
+    .tour-intro-title { font-family: 'Unbounded', sans-serif; font-size: clamp(22px, 3vw, 36px); font-weight: 900; letter-spacing: -0.05em; line-height: 1.1; margin-bottom: 14px }
+    .tour-intro-text { font-size: 16px; line-height: 1.75; color: #3d3d3d; margin-bottom: 14px }
+    .tour-tags { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0; padding: 0; list-style: none }
+    .tour-tags li { padding: 8px 14px; border-radius: 999px; background: #fff; border: 1px solid #edd8cb; color: #5d4a40; font-size: 13px; font-weight: 600 }
+    .tour-price-line { font-size: 20px; font-weight: 700; margin-bottom: 6px }
+    .tour-note { font-size: 14px; color: var(--muted); margin-bottom: 20px; line-height: 1.6 }
+    .tour-side { background: #fff; border: 1px solid #f1e3da; border-radius: 24px; padding: 24px }
+    .tour-side-title { font-family: 'Unbounded', sans-serif; font-size: 15px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 14px }
+    .mini-facts { display: grid; gap: 10px }
+    .mini-fact { padding: 13px 16px; border-radius: var(--radius); background: #fcf6f2; border: 1px solid #f2dfd4; font-size: 14px; line-height: 1.5; color: #5d4a40; font-weight: 500 }
 
-  /* PROGRAM */
-  .days-grid { display: grid; gap: 12px; margin-bottom: 60px; }
-  .day-card {
-    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
-    padding: 28px 32px; display: grid; grid-template-columns: 80px 1fr; gap: 24px;
-    align-items: start; transition: border-color 0.2s, transform 0.25s ease;
-  }
-  .day-card:hover { border-color: var(--accent); transform: translateY(-2px); }
-  .day-num {
-    font-family: 'Cormorant Garamond', serif; font-size: 42px; font-weight: 600;
-    color: var(--accent); line-height: 1; padding-top: 4px;
-  }
-  .day-label { font-size: 11px; color: var(--text-muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px; }
-  .day-title { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 600; margin-bottom: 10px; }
-  .day-desc { font-size: 14px; color: rgba(240,237,232,0.72); line-height: 1.7; }
+    /* PROGRAM */
+    .days-grid { display: grid; gap: 12px; margin-top: 8px }
+    .day-card {
+      background: #fff; border: 1px solid var(--line); border-radius: var(--radius);
+      padding: 24px 28px; display: grid; grid-template-columns: 72px 1fr; gap: 20px; align-items: start;
+      transition: border-color .2s ease, transform .25s ease;
+    }
+    .day-card:hover { border-color: #f1d8ca; transform: translateY(-2px) }
+    .day-num { font-family: 'Unbounded', sans-serif; font-size: 38px; font-weight: 900; color: var(--accent); line-height: 1; letter-spacing: -0.05em }
+    .day-label { font-size: 11px; color: var(--muted); letter-spacing: .1em; text-transform: uppercase; font-weight: 700; margin-bottom: 6px }
+    .day-title { font-family: 'Unbounded', sans-serif; font-size: 17px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 8px }
+    .day-desc { font-size: 14px; color: var(--muted); line-height: 1.7 }
 
-  /* INCLUDED */
-  .included-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 60px; }
-  .included-item {
-    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
-    padding: 13px 18px; font-size: 14px; color: rgba(240,237,232,0.85);
-  }
+    /* INCLUDED */
+    .included-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 8px }
+    .included-item {
+      background: #fff; border: 1px solid var(--line); border-radius: var(--radius);
+      padding: 13px 18px; font-size: 14px; font-weight: 500; color: #3d3d3d; line-height: 1.5;
+    }
+    .not-included { margin-top: 16px; display: grid; gap: 8px }
+    .not-included-item { padding: 12px 18px; border-radius: var(--radius); background: #fafafa; border: 1px solid var(--line); font-size: 14px; color: var(--muted) }
 
-  /* PRICE BLOCK — dark, no brown */
-  .price-block {
-    background: #111111;
-    border: 1px solid var(--border); border-radius: 16px;
-    padding: 60px 48px; text-align: center; margin-bottom: 60px;
-  }
-  .price-num {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: clamp(56px, 10vw, 96px); font-weight: 600;
-    color: var(--accent); line-height: 1; margin-bottom: 12px;
-  }
-  .price-note { font-size: 15px; color: var(--text-muted); margin-bottom: 36px; }
-  .price-title {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: clamp(24px, 4vw, 36px); font-weight: 600; margin-bottom: 12px;
-  }
-  .price-desc {
-    font-size: 14px; color: var(--text-muted); margin-bottom: 32px;
-    max-width: 480px; margin-left: auto; margin-right: auto; line-height: 1.7;
-  }
-  .btn-tour {
-    display: inline-block; padding: 15px 44px;
-    background: var(--accent); color: #fff; text-decoration: none;
-    font-size: 16px; font-weight: 500; border-radius: 8px;
-    transition: background 0.2s; margin-bottom: 20px;
-  }
-  .btn-tour:hover { background: #a84f23; }
-  .tour-author { font-size: 13px; color: var(--text-muted); }
+    /* FAQ */
+    .faq-list { display: grid; gap: 10px; margin-top: 8px }
+    .faq-item { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden }
+    .faq-question {
+      width: 100%; background: none; border: none; color: var(--text);
+      font-family: 'Manrope', sans-serif; font-size: 15px; font-weight: 600;
+      padding: 20px 24px; text-align: left; cursor: pointer;
+      display: flex; justify-content: space-between; align-items: center; gap: 16px; transition: color .2s;
+    }
+    .faq-question:hover { color: var(--accent) }
+    .faq-chevron { flex-shrink: 0; font-size: 18px; transition: transform .3s; color: var(--accent); font-style: normal }
+    .faq-item.open .faq-chevron { transform: rotate(180deg) }
+    .faq-answer {
+      max-height: 0; overflow: hidden;
+      transition: max-height .35s ease, padding .35s ease;
+      font-size: 15px; color: var(--muted); line-height: 1.7; padding: 0 24px;
+    }
+    .faq-item.open .faq-answer { max-height: 300px; padding: 0 24px 20px }
 
-  /* FAQ */
-  .faq-list { display: grid; gap: 10px; }
-  .faq-item {
-    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
-    overflow: hidden;
-  }
-  .faq-question {
-    width: 100%; background: none; border: none; color: var(--text);
-    font-family: inherit; font-size: 15px; font-weight: 500;
-    padding: 20px 24px; text-align: left; cursor: pointer;
-    display: flex; justify-content: space-between; align-items: center; gap: 16px;
-    transition: color 0.2s;
-  }
-  .faq-question:hover { color: var(--accent); }
-  .faq-chevron { flex-shrink: 0; font-size: 18px; transition: transform 0.3s; color: var(--accent); }
-  .faq-item.open .faq-chevron { transform: rotate(180deg); }
-  .faq-answer {
-    max-height: 0; overflow: hidden;
-    transition: max-height 0.35s ease, padding 0.35s ease;
-    font-size: 14px; color: rgba(240,237,232,0.72); line-height: 1.7; padding: 0 24px;
-  }
-  .faq-item.open .faq-answer { max-height: 300px; padding: 0 24px 20px; }
+    /* CTA BLOCK */
+    .cta-block {
+      background: radial-gradient(circle at top right, rgba(196,98,45,.08), transparent 40%),
+        linear-gradient(135deg, #fffaf7 0%, #fff5ee 100%);
+      border: 1px solid #efd9cd; border-radius: var(--radius-lg);
+      padding: 52px 40px; text-align: center; margin-top: 16px;
+    }
+    .cta-price { font-family: 'Unbounded', sans-serif; font-size: clamp(42px, 8vw, 80px); font-weight: 900; color: var(--accent); letter-spacing: -0.06em; line-height: 1; margin-bottom: 10px }
+    .cta-note { font-size: 15px; color: var(--muted); margin-bottom: 8px }
+    .cta-disclaimer { font-size: 14px; color: var(--muted); font-style: italic; margin-bottom: 28px; max-width: 520px; margin-left: auto; margin-right: auto; line-height: 1.65 }
+    .cta-author { margin-top: 14px; font-size: 13px; color: var(--muted) }
 
-  .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.6s ease, transform 0.6s ease; }
-  .reveal.visible { opacity: 1; transform: none; }
+    /* FOOTER */
+    .footer { border-top: 1px solid var(--line); padding: 28px 0 40px; color: var(--muted) }
+    .footer-inner { display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap }
+    .footer-brand { font-family: 'Unbounded', sans-serif; font-weight: 700; color: #222; font-size: 14px; margin-bottom: 4px }
+    .footer-sub { font-size: 13px }
 
-  footer { border-top: 1px solid var(--border); padding: 48px 24px; text-align: center; }
-  .footer-logo { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 600; margin-bottom: 16px; }
-  .footer-links { margin-bottom: 16px; }
-  .footer-links a { color: var(--text-muted); text-decoration: none; font-size: 13px; margin: 0 10px; transition: color 0.2s; }
-  .footer-links a:hover { color: var(--accent); }
-  .footer-copy { font-size: 12px; color: var(--text-muted); }
+    /* ANIMATIONS */
+    .reveal { opacity: 0; transform: translateY(24px); transition: opacity .7s ease, transform .7s ease; will-change: opacity, transform }
+    .reveal.is-visible { opacity: 1; transform: translateY(0) }
 
-  @media (max-width: 768px) {
-    .nav-links, .nav-btn { display: none; }
-    .nav-burger { display: block; }
-    .day-card { grid-template-columns: 1fr; gap: 8px; }
-    .day-num { font-size: 28px; }
-    .included-grid { grid-template-columns: 1fr; }
-    .price-block { padding: 40px 24px; }
-    .intro-block { padding: 24px; }
-    .section { padding: 52px 24px; }
-  }
-</style>
+    @media (max-width: 980px) {
+      .tour-intro { grid-template-columns: 1fr }
+    }
+    @media (max-width: 760px) {
+      .topbar-inner { min-height: 66px }
+      .nav-links { display: none }
+      .burger { display: block; margin-left: auto }
+      .topbar-actions .btn-primary { padding: 10px 16px; font-size: 13px }
+      .day-card { grid-template-columns: 1fr; gap: 8px; padding: 20px }
+      .day-num { font-size: 28px }
+      .included-grid { grid-template-columns: 1fr }
+      .cta-block { padding: 36px 24px }
+      .section { padding: 52px 0 }
+      .page-hero { padding: 52px 0 40px }
+      .tour-intro { padding: 24px }
+    }
+    @media (max-width: 520px) {
+      .container { width: min(var(--container), calc(100% - 20px)) }
+      .footer-inner { flex-direction: column; align-items: flex-start }
+    }
+  </style>
 </head>
 <body>
 
-<nav class="site-nav">
-  <a href="index.html" class="nav-logo">🎒 Как местный</a>
-  <div class="nav-links">
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="index.html">Как местный</a>
+      <nav class="nav-links" aria-label="Разделы">
+        <a href="index.html">О регионе</a>
+        <a href="places.html">Места</a>
+        <a href="food.html">Кухня</a>
+        <a href="tips.html">Советы</a>
+        <a href="tour.html" class="active">Тур</a>
+      </nav>
+      <div style="display:flex;align-items:center;gap:10px">
+        <a class="btn btn-primary" href="https://t.me/like_a_local_bot" target="_blank" rel="noopener noreferrer">Открыть бота</a>
+      </div>
+      <button class="burger" aria-label="Открыть меню" onclick="document.getElementById('mobileMenu').classList.toggle('open')">&#9776;</button>
+    </div>
+  </header>
+
+  <nav class="mobile-menu" id="mobileMenu" aria-label="Мобильное меню">
     <a href="index.html">О регионе</a>
     <a href="places.html">Места</a>
     <a href="food.html">Кухня</a>
     <a href="tips.html">Советы</a>
     <a href="tour.html" class="active">Тур</a>
+    <a href="https://t.me/like_a_local_bot" target="_blank" rel="noopener noreferrer" style="color:var(--accent);font-weight:700">Открыть бота →</a>
+  </nav>
+
+  <div class="page-hero">
+    <div class="container reveal">
+      <div class="eyebrow">Авторский тур в Дагестан</div>
+      <h1 class="page-title">Тур с Кириллом</h1>
+      <p class="page-sub">5 дней, до 10 человек, лето или осень 2026. Без туристических толп — только настоящий Дагестан.</p>
+      <a class="btn btn-primary" href="https://t.me/like_a_local_bot" target="_blank" rel="noopener noreferrer">Хочу в тур →</a>
+    </div>
   </div>
-  <a href="https://t.me/like_a_local_bot" class="nav-btn" target="_blank" rel="noopener">Открыть бота →</a>
-  <button class="nav-burger" aria-label="Меню" onclick="toggleMobile()">☰</button>
-</nav>
-<div class="mobile-menu" id="mobileMenu">
-  <a href="index.html">О регионе</a>
-  <a href="places.html">Места</a>
-  <a href="food.html">Кухня</a>
-  <a href="tips.html">Советы</a>
-  <a href="tour.html" class="active">Тур</a>
-  <a href="https://t.me/like_a_local_bot" target="_blank" rel="noopener">Открыть бота →</a>
-</div>
 
-<div class="page-hero">
-  <div class="section-label">АВТОРСКИЙ ТУР</div>
-  <h1 class="page-title">Дагестан с Кириллом</h1>
-  <p class="page-sub">Страна гор с опытными местными гидами</p>
-</div>
+  <section class="section">
+    <div class="container">
 
-<section class="section">
-  <div class="container">
-
-    <!-- INTRO -->
-    <div class="intro-block reveal">
-      Меня зовут Кирилл. Я создал «Как местный» — потому что верю: лучшие путешествия случаются когда рядом тот, кто знает место изнутри.<br><br>
-      Думаю собрать небольшую группу и отправиться в Дагестан вместе — с опытными местными гидами-горцами, которые знают каждую тропу, каждый аул и каждое место где готовят настоящую еду.<br><br>
-      Сейчас проверяю спрос. Если наберётся группа — поедем летом или осенью 2026. Никаких обязательств и предоплаты.
-    </div>
-
-    <!-- PROGRAM -->
-    <div class="section-label">ПРОГРАММА</div>
-    <h2 class="section-title reveal">5 дней в Стране гор</h2>
-    <div class="days-grid">
-      <div class="day-card reveal">
-        <div class="day-num">1</div>
+      <div class="reveal">
+        <div class="eyebrow">О туре</div>
+      </div>
+      <div class="tour-intro reveal">
         <div>
-          <div class="day-label">ДЕНЬ ПЕРВЫЙ</div>
-          <div class="day-title">Прилёт · Махачкала</div>
-          <div class="day-desc">Встреча в аэропорту. Обзор Махачкалы: Джума-мечеть, набережная Каспия. Знакомство с командой. Ужин — настоящий хинкал в местном кафе.</div>
+          <h2 class="tour-intro-title">Хочешь вместе изучить Дагестан?</h2>
+          <p class="tour-intro-text">Я собираю группу для авторского тура — без туристических толп, только настоящий Дагестан. Едем к Сулакскому каньону, поднимаемся в Гамсутль, купаемся в Каспии и едим форель прямо у реки.</p>
+          <ul class="tour-tags">
+            <li>5 дней</li>
+            <li>Сулакский каньон</li>
+            <li>Гамсутль</li>
+            <li>Дербент</li>
+            <li>Горные сёла</li>
+            <li>Форель на углях</li>
+          </ul>
+          <p class="tour-price-line">~70 000 ₽ с человека (без перелёта). Всё включено.</p>
+          <p class="tour-note">Это проверка спроса — никаких обязательств и предоплаты.</p>
+          <a class="btn btn-primary" href="https://t.me/like_a_local_bot" target="_blank" rel="noopener noreferrer">Хочу в тур →</a>
+        </div>
+        <aside class="tour-side">
+          <div class="tour-side-title">Детали</div>
+          <div class="mini-facts">
+            <div class="mini-fact">🗓 Сезон: лето / осень 2026</div>
+            <div class="mini-fact">👥 Группа: до 10 человек</div>
+            <div class="mini-fact">📅 Длительность: 5 дней</div>
+            <div class="mini-fact">✈️ Прилёт: Махачкала (MCX)</div>
+            <div class="mini-fact">💰 ~70 000 ₽ / чел. (без авиа)</div>
+          </div>
+        </aside>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="section" style="background:#fafafa; border-top:1px solid var(--line); border-bottom:1px solid var(--line)">
+    <div class="container">
+      <div class="reveal">
+        <div class="eyebrow">Программа</div>
+        <h2 class="section-title">5 дней в Стране гор</h2>
+      </div>
+      <div class="days-grid">
+
+        <div class="day-card reveal">
+          <div class="day-num">1</div>
+          <div>
+            <div class="day-label">День первый</div>
+            <div class="day-title">Прилёт в Махачкалу</div>
+            <p class="day-desc">Встреча в аэропорту, трансфер в отель. Знакомство с командой. Обустройство. Вечером — ужин с настоящей местной едой: хинкал, чуду, первое знакомство с дагестанской кухней.</p>
+          </div>
+        </div>
+
+        <div class="day-card reveal">
+          <div class="day-num">2</div>
+          <div>
+            <div class="day-label">День второй</div>
+            <div class="day-title">Сулакский каньон</div>
+            <p class="day-desc">Ранний выезд на каньон (100 км от Махачкалы). Смотровая в посёлке Дубки, прогулка на лодке по бирюзовой реке Сулак. Обед с форелью прямо у воды — та самая рыба, за которой сюда едут специально.</p>
+          </div>
+        </div>
+
+        <div class="day-card reveal">
+          <div class="day-num">3</div>
+          <div>
+            <div class="day-label">День третий</div>
+            <div class="day-title">Гамсутль и горные сёла</div>
+            <p class="day-desc">Выезд в горы. Пешая тропа к аулу-призраку Гамсутль (40 минут подъёма). Каменные дома, вид на ущелье, горный воздух. Аутентичные горные сёла — живые, с жителями и традициями.</p>
+          </div>
+        </div>
+
+        <div class="day-card reveal">
+          <div class="day-num">4</div>
+          <div>
+            <div class="day-label">День четвёртый</div>
+            <div class="day-title">Дербент</div>
+            <p class="day-desc">Цитадель Нарын-кала (ЮНЕСКО), старый город — лабиринт узких улочек с виноградными лозами и котами на стенах. Рынок, местные специалитеты, дербентский коньяк. Каспийский воздух.</p>
+          </div>
+        </div>
+
+        <div class="day-card reveal">
+          <div class="day-num">5</div>
+          <div>
+            <div class="day-label">День пятый</div>
+            <div class="day-title">Каспий и отлёт</div>
+            <p class="day-desc">Утро на берегу Каспийского моря. Пляж, последний ужин — форель на углях у воды. Трансфер в аэропорт Махачкалы. До встречи, Дагестан.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container" style="display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:start">
+      <div>
+        <div class="reveal">
+          <div class="eyebrow">Что включено</div>
+          <h2 class="section-title">Всё включено</h2>
+        </div>
+        <div class="included-grid">
+          <div class="included-item reveal">✅ Трансфер из аэропорта и обратно</div>
+          <div class="included-item reveal">✅ Проживание в отелях / гостевых домах</div>
+          <div class="included-item reveal">✅ Все экскурсии и входные билеты</div>
+          <div class="included-item reveal">✅ Питание (завтраки + ужины)</div>
+          <div class="included-item reveal">✅ Местный гид и водитель</div>
+          <div class="included-item reveal">✅ Личное сопровождение Кирилла</div>
+        </div>
+        <div class="not-included reveal" style="margin-top:20px">
+          <div style="font-size:13px;font-weight:700;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px">Не включено</div>
+          <div class="not-included-item">✈️ Авиабилеты до Махачкалы</div>
+          <div class="not-included-item">🛍 Личные покупки и сувениры</div>
         </div>
       </div>
-      <div class="day-card reveal">
-        <div class="day-num">2</div>
-        <div>
-          <div class="day-label">ДЕНЬ ВТОРОЙ</div>
-          <div class="day-title">Сулакский каньон · Сарыкум</div>
-          <div class="day-desc">Ранний выезд на Сулакский каньон (100 км). Смотровая площадка, сплав на катере по бирюзовой реке. Обед с форелью прямо у воды. Бархан Сарыкум на закате.</div>
+
+      <div>
+        <div class="reveal">
+          <div class="eyebrow">FAQ</div>
+          <h2 class="section-title">Частые вопросы</h2>
+        </div>
+        <div class="faq-list reveal">
+          <div class="faq-item">
+            <button class="faq-question" onclick="toggleFaq(this)">
+              Нужна ли виза?
+              <i class="faq-chevron">∨</i>
+            </button>
+            <div class="faq-answer">Нет. Дагестан — субъект России. Нужен только паспорт гражданина РФ. Иностранным гражданам — стандартная виза в Россию.</div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-question" onclick="toggleFaq(this)">
+              Можно ли без физподготовки?
+              <i class="faq-chevron">∨</i>
+            </button>
+            <div class="faq-answer">Да, маршрут умеренный. Самый сложный участок — подъём в Гамсутль, 40 минут по горной тропе. Люди разной физической формы справляются без проблем.</div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-question" onclick="toggleFaq(this)">
+              Когда лучший сезон?
+              <i class="faq-chevron">∨</i>
+            </button>
+            <div class="faq-answer">Лето (июль–август) — жарко, можно купаться на Каспии. Осень (сентябрь–октябрь) — тихо, золотые горы, меньше туристов, мягкая температура. Оба варианта хороши.</div>
+          </div>
         </div>
       </div>
-      <div class="day-card reveal">
-        <div class="day-num">3</div>
-        <div>
-          <div class="day-label">ДЕНЬ ТРЕТИЙ</div>
-          <div class="day-title">Гуниб · Гамсутль · Чох</div>
-          <div class="day-desc">Выезд в горы. Плато Гуниб — 300 солнечных дней. Пешая тропа к Гамсутлю (40 минут) — аул-призрак на высоте 1500м. Аул Чох — один из красивейших в Дагестане.</div>
-        </div>
-      </div>
-      <div class="day-card reveal">
-        <div class="day-num">4</div>
-        <div>
-          <div class="day-label">ДЕНЬ ЧЕТВЁРТЫЙ</div>
-          <div class="day-title">Хунзах · Водопад Тобот</div>
-          <div class="day-desc">Хунзахское плато. Водопад Тобот — 100 метров над пропастью. Матласская каменная чаша. Горные сёла, местная кухня, живое общение с жителями.</div>
-        </div>
-      </div>
-      <div class="day-card reveal">
-        <div class="day-num">5</div>
-        <div>
-          <div class="day-label">ДЕНЬ ПЯТЫЙ</div>
-          <div class="day-title">Дербент · Вылет</div>
-          <div class="day-desc">Древний Дербент: цитадель Нарын-Кала, Джума-мечеть 734 года, Старый город. Экраноплан «Лунь» на берегу Каспия. Ужин с дербентским коньяком. Трансфер в аэропорт.</div>
-        </div>
+    </div>
+  </section>
+
+  <section class="section" style="background:#fafafa; border-top:1px solid var(--line)">
+    <div class="container">
+      <div class="cta-block reveal">
+        <div class="cta-price">~70 000 ₽</div>
+        <p class="cta-note">с человека · без перелёта · всё включено</p>
+        <p class="cta-disclaimer">Это проверка спроса. Никаких обязательств и предоплаты — просто нажми кнопку и напиши мне в боте.</p>
+        <a class="btn btn-primary btn-lg" href="https://t.me/like_a_local_bot" target="_blank" rel="noopener noreferrer">Хочу в тур →</a>
+        <div class="cta-author">Кирилл Андреев · основатель «Как местный» · @andreev032</div>
       </div>
     </div>
+  </section>
 
-    <!-- INCLUDED -->
-    <div class="section-label">ЧТО ВКЛЮЧЕНО</div>
-    <h2 class="section-title reveal">Всё включено</h2>
-    <div class="included-grid reveal">
-      <div class="included-item">✅ Трансфер по всему Дагестану</div>
-      <div class="included-item">✅ Проживание (4 ночи)</div>
-      <div class="included-item">✅ Полное питание</div>
-      <div class="included-item">✅ Море свежих фруктов</div>
-      <div class="included-item">✅ Опытный местный гид-горец</div>
-      <div class="included-item">✅ Все входные билеты</div>
-      <div class="included-item">✅ Сплав на катере по Сулаку</div>
-      <div class="included-item">✅ Личное сопровождение Кирилла</div>
-    </div>
-
-    <!-- PRICE + CTA -->
-    <div class="price-block reveal">
-      <div class="price-num">~70 000 ₽</div>
-      <div class="price-note">с человека · без перелёта · всё включено</div>
-      <div class="price-title">Оставь заявку</div>
-      <p class="price-desc">
-        Я напишу лично когда подберём даты. Никаких обязательств и предоплаты.
-      </p>
-      <a href="https://t.me/like_a_local_bot" class="btn-tour" target="_blank" rel="noopener">Хочу в тур →</a>
-      <div class="tour-author">Кирилл Андреев · основатель «Как местный» · @andreev032</div>
-    </div>
-
-    <!-- FAQ -->
-    <div class="section-label">ВОПРОСЫ</div>
-    <h2 class="section-title reveal">Частые вопросы</h2>
-    <div class="faq-list reveal">
-      <div class="faq-item">
-        <button class="faq-question" onclick="toggleFaq(this)">
-          Нужна ли физическая подготовка?
-          <span class="faq-chevron">∨</span>
-        </button>
-        <div class="faq-answer">Базовая. Пешие маршруты 2–5 км по горным тропам. Подъём к Гамсутлю занимает 40 минут. Люди разной физической формы справляются без проблем.</div>
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div>
+        <div class="footer-brand">Как местный</div>
+        <div class="footer-sub">© 2026 · <a href="https://t.me/like_a_local_bot" target="_blank" rel="noopener noreferrer" style="color:var(--accent);font-weight:600">@like_a_local_bot</a> · Путеводители</div>
       </div>
-      <div class="faq-item">
-        <button class="faq-question" onclick="toggleFaq(this)">
-          Что взять с собой?
-          <span class="faq-chevron">∨</span>
-        </button>
-        <div class="faq-answer">Удобная закрытая обувь, лёгкая куртка (в горах прохладно вечером), наличные (в горах нет банкоматов), офлайн-карты. Женщинам — платок для мечетей.</div>
-      </div>
-      <div class="faq-item">
-        <button class="faq-question" onclick="toggleFaq(this)">
-          Когда будут точные даты?
-          <span class="faq-chevron">∨</span>
-        </button>
-        <div class="faq-answer">Как только наберётся группа — сразу назначу даты и напишу каждому лично. Оставь заявку и я свяжусь.</div>
-      </div>
-      <div class="faq-item">
-        <button class="faq-question" onclick="toggleFaq(this)">
-          Можно приехать одному?
-          <span class="faq-chevron">∨</span>
-        </button>
-        <div class="faq-answer">Да, это групповой тур для тех кто хочет путешествовать в компании. Формат располагает к знакомству с интересными людьми.</div>
-      </div>
+      <nav style="display:flex;gap:18px;flex-wrap:wrap">
+        <a href="index.html" style="font-size:14px;font-weight:500;color:var(--muted)">О регионе</a>
+        <a href="places.html" style="font-size:14px;font-weight:500;color:var(--muted)">Места</a>
+        <a href="food.html" style="font-size:14px;font-weight:500;color:var(--muted)">Кухня</a>
+        <a href="tips.html" style="font-size:14px;font-weight:500;color:var(--muted)">Советы</a>
+      </nav>
     </div>
+  </footer>
 
-  </div>
-</section>
+  <script>
+    (function () {
+      const burger = document.querySelector('.burger');
+      const mobileMenu = document.getElementById('mobileMenu');
+      document.addEventListener('click', function (e) {
+        if (mobileMenu && !mobileMenu.contains(e.target) && !burger.contains(e.target)) {
+          mobileMenu.classList.remove('open');
+        }
+      });
+      const obs = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) { e.target.classList.add('is-visible'); obs.unobserve(e.target); }
+        });
+      }, { threshold: 0.14, rootMargin: '0px 0px -40px 0px' });
+      document.querySelectorAll('.reveal').forEach(function (el) { obs.observe(el); });
+    })();
 
-<footer>
-  <div class="container">
-    <div class="footer-logo">🎒 Как местный</div>
-    <p style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">Путеводители для настоящих путешественников</p>
-    <div class="footer-links">
-      <a href="index.html">О регионе</a>
-      <a href="places.html">Места</a>
-      <a href="food.html">Кухня</a>
-      <a href="tips.html">Советы</a>
-      <a href="tour.html">Тур с Кириллом</a>
-    </div>
-    <div class="footer-copy">© 2026 · <a href="https://t.me/like_a_local_bot" style="color:var(--text-muted); text-decoration:none;" target="_blank" rel="noopener">@like_a_local_bot</a></div>
-  </div>
-</footer>
-
-<script>
-  function toggleMobile() {
-    document.getElementById('mobileMenu').classList.toggle('open');
-  }
-  document.addEventListener('click', function(e) {
-    const menu = document.getElementById('mobileMenu');
-    const burger = document.querySelector('.nav-burger');
-    if (!menu.contains(e.target) && !burger.contains(e.target)) menu.classList.remove('open');
-  });
-
-  function toggleFaq(btn) {
-    const item = btn.closest('.faq-item');
-    const isOpen = item.classList.contains('open');
-    document.querySelectorAll('.faq-item.open').forEach(el => el.classList.remove('open'));
-    if (!isOpen) item.classList.add('open');
-  }
-
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach((entry, i) => {
-      if (entry.isIntersecting) {
-        setTimeout(() => {
-          entry.target.style.opacity = '1';
-          entry.target.style.transform = 'translateY(0)';
-        }, i * 80);
-        observer.unobserve(entry.target);
-      }
-    });
-  }, { threshold: 0.1 });
-
-  document.querySelectorAll('.reveal').forEach(el => {
-    el.style.opacity = '0';
-    el.style.transform = 'translateY(30px)';
-    el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-    observer.observe(el);
-  });
-</script>
+    function toggleFaq(btn) {
+      var item = btn.closest('.faq-item');
+      var isOpen = item.classList.contains('open');
+      document.querySelectorAll('.faq-item.open').forEach(function (el) { el.classList.remove('open'); });
+      if (!isOpen) item.classList.add('open');
+    }
+  </script>
 </body>
 </html>

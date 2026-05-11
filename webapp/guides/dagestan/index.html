@@ -3,795 +3,403 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Дагестан — Как местный</title>
-  <meta name="description" content="Красивый HTML-путеводитель по Дагестану: каньоны, древние аулы, Дербент, кухня и тур с местными гидами." />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-
+  <title>Дагестан — путеводитель | Как местный</title>
+  <meta name="description" content="Путеводитель по Дагестану: Сулакский каньон, Гамсутль, Дербент, кухня и авторский тур с Кириллом." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
-    :root{
-      --bg:#ffffff;
-      --text:#111111;
-      --muted:#6f6f6f;
-      --line:#e8e8e8;
-      --card:#ffffff;
-      --accent:#C4622D;
-      --accent-dark:#a24e22;
-      --shadow:0 10px 30px rgba(17,17,17,.06);
-      --shadow-hover:0 20px 40px rgba(17,17,17,.10);
-      --radius:16px;
-      --radius-lg:28px;
-      --container:1180px;
+    :root {
+      --bg: #ffffff;
+      --text: #111111;
+      --muted: #6f6f6f;
+      --line: #e8e8e8;
+      --accent: #C4622D;
+      --accent-dark: #a24e22;
+      --accent-bg: #fff7f1;
+      --shadow: 0 10px 30px rgba(17,17,17,.06);
+      --shadow-hover: 0 20px 40px rgba(17,17,17,.10);
+      --radius: 16px;
+      --radius-lg: 28px;
+      --container: 1180px;
     }
-
-    *{box-sizing:border-box}
-    html{scroll-behavior:smooth}
-    body{
-      margin:0;
-      background:var(--bg);
-      color:var(--text);
-      font-family:"Inter",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-      -webkit-font-smoothing:antialiased;
-      text-rendering:optimizeLegibility;
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0 }
+    html { scroll-behavior: smooth }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Manrope', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
     }
+    img { max-width: 100%; display: block }
+    a { color: inherit; text-decoration: none }
+    .container { width: min(var(--container), calc(100% - 32px)); margin: 0 auto }
 
-    img{max-width:100%;display:block}
-    a{color:inherit;text-decoration:none}
-
-    .container{
-      width:min(var(--container), calc(100% - 32px));
-      margin:0 auto;
+    /* TOPBAR */
+    .topbar {
+      position: sticky; top: 0; z-index: 1000;
+      background: rgba(255,255,255,.92);
+      backdrop-filter: saturate(180%) blur(14px);
+      -webkit-backdrop-filter: saturate(180%) blur(14px);
+      border-bottom: 1px solid rgba(17,17,17,.06);
     }
-
-    .topbar{
-      position:sticky;
-      top:0;
-      z-index:1000;
-      background:rgba(255,255,255,.9);
-      backdrop-filter:saturate(180%) blur(14px);
-      border-bottom:1px solid rgba(17,17,17,.06);
+    .topbar-inner {
+      display: flex; align-items: center; gap: 16px;
+      min-height: 72px; max-width: 1180px; margin: 0 auto; padding: 0 24px;
     }
-
-    .topbar-inner{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:16px;
-      min-height:72px;
+    .brand { font-family: 'Unbounded', sans-serif; font-size: 15px; font-weight: 700; color: #111; white-space: nowrap }
+    .nav-links { display: flex; gap: 0; margin-left: auto }
+    .nav-links a { color: var(--muted); font-size: 14px; font-weight: 500; padding: 8px 12px; transition: color .2s }
+    .nav-links a:hover, .nav-links a.active { color: var(--text) }
+    .topbar-actions { display: flex; align-items: center; gap: 10px }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      border: none; border-radius: 999px; padding: 11px 20px;
+      font: 600 14px/1 'Manrope', sans-serif; cursor: pointer; transition: .25s ease;
+      text-decoration: none; white-space: nowrap;
     }
-
-    .brand{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      font-weight:800;
-      font-size:18px;
-      letter-spacing:-0.02em;
-      white-space:nowrap;
+    .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 8px 20px rgba(196,98,45,.22) }
+    .btn-primary:hover { background: var(--accent-dark); transform: translateY(-1px) }
+    .btn-white { background: #fff; color: #111; border: none }
+    .btn-white:hover { background: #f5f5f5; transform: translateY(-1px) }
+    .btn-outline { background: transparent; color: #fff; border: 1.5px solid rgba(255,255,255,.55) }
+    .btn-outline:hover { background: rgba(255,255,255,.12); transform: translateY(-1px) }
+    .btn-secondary { background: #fff; color: var(--accent); border: 1px solid #ead7cc }
+    .btn-secondary:hover { border-color: #d7b4a2; transform: translateY(-1px) }
+    .burger { display: none; background: none; border: none; cursor: pointer; padding: 8px; color: var(--text); font-size: 22px; line-height: 1 }
+    .mobile-menu {
+      display: none; position: fixed; top: 72px; left: 0; right: 0;
+      background: rgba(255,255,255,.98);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--line);
+      flex-direction: column; z-index: 999; padding: 16px 24px;
     }
+    .mobile-menu.open { display: flex }
+    .mobile-menu a { color: var(--muted); padding: 13px 0; font-size: 15px; font-weight: 500; border-bottom: 1px solid var(--line); transition: color .2s }
+    .mobile-menu a:last-child { border-bottom: none }
+    .mobile-menu a:hover, .mobile-menu a.active { color: var(--accent) }
 
-    .brand-badge{
-      width:36px;
-      height:36px;
-      border-radius:12px;
-      display:grid;
-      place-items:center;
-      background:#fff4ec;
-      border:1px solid #f2d8c8;
-      font-size:18px;
-    }
-
-    .topbar-actions{
-      display:flex;
-      align-items:center;
-      gap:10px;
-    }
-
-    .btn{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      gap:8px;
-      border:none;
-      border-radius:999px;
-      padding:13px 18px;
-      font:600 14px/1 "Inter",system-ui,sans-serif;
-      cursor:pointer;
-      transition:.25s ease;
-      text-decoration:none;
-      white-space:nowrap;
-    }
-
-    .btn-primary{
-      background:var(--accent);
-      color:#fff;
-      box-shadow:0 10px 24px rgba(196,98,45,.24);
-    }
-
-    .btn-primary:hover{
-      background:var(--accent-dark);
-      transform:translateY(-1px);
-    }
-
-    .btn-secondary{
-      background:#fff;
-      color:var(--accent);
-      border:1px solid #ead7cc;
-    }
-
-    .btn-secondary:hover{
-      border-color:#d7b4a2;
-      transform:translateY(-1px);
-    }
-
-    .hero{
-      min-height:100svh;
-      position:relative;
-      overflow:hidden;
-      display:flex;
-      align-items:flex-end;
+    /* HERO */
+    .hero {
+      min-height: 100svh; position: relative; overflow: hidden;
+      display: flex; align-items: flex-end;
       background:
         linear-gradient(rgba(0,0,0,.26), rgba(0,0,0,.56)),
         url('https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/Sulak_Canyon_Dagestan.jpg/1600px-Sulak_Canyon_Dagestan.jpg') center/cover no-repeat;
     }
-
-    .hero::after{
-      content:"";
-      position:absolute;
-      inset:auto 0 0 0;
-      height:28vh;
-      background:linear-gradient(to top, rgba(0,0,0,.40), rgba(0,0,0,0));
-      pointer-events:none;
+    .hero::after {
+      content: ""; position: absolute; inset: auto 0 0 0;
+      height: 28vh; background: linear-gradient(to top, rgba(0,0,0,.40), transparent);
+      pointer-events: none;
     }
-
-    .hero-content{
-      position:relative;
-      z-index:1;
-      width:min(980px, calc(100% - 32px));
-      margin:0 auto;
-      padding:120px 0 72px;
-      color:#fff;
+    .hero-content {
+      position: relative; z-index: 1;
+      width: min(980px, calc(100% - 32px));
+      margin: 0 auto; padding: 120px 0 72px; color: #fff;
     }
-
-    .hero-kicker{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding:10px 14px;
-      border-radius:999px;
-      background:rgba(255,255,255,.12);
-      border:1px solid rgba(255,255,255,.18);
-      backdrop-filter:blur(10px);
-      font-size:14px;
-      font-weight:600;
-      margin-bottom:18px;
+    .hero-kicker {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 14px; border-radius: 999px;
+      background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.18);
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      font-size: 14px; font-weight: 600; margin-bottom: 18px;
     }
-
-    .hero h1{
-      margin:0 0 12px;
-      font-size:clamp(54px, 11vw, 112px);
-      line-height:.95;
-      letter-spacing:-0.06em;
-      font-weight:900;
+    .hero h1 {
+      font-family: 'Unbounded', sans-serif;
+      margin: 0 0 14px;
+      font-size: clamp(54px, 11vw, 112px);
+      line-height: .95; letter-spacing: -0.06em; font-weight: 900;
     }
-
-    .hero-subtitle{
-      max-width:760px;
-      margin:0 0 28px;
-      font-size:clamp(18px, 2.3vw, 28px);
-      line-height:1.35;
-      color:rgba(255,255,255,.92);
-      font-style:italic;
+    .hero-subtitle {
+      max-width: 720px; margin: 0 0 28px;
+      font-size: clamp(17px, 2.1vw, 22px); line-height: 1.45;
+      color: rgba(255,255,255,.9); font-style: italic;
     }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px }
 
-    .hero-actions{
-      display:flex;
-      flex-wrap:wrap;
-      gap:12px;
+    /* STATS */
+    .stats-wrap { position: relative; z-index: 5; margin-top: -42px }
+    .stats {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
     }
-
-    .section{
-      padding:76px 0;
+    .stat {
+      background: #fff; border: 1px solid var(--line); border-radius: 22px;
+      padding: 22px 20px; box-shadow: var(--shadow);
     }
+    .stat-icon { font-size: 22px; margin-bottom: 8px }
+    .stat-value { font-family: 'Unbounded', sans-serif; font-size: clamp(18px, 2.5vw, 26px); font-weight: 900; letter-spacing: -0.04em; line-height: 1.1; margin-bottom: 6px }
+    .stat-label { color: var(--muted); font-size: 13px; line-height: 1.5; font-weight: 500 }
 
-    .section-sm{
-      padding:52px 0;
+    /* SECTION */
+    .section { padding: 76px 0 }
+    .section-sm { padding: 52px 0 }
+    .eyebrow { display: inline-block; margin-bottom: 12px; color: var(--accent); font-size: 13px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase }
+    .section-title { font-family: 'Unbounded', sans-serif; margin: 0 0 12px; font-size: clamp(32px, 4vw, 56px); line-height: 1.02; letter-spacing: -0.05em; font-weight: 900 }
+    .section-lead { margin: 0; max-width: 760px; color: var(--muted); font-size: 18px; line-height: 1.6 }
+    .section-header { margin-bottom: 28px }
+    .section-header-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap }
+
+    /* PLACE CARDS */
+    .places-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; margin-top: 28px }
+    .place-card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; transition: transform .3s ease, box-shadow .3s ease }
+    .place-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover) }
+    .place-image { width: 100%; height: 200px; object-fit: cover; background: #ededed }
+    .place-body { padding: 18px; display: flex; flex-direction: column; gap: 12px }
+    .place-title { margin: 0; font-family: 'Unbounded', sans-serif; font-size: 17px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.2 }
+    .place-desc { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.55 }
+    .place-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: auto }
+    .place-tag { font-size: 13px; color: #9a9a9a }
+    .map-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--accent-bg); color: var(--accent);
+      border: 1px solid #f1d8ca; border-radius: 999px;
+      padding: 10px 14px; font-size: 13px; font-weight: 700; transition: .25s ease; flex-shrink: 0;
     }
+    .map-link:hover { background: var(--accent); color: #fff; border-color: var(--accent) }
 
-    .eyebrow{
-      display:inline-block;
-      margin-bottom:12px;
-      color:var(--accent);
-      font-size:13px;
-      font-weight:800;
-      letter-spacing:.12em;
-      text-transform:uppercase;
+    /* FOOD ROW */
+    .food-row {
+      display: grid; grid-auto-flow: column;
+      grid-auto-columns: minmax(240px, 270px);
+      gap: 18px; overflow-x: auto; padding-bottom: 8px; margin-top: 28px;
+      scroll-snap-type: x proximity;
     }
+    .food-row::-webkit-scrollbar { height: 6px }
+    .food-row::-webkit-scrollbar-thumb { background: #e6c8b8; border-radius: 999px }
+    .food-card { scroll-snap-align: start; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: #fff; transition: transform .3s ease, box-shadow .3s ease }
+    .food-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover) }
+    .food-image { width: 100%; height: 180px; object-fit: cover; background: #ececec }
+    .food-body { padding: 16px }
+    .food-title { margin: 0 0 6px; font-family: 'Unbounded', sans-serif; font-size: 15px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2 }
+    .food-desc { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.55 }
 
-    .section-title{
-      margin:0 0 12px;
-      font-size:clamp(32px, 4vw, 56px);
-      line-height:1.02;
-      letter-spacing:-0.05em;
-      font-weight:900;
+    /* TOUR */
+    .tour {
+      margin-top: 18px;
+      background: radial-gradient(circle at top right, rgba(196,98,45,.08), transparent 40%), linear-gradient(180deg, #fffaf7 0%, #fff 100%);
+      border: 1px solid #efd9cd; border-radius: var(--radius-lg);
+      padding: 34px; box-shadow: var(--shadow);
+      display: grid; grid-template-columns: 1.25fr .75fr; gap: 24px; align-items: start;
     }
+    .tour-title { font-family: 'Unbounded', sans-serif; margin: 0 0 12px; font-size: clamp(22px, 3vw, 38px); line-height: 1.1; letter-spacing: -0.05em; font-weight: 900 }
+    .tour-text { margin: 0 0 14px; color: #3d3d3d; line-height: 1.7; font-size: 16px }
+    .tour-tags { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0; padding: 0; list-style: none }
+    .tour-tags li { padding: 8px 14px; border-radius: 999px; background: #fff; border: 1px solid #edd8cb; color: #5d4a40; font-size: 13px; font-weight: 600 }
+    .tour-price { margin: 0 0 6px; font-size: 18px; font-weight: 700 }
+    .tour-note { color: var(--muted); font-size: 14px; line-height: 1.6; margin: 0 0 18px }
+    .tour-side { background: #fff; border: 1px solid #f1e3da; border-radius: 24px; padding: 22px }
+    .tour-side-title { margin: 0 0 10px; font-family: 'Unbounded', sans-serif; font-size: 15px; font-weight: 700; letter-spacing: -0.02em }
+    .tour-side p { margin: 0 0 10px; color: var(--muted); font-size: 14px; line-height: 1.6 }
+    .mini-facts { display: grid; gap: 8px; margin-top: 14px }
+    .mini-fact { padding: 11px 14px; border-radius: var(--radius); background: #fcf6f2; border: 1px solid #f2dfd4; font-size: 14px; line-height: 1.5; color: #5d4a40 }
 
-    .section-lead{
-      margin:0;
-      max-width:760px;
-      color:var(--muted);
-      font-size:18px;
-      line-height:1.6;
+    /* FOOTER */
+    .footer { border-top: 1px solid var(--line); padding: 28px 0 40px; color: var(--muted) }
+    .footer-inner { display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap }
+    .footer-brand { font-family: 'Unbounded', sans-serif; font-weight: 700; color: #222; font-size: 14px; margin-bottom: 4px }
+    .footer-sub { font-size: 13px }
+
+    /* ANIMATIONS */
+    .reveal { opacity: 0; transform: translateY(24px); transition: opacity .7s ease, transform .7s ease; will-change: opacity, transform }
+    .reveal.is-visible { opacity: 1; transform: translateY(0) }
+
+    @media (max-width: 980px) {
+      .tour { grid-template-columns: 1fr }
+      .stats { grid-template-columns: repeat(2, 1fr) }
     }
-
-    .stats{
-      display:grid;
-      grid-template-columns:repeat(3,1fr);
-      gap:16px;
-      margin-top:-42px;
-      position:relative;
-      z-index:5;
+    @media (max-width: 760px) {
+      .topbar-inner { min-height: 66px }
+      .nav-links { display: none }
+      .burger { display: block; margin-left: auto }
+      .topbar-actions .btn-primary { padding: 10px 16px; font-size: 13px }
+      .places-grid { grid-template-columns: 1fr }
+      .section { padding: 56px 0 }
+      .section-sm { padding: 40px 0 }
+      .food-row { grid-auto-columns: minmax(220px, 80vw) }
+      .tour { padding: 24px; border-radius: 22px }
+      .hero-content { padding: 100px 0 56px }
+      .stats-wrap { margin-top: -24px }
     }
-
-    .stat{
-      background:#fff;
-      border:1px solid var(--line);
-      border-radius:22px;
-      padding:26px 24px;
-      box-shadow:var(--shadow);
-    }
-
-    .stat-value{
-      font-size:clamp(28px, 4vw, 44px);
-      line-height:1;
-      font-weight:900;
-      letter-spacing:-0.05em;
-      margin-bottom:10px;
-    }
-
-    .stat-label{
-      color:var(--muted);
-      font-size:15px;
-      line-height:1.5;
-    }
-
-    .places-grid{
-      display:grid;
-      grid-template-columns:repeat(2, minmax(0,1fr));
-      gap:22px;
-      margin-top:28px;
-    }
-
-    .place-card{
-      background:var(--card);
-      border:1px solid var(--line);
-      border-radius:var(--radius);
-      overflow:hidden;
-      transition:transform .3s ease, box-shadow .3s ease, border-color .3s ease;
-      box-shadow:0 0 0 rgba(0,0,0,0);
-    }
-
-    .place-card:hover{
-      transform:translateY(-4px);
-      box-shadow:var(--shadow-hover);
-      border-color:#ddd4ce;
-    }
-
-    .place-image{
-      width:100%;
-      height:200px;
-      object-fit:cover;
-      background:#ededed;
-    }
-
-    .place-body{
-      padding:18px;
-      display:flex;
-      flex-direction:column;
-      gap:12px;
-    }
-
-    .place-title{
-      margin:0;
-      font-size:24px;
-      line-height:1.1;
-      font-weight:800;
-      letter-spacing:-0.03em;
-    }
-
-    .place-desc{
-      margin:0;
-      color:var(--muted);
-      font-size:15px;
-      line-height:1.55;
-    }
-
-    .place-footer{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      margin-top:auto;
-    }
-
-    .place-tag{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      font-size:13px;
-      color:#7c7c7c;
-      min-width:0;
-    }
-
-    .place-tag span{
-      display:block;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      white-space:nowrap;
-    }
-
-    .map-link{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      background:#fff7f1;
-      color:var(--accent);
-      border:1px solid #f1d8ca;
-      border-radius:999px;
-      padding:10px 14px;
-      font-size:14px;
-      font-weight:700;
-      transition:.25s ease;
-      flex-shrink:0;
-    }
-
-    .map-link:hover{
-      background:var(--accent);
-      color:#fff;
-      border-color:var(--accent);
-    }
-
-    .food-row{
-      display:grid;
-      grid-auto-flow:column;
-      grid-auto-columns:minmax(250px, 280px);
-      gap:18px;
-      overflow-x:auto;
-      padding-bottom:8px;
-      margin-top:28px;
-      scroll-snap-type:x proximity;
-    }
-
-    .food-row::-webkit-scrollbar{height:10px}
-    .food-row::-webkit-scrollbar-thumb{
-      background:#e6c8b8;
-      border-radius:999px;
-    }
-
-    .food-card{
-      scroll-snap-align:start;
-      background:#fff;
-      border:1px solid var(--line);
-      border-radius:var(--radius);
-      overflow:hidden;
-      transition:transform .3s ease, box-shadow .3s ease;
-    }
-
-    .food-card:hover{
-      transform:translateY(-4px);
-      box-shadow:var(--shadow-hover);
-    }
-
-    .food-image{
-      width:100%;
-      height:200px;
-      object-fit:cover;
-      background:#ececec;
-    }
-
-    .food-body{
-      padding:16px;
-    }
-
-    .food-title{
-      margin:0 0 6px;
-      font-size:20px;
-      line-height:1.15;
-      font-weight:800;
-      letter-spacing:-0.03em;
-    }
-
-    .food-price{
-      color:var(--accent);
-      font-size:15px;
-      font-weight:700;
-      margin-bottom:8px;
-    }
-
-    .food-desc{
-      margin:0;
-      color:var(--muted);
-      font-size:14px;
-      line-height:1.55;
-    }
-
-    .tour{
-      margin-top:18px;
-      background:
-        radial-gradient(circle at top right, rgba(196,98,45,.10), transparent 30%),
-        linear-gradient(180deg, #fffaf7 0%, #fff 100%);
-      border:1px solid #efd9cd;
-      border-radius:28px;
-      padding:34px;
-      box-shadow:var(--shadow);
-      display:grid;
-      grid-template-columns:1.25fr .75fr;
-      gap:24px;
-      align-items:center;
-    }
-
-    .tour-title{
-      margin:0 0 12px;
-      font-size:clamp(28px, 3vw, 44px);
-      line-height:1.03;
-      letter-spacing:-0.05em;
-      font-weight:900;
-    }
-
-    .tour-text{
-      margin:0 0 14px;
-      color:#3d3d3d;
-      line-height:1.7;
-      font-size:16px;
-    }
-
-    .tour-list{
-      display:flex;
-      flex-wrap:wrap;
-      gap:10px;
-      margin:18px 0 18px;
-      padding:0;
-      list-style:none;
-    }
-
-    .tour-list li{
-      padding:10px 12px;
-      border-radius:999px;
-      background:#fff;
-      border:1px solid #edd8cb;
-      color:#5d4a40;
-      font-size:14px;
-      font-weight:600;
-    }
-
-    .tour-price{
-      margin:0 0 18px;
-      font-size:18px;
-      line-height:1.5;
-      font-weight:700;
-    }
-
-    .tour-note{
-      color:var(--muted);
-      font-size:14px;
-      line-height:1.6;
-      margin:0;
-    }
-
-    .tour-side{
-      background:#fff;
-      border:1px solid #f1e3da;
-      border-radius:24px;
-      padding:22px;
-    }
-
-    .tour-side-title{
-      margin:0 0 10px;
-      font-size:18px;
-      font-weight:800;
-      letter-spacing:-0.03em;
-    }
-
-    .tour-side p{
-      margin:0 0 10px;
-      color:var(--muted);
-      line-height:1.6;
-      font-size:15px;
-    }
-
-    .mini-facts{
-      display:grid;
-      gap:10px;
-      margin-top:16px;
-    }
-
-    .mini-fact{
-      padding:12px 14px;
-      border-radius:16px;
-      background:#fcf6f2;
-      border:1px solid #f2dfd4;
-      font-size:14px;
-      line-height:1.5;
-      color:#5d4a40;
-    }
-
-    .footer{
-      border-top:1px solid var(--line);
-      padding:28px 0 40px;
-      color:var(--muted);
-    }
-
-    .footer-inner{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:18px;
-      flex-wrap:wrap;
-    }
-
-    .footer-brand{
-      font-weight:800;
-      color:#222;
-    }
-
-    .reveal{
-      opacity:0;
-      transform:translateY(24px);
-      transition:opacity .7s ease, transform .7s ease;
-      will-change:opacity,transform;
-    }
-
-    .reveal.is-visible{
-      opacity:1;
-      transform:translateY(0);
-    }
-
-    @media (max-width: 980px){
-      .tour{
-        grid-template-columns:1fr;
-      }
-    }
-
-    @media (max-width: 760px){
-      .topbar-inner{min-height:66px}
-      .stats{
-        grid-template-columns:1fr;
-        margin-top:-24px;
-      }
-      .places-grid{
-        grid-template-columns:1fr;
-      }
-      .section{
-        padding:56px 0;
-      }
-      .section-sm{
-        padding:42px 0;
-      }
-      .place-title{
-        font-size:22px;
-      }
-      .hero-content{
-        padding:100px 0 56px;
-      }
-      .food-row{
-        grid-auto-columns:minmax(230px, 82vw);
-      }
-      .tour{
-        padding:24px;
-        border-radius:22px;
-      }
-    }
-
-    @media (max-width: 520px){
-      .container{
-        width:min(var(--container), calc(100% - 20px));
-      }
-      .topbar-actions .btn{
-        padding:11px 14px;
-        font-size:13px;
-      }
-      .hero-subtitle{
-        max-width:95%;
-      }
-      .place-footer{
-        flex-direction:column;
-        align-items:flex-start;
-      }
-      .footer-inner{
-        align-items:flex-start;
-        flex-direction:column;
-      }
+    @media (max-width: 520px) {
+      .container { width: min(var(--container), calc(100% - 20px)) }
+      .stats { grid-template-columns: repeat(2, 1fr) }
+      .footer-inner { flex-direction: column; align-items: flex-start }
+      .section-header-row { flex-direction: column; align-items: flex-start }
     }
   </style>
 </head>
 <body>
 
   <header class="topbar">
-    <div class="container topbar-inner">
-      <a class="brand" href="#top" aria-label="Как местный — наверх">
-        <span class="brand-badge">🎒</span>
-        <span>Как местный</span>
-      </a>
-
+    <div class="topbar-inner">
+      <a class="brand" href="index.html">Как местный</a>
+      <nav class="nav-links" aria-label="Разделы">
+        <a href="index.html" class="active">О регионе</a>
+        <a href="places.html">Места</a>
+        <a href="food.html">Кухня</a>
+        <a href="tips.html">Советы</a>
+        <a href="tour.html">Тур</a>
+      </nav>
       <div class="topbar-actions">
-        <a class="btn btn-primary" href="https://t.me/like_a_local_bot" target="_blank" rel="noopener noreferrer">
-          Открыть бота
-        </a>
+        <a class="btn btn-primary" href="https://t.me/like_a_local_bot" target="_blank" rel="noopener noreferrer">Открыть бота</a>
       </div>
+      <button class="burger" aria-label="Открыть меню" onclick="document.getElementById('mobileMenu').classList.toggle('open')">&#9776;</button>
     </div>
   </header>
 
-  <section class="hero" id="top">
+  <nav class="mobile-menu" id="mobileMenu" aria-label="Мобильное меню">
+    <a href="index.html" class="active">О регионе</a>
+    <a href="places.html">Места</a>
+    <a href="food.html">Кухня</a>
+    <a href="tips.html">Советы</a>
+    <a href="tour.html">Тур</a>
+    <a href="https://t.me/like_a_local_bot" target="_blank" rel="noopener noreferrer" style="color:var(--accent);font-weight:700">Открыть бота →</a>
+  </nav>
+
+  <section class="hero" aria-label="Заглавный экран">
     <div class="hero-content reveal">
-      <div class="hero-kicker">Горы · древние аулы · море · кухня</div>
+      <div class="hero-kicker">🏔 Северный Кавказ · Россия</div>
       <h1>Дагестан</h1>
-      <p class="hero-subtitle">
-        Место, где за одну поездку можно увидеть один из самых впечатляющих каньонов,
-        пройтись по аулу-призраку, доехать до древнего Дербента и поужинать форелью на углях.
-      </p>
+      <p class="hero-subtitle">Горы, море, история и кухня — всё это один регион</p>
       <div class="hero-actions">
-        <a class="btn btn-primary" href="#guide">Читать путеводитель ↓</a>
-        <a class="btn btn-secondary" href="https://t.me/like_a_local_bot" target="_blank" rel="noopener noreferrer">
-          Написать в бот
-        </a>
+        <a class="btn btn-white" href="places.html">Смотреть места →</a>
+        <a class="btn btn-outline" href="#guide">Читать путеводитель</a>
       </div>
     </div>
   </section>
 
   <div class="container">
-    <section class="stats section-sm" aria-label="Факты о Дагестане">
-      <div class="stat reveal">
-        <div class="stat-value">60+</div>
-        <div class="stat-label">народов живут в Дагестане — республика удивляет языками, кухней и традициями</div>
+    <div class="stats-wrap section-sm">
+      <div class="stats">
+        <div class="stat reveal">
+          <div class="stat-icon">🏔</div>
+          <div class="stat-value">2 000 км²</div>
+          <div class="stat-label">горных территорий</div>
+        </div>
+        <div class="stat reveal">
+          <div class="stat-icon">🌊</div>
+          <div class="stat-value">530 км</div>
+          <div class="stat-label">береговой линии Каспия</div>
+        </div>
+        <div class="stat reveal">
+          <div class="stat-icon">🕌</div>
+          <div class="stat-value">30+</div>
+          <div class="stat-label">народов живут в регионе</div>
+        </div>
+        <div class="stat reveal">
+          <div class="stat-icon">⏱</div>
+          <div class="stat-value">Май–окт</div>
+          <div class="stat-label">лучшее время для поездки</div>
+        </div>
       </div>
-      <div class="stat reveal">
-        <div class="stat-value">5000 лет</div>
-        <div class="stat-label">примерный возраст Дербента — одного из древнейших городов России</div>
-      </div>
-      <div class="stat reveal">
-        <div class="stat-value">1920 м</div>
-        <div class="stat-label">глубина Сулакского каньона — одна из самых впечатляющих природных точек региона</div>
-      </div>
-    </section>
+    </div>
   </div>
 
   <main id="guide">
+
     <section class="section">
       <div class="container">
-        <div class="reveal">
-          <div class="eyebrow">Главное</div>
-          <h2 class="section-title">Главные места</h2>
-          <p class="section-lead">
-            Маршрут для первого знакомства с Дагестаном: вода, камень, пустыня, древняя история
-            и горные сёла. Ниже — шесть мест, с которых стоит начать.
-          </p>
+        <div class="section-header-row section-header reveal">
+          <div>
+            <div class="eyebrow">Где побывать</div>
+            <h2 class="section-title">Главные места</h2>
+            <p class="section-lead">С этих трёх точек начинается знакомство с Дагестаном.</p>
+          </div>
+          <a class="btn btn-secondary" href="places.html">Все места →</a>
         </div>
 
         <div class="places-grid">
           <article class="place-card reveal">
-            <img
-              class="place-image"
-              loading="lazy"
-              src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/Sulak_Canyon_Dagestan.jpg/800px-Sulak_Canyon_Dagestan.jpg"
+            <img class="place-image" loading="lazy"
+              src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/Sulak_Canyon_Dagestan.jpg/1280px-Sulak_Canyon_Dagestan.jpg"
               alt="Сулакский каньон"
-              onerror="this.onerror=null;this.src='data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22800%22 height=%22450%22 viewBox=%220 0 800 450%22%3E%3Crect fill=%22%23e9e9e9%22 width=%22800%22 height=%22450%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-family=%22Arial%22 font-size=%2232%22 fill=%22%23888888%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22%3EФото недоступно%3C/text%3E%3C/svg%3E';"
-            />
+              onerror="this.onerror=null;this.style.background='#ededed'" />
             <div class="place-body">
               <h3 class="place-title">Сулакский каньон</h3>
-              <p class="place-desc">
-                Один из самых впечатляющих каньонов региона. Сюда едут за панорамами, бирюзовой водой
-                и прогулкой на катере по реке Сулак — это один из самых сильных первых вау-моментов в поездке.
-              </p>
+              <p class="place-desc">Один из глубочайших каньонов мира — 1920 м. Бирюзовая вода, прогулки на лодке, форель прямо у реки.</p>
               <div class="place-footer">
-                <div class="place-tag"><span>Панорамы · катер · бирюзовая вода</span></div>
-                <a class="map-link" href="https://www.google.com/maps/search/Сулакский+каньон/@43.009444,46.827778,12z" target="_blank" rel="noopener noreferrer">На карте 📍</a>
+                <span class="place-tag">Май–октябрь</span>
+                <a class="map-link" href="https://www.google.com/maps/search/Сулакский+каньон/@43.0,46.8,10z" target="_blank" rel="noopener noreferrer">📍 Карта</a>
               </div>
             </div>
           </article>
 
           <article class="place-card reveal">
-            <img
-              class="place-image"
-              loading="lazy"
-              src="https://images.unsplash.com/photo-1519608487953-e999c86e7455?auto=format&fit=crop&w=1200&q=80"
-              alt="Гамсутль"
-              onerror="this.onerror=null;this.src='data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22800%22 height=%22450%22 viewBox=%220 0 800 450%22%3E%3Crect fill=%22%23e9e9e9%22 width=%22800%22 height=%22450%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-family=%22Arial%22 font-size=%2232%22 fill=%22%23888888%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22%3EФото недоступно%3C/text%3E%3C/svg%3E';"
-            />
-            <div class="place-body">
-              <h3 class="place-title">Гамсутль</h3>
-              <p class="place-desc">
-                Легендарный аул-призрак, который часто называют «дагестанским Мачу-Пикчу».
-                Заброшенные каменные дома, горный воздух и ощущение, будто время здесь остановилось.
-              </p>
-              <div class="place-footer">
-                <div class="place-tag"><span>Аул-призрак · история · хайкинг</span></div>
-                <a class="map-link" href="https://www.google.com/maps/search/Гамсутль/@42.388,46.968,14z" target="_blank" rel="noopener noreferrer">На карте 📍</a>
-              </div>
-            </div>
-          </article>
-
-          <article class="place-card reveal">
-            <img
-              class="place-image"
-              loading="lazy"
-              src="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80"
-              alt="Бархан Сарыкум"
-              onerror="this.onerror=null;this.src='data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22800%22 height=%22450%22 viewBox=%220 0 800 450%22%3E%3Crect fill=%22%23e9e9e9%22 width=%22800%22 height=%22450%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-family=%22Arial%22 font-size=%2232%22 fill=%22%23888888%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22%3EФото недоступно%3C/text%3E%3C/svg%3E';"
-            />
-            <div class="place-body">
-              <h3 class="place-title">Бархан Сарыкум</h3>
-              <p class="place-desc">
-                Самый крупный бархан Евразии, высотой около 260 метров. Здесь снимали «Белое солнце пустыни».
-                Контраст песка, неба и гор вокруг выглядит почти нереально.
-              </p>
-              <div class="place-footer">
-                <div class="place-tag"><span>Пустыня · киноистория · закат</span></div>
-                <a class="map-link" href="https://www.google.com/maps/search/бархан+Сарыкум/@43.027,47.347,13z" target="_blank" rel="noopener noreferrer">На карте 📍</a>
-              </div>
-            </div>
-          </article>
-
-          <article class="place-card reveal">
-            <img
-              class="place-image"
-              loading="lazy"
-              src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/Derbent%2C_Dagestan_aerial_evening_view_2023-04-29.jpg/800px-Derbent%2C_Dagestan_aerial_evening_view_2023-04-29.jpg"
+            <img class="place-image" loading="lazy"
+              src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/Derbent%2C_Dagestan_aerial_evening_view_2023-04-29.jpg/1280px-Derbent%2C_Dagestan_aerial_evening_view_2023-04-29.jpg"
               alt="Дербент"
-              onerror="this.onerror=null;this.src='data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22800%22 height=%22450%22 viewBox=%220 0 800 450%22%3E%3Crect fill=%22%23e9e9e9%22 width=%22800%22 height=%22450%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-family=%22Arial%22 font-size=%2232%22 fill=%22%23888888%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22%3EФото недоступно%3C/text%3E%3C/svg%3E';"
-            />
+              onerror="this.onerror=null;this.style.background='#ededed'" />
             <div class="place-body">
               <h3 class="place-title">Дербент</h3>
-              <p class="place-desc">
-                Один из древнейших городов страны. Сюда едут ради крепости Нарын-Кала,
-                узких улиц старого города, каспийского воздуха и ощущения живой истории на каждом шагу.
-              </p>
+              <p class="place-desc">5000 лет истории. Цитадель Нарын-кала в списке ЮНЕСКО. Старый город — лабиринт узких улочек.</p>
               <div class="place-footer">
-                <div class="place-tag"><span>Крепость · старый город · Каспий</span></div>
-                <a class="map-link" href="https://www.google.com/maps/search/Нарын-Кала+Дербент/@42.059,48.286,15z" target="_blank" rel="noopener noreferrer">На карте 📍</a>
+                <span class="place-tag">Весь год</span>
+                <a class="map-link" href="https://www.google.com/maps/search/Дербент/@42.05,48.28,13z" target="_blank" rel="noopener noreferrer">📍 Карта</a>
               </div>
             </div>
           </article>
 
           <article class="place-card reveal">
-            <img
-              class="place-image"
-              loading="lazy"
-              src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80"
-              alt="Салтинский водопад"
-              onerror="this.onerror=null;this.src='data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22800%22 height=%22450%22 viewBox=%220 0 800 450%22%3E%3Crect fill=%22%23e9e9e9%22 width=%22800%22 height=%22450%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-family=%22Arial%22 font-size=%2232%22 fill=%22%23888888%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22%3EФото недоступно%3C/text%3E%3C/svg%3E';"
-            />
+            <img class="place-image" loading="lazy"
+              src="https://images.unsplash.com/photo-1519608487953-e999c86e7455?auto=format&fit=crop&w=1200&q=80"
+              alt="Гамсутль"
+              onerror="this.onerror=null;this.style.background='#ededed'" />
             <div class="place-body">
-              <h3 class="place-title">Салтинский водопад</h3>
-              <p class="place-desc">
-                Подземный водопад в скальном каньоне — одна из самых необычных природных точек маршрута.
-                Ради этого места стоит взять удобную обувь и не торопиться по дороге.
-              </p>
+              <h3 class="place-title">Гамсутль</h3>
+              <p class="place-desc">Заброшенный аул-призрак в горах. Каменные дома без людей, вид на ущелье. Подъём пешком 40 минут.</p>
               <div class="place-footer">
-                <div class="place-tag"><span>Подземный водопад · скалы · прохлада</span></div>
-                <a class="map-link" href="https://www.google.com/maps/search/Салтинский+водопад/@42.347,47.083,14z" target="_blank" rel="noopener noreferrer">На карте 📍</a>
+                <span class="place-tag">Май–октябрь</span>
+                <a class="map-link" href="https://www.google.com/maps/search/Гамсутль/@42.5,46.6,13z" target="_blank" rel="noopener noreferrer">📍 Карта</a>
               </div>
             </div>
           </article>
+        </div>
+      </div>
+    </section>
 
-          <article class="place-card reveal">
-            <img
-              class="place-image"
-              loading="lazy"
-              src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80"
-              alt="Чохские террасы"
-              onerror="this.onerror=null;this.src='data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22800%22 height=%22450%22 viewBox=%220 0 800 450%22%3E%3Crect fill=%22%23e9e9e9%22 width=%22800%22 height=%22450%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-family=%22Arial%22 font-size=%2232%22 fill=%22%23888888%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22%3EФото недоступно%3C/text%3E%3C/svg%3E';"
-            />
-            <div class="place-body">
-              <h3 class="place-title">Чохские террасы</h3>
-              <p class="place-desc">
-                Один из самых фотогеничных ландшафтов Дагестана: ступенчатые горные террасы,
-                мягкий свет, масштаб и ощущение, что смотришь на древний рукотворный амфитеатр.
-              </p>
-              <div class="place-footer">
-                <div class="place-tag"><span>Пейзажи · фото-точка · горы</span></div>
-                <a class="map-link" href="https://www.google.com/maps/search/Чохские+террасы+Дагестан/@42.320,47.317,13z" target="_blank" rel="noopener noreferrer">На карте 📍</a>
-              </div>
+    <section class="section" style="background:#fafafa; border-top:1px solid var(--line); border-bottom:1px solid var(--line)">
+      <div class="container">
+        <div class="section-header-row section-header reveal">
+          <div>
+            <div class="eyebrow">Что попробовать</div>
+            <h2 class="section-title">Кухня</h2>
+            <p class="section-lead">Хинкал, чуду и урбеч — три блюда, с которых начинается дагестанская кухня.</p>
+          </div>
+          <a class="btn btn-secondary" href="food.html">Вся кухня →</a>
+        </div>
+
+        <div class="food-row" aria-label="Блюда дагестанской кухни">
+          <article class="food-card reveal">
+            <img class="food-image" loading="lazy"
+              src="https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80"
+              alt="Хинкал аварский"
+              onerror="this.onerror=null;this.style.background='#ececec'" />
+            <div class="food-body">
+              <h3 class="food-title">Хинкал аварский</h3>
+              <p class="food-desc">Не путать с грузинским хинкали! Тесто + баранина + чеснок + томатный соус. Главное блюдо Дагестана.</p>
+            </div>
+          </article>
+
+          <article class="food-card reveal">
+            <img class="food-image" loading="lazy"
+              src="https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=800&q=80"
+              alt="Чуду"
+              onerror="this.onerror=null;this.style.background='#ececec'" />
+            <div class="food-body">
+              <h3 class="food-title">Чуду</h3>
+              <p class="food-desc">Тонкие лепёшки с начинкой — творог и зелень, мясо или тыква. Пекут на сухой сковороде.</p>
+            </div>
+          </article>
+
+          <article class="food-card reveal">
+            <img class="food-image" loading="lazy"
+              src="https://images.unsplash.com/photo-1526318896980-cf78c088247c?auto=format&fit=crop&w=800&q=80"
+              alt="Урбеч"
+              onerror="this.onerror=null;this.style.background='#ececec'" />
+            <div class="food-body">
+              <h3 class="food-title">Урбеч</h3>
+              <p class="food-desc">Паста из молотых семян льна или орехов. Энергетическая бомба горцев — с мёдом на хлеб.</p>
             </div>
           </article>
         </div>
@@ -801,171 +409,70 @@
     <section class="section">
       <div class="container">
         <div class="reveal">
-          <div class="eyebrow">Вкус путешествия</div>
-          <h2 class="section-title">Кухня</h2>
-          <p class="section-lead">
-            В Дагестан стоит ехать не только за видами. Здесь важно пробовать: хинкал, чуду,
-            курзе, мясо на углях и свежую форель. Простая еда, после которой сложно остаться равнодушным.
-          </p>
+          <div class="eyebrow">Тур с Кириллом</div>
         </div>
-
-        <div class="food-row" aria-label="Карточки блюд дагестанской кухни">
-          <article class="food-card reveal">
-            <img
-              class="food-image"
-              loading="lazy"
-              src="https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1200&q=80"
-              alt="Хинкал"
-              onerror="this.onerror=null;this.src='data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22800%22 height=%22450%22 viewBox=%220 0 800 450%22%3E%3Crect fill=%22%23ececec%22 width=%22800%22 height=%22450%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-family=%22Arial%22 font-size=%2232%22 fill=%22%23888888%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22%3EФото недоступно%3C/text%3E%3C/svg%3E';"
-            />
-            <div class="food-body">
-              <h3 class="food-title">Хинкал</h3>
-              <div class="food-price">~300–500 ₽</div>
-              <p class="food-desc">Сытное блюдо, с которого многие начинают знакомство с местной кухней.</p>
-            </div>
-          </article>
-
-          <article class="food-card reveal">
-            <img
-              class="food-image"
-              loading="lazy"
-              src="https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=1200&q=80"
-              alt="Чуду"
-              onerror="this.onerror=null;this.src='data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22800%22 height=%22450%22 viewBox=%220 0 800 450%22%3E%3Crect fill=%22%23ececec%22 width=%22800%22 height=%22450%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-family=%22Arial%22 font-size=%2232%22 fill=%22%23888888%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22%3EФото недоступно%3C/text%3E%3C/svg%3E';"
-            />
-            <div class="food-body">
-              <h3 class="food-title">Чуду</h3>
-              <div class="food-price">~100–200 ₽</div>
-              <p class="food-desc">Тонкая лепёшка с начинкой. Отличный быстрый перекус в дороге между локациями.</p>
-            </div>
-          </article>
-
-          <article class="food-card reveal">
-            <img
-              class="food-image"
-              loading="lazy"
-              src="https://images.unsplash.com/photo-1526318896980-cf78c088247c?auto=format&fit=crop&w=1200&q=80"
-              alt="Курзе"
-              onerror="this.onerror=null;this.src='data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22800%22 height=%22450%22 viewBox=%220 0 800 450%22%3E%3Crect fill=%22%23ececec%22 width=%22800%22 height=%22450%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-family=%22Arial%22 font-size=%2232%22 fill=%22%23888888%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22%3EФото недоступно%3C/text%3E%3C/svg%3E';"
-            />
-            <div class="food-body">
-              <h3 class="food-title">Курзе</h3>
-              <div class="food-price">~250–400 ₽</div>
-              <p class="food-desc">Местные пельмени с характерной лепкой — простое и очень живое блюдо региона.</p>
-            </div>
-          </article>
-
-          <article class="food-card reveal">
-            <img
-              class="food-image"
-              loading="lazy"
-              src="https://images.unsplash.com/photo-1529193591184-b1d58069ecdd?auto=format&fit=crop&w=1200&q=80"
-              alt="Шашлык из баранины"
-              onerror="this.onerror=null;this.src='data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22800%22 height=%22450%22 viewBox=%220 0 800 450%22%3E%3Crect fill=%22%23ececec%22 width=%22800%22 height=%22450%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-family=%22Arial%22 font-size=%2232%22 fill=%22%23888888%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22%3EФото недоступно%3C/text%3E%3C/svg%3E';"
-            />
-            <div class="food-body">
-              <h3 class="food-title">Шашлык из баранины</h3>
-              <div class="food-price">~500–800 ₽</div>
-              <p class="food-desc">Классика горного ужина: мясо на углях, овощи, лепёшка и долгий разговор за столом.</p>
-            </div>
-          </article>
-
-          <article class="food-card reveal">
-            <img
-              class="food-image"
-              loading="lazy"
-              src="https://images.unsplash.com/photo-1510130387422-82bed34b37e9?auto=format&fit=crop&w=1200&q=80"
-              alt="Форель из Сулака"
-              onerror="this.onerror=null;this.src='data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22800%22 height=%22450%22 viewBox=%220 0 800 450%22%3E%3Crect fill=%22%23ececec%22 width=%22800%22 height=%22450%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-family=%22Arial%22 font-size=%2232%22 fill=%22%23888888%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22%3EФото недоступно%3C/text%3E%3C/svg%3E';"
-            />
-            <div class="food-body">
-              <h3 class="food-title">Форель из Сулака</h3>
-              <div class="food-price">~600–900 ₽</div>
-              <p class="food-desc">Та самая форель на углях, ради которой многие потом вспоминают поездку ещё вкуснее.</p>
-            </div>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="container">
         <div class="tour reveal">
           <div>
-            <div class="eyebrow">Тур с Кириллом</div>
             <h2 class="tour-title">Хочешь вместе изучить Дагестан?</h2>
-            <p class="tour-text">
-              Меня зовут Кирилл, я основатель «Как местный». Собираю группу с опытными местными
-              гидами-горцами, чтобы показать Дагестан не "по верхам", а живо и по-настоящему.
-            </p>
-
-            <ul class="tour-list">
+            <p class="tour-text">Я собираю группу для авторского тура — без туристических толп, только настоящий Дагестан. Едем к Сулакскому каньону, поднимаемся в Гамсутль, купаемся в Каспии и едим форель прямо у реки.</p>
+            <ul class="tour-tags">
               <li>5 дней</li>
               <li>Сулакский каньон</li>
               <li>Гамсутль</li>
               <li>Дербент</li>
-              <li>горные сёла</li>
-              <li>форель на углях</li>
+              <li>Горные сёла</li>
+              <li>Форель на углях</li>
             </ul>
-
             <p class="tour-price">~70 000 ₽ с человека (без перелёта). Всё включено.</p>
-            <p class="tour-note">
-              Сейчас проверяю спрос — оставь заявку, и я напишу лично, когда появятся даты.
-            </p>
-
-            <div style="margin-top:20px;">
-              <a class="btn btn-primary" href="https://t.me/like_a_local_bot" target="_blank" rel="noopener noreferrer">
-                Хочу в тур →
-              </a>
-            </div>
+            <p class="tour-note">Это проверка спроса — никаких обязательств и предоплаты</p>
+            <a class="btn btn-primary" href="https://t.me/like_a_local_bot" target="_blank" rel="noopener noreferrer">Хочу в тур →</a>
           </div>
 
           <aside class="tour-side">
-            <h3 class="tour-side-title">Почему такой формат работает</h3>
-            <p>Не просто "посмотреть точку на карте", а собрать цельную поездку: природа, история, еда и люди.</p>
-            <p>Маршрут подходит тем, кто хочет увидеть главное без хаоса и бесконечных пересадок.</p>
-
+            <h3 class="tour-side-title">Детали</h3>
+            <p>Авторский тур с Кириллом Андреевым, основателем «Как местный».</p>
             <div class="mini-facts">
-              <div class="mini-fact">🏔️ Горы, аулы и панорамы, ради которых в Дагестан хочется вернуться.</div>
-              <div class="mini-fact">🍽️ Местная кухня — не приложение к поездке, а её важная часть.</div>
-              <div class="mini-fact">📍 Маршрут собран вокруг самых сильных и запоминающихся мест региона.</div>
+              <div class="mini-fact">🗓 Сезон: лето / осень 2026</div>
+              <div class="mini-fact">👥 Группа: до 10 человек</div>
+              <div class="mini-fact">📅 Длительность: 5 дней</div>
             </div>
           </aside>
         </div>
       </div>
     </section>
+
   </main>
 
   <footer class="footer">
     <div class="container footer-inner">
       <div>
-        <div class="footer-brand">🎒 Как местный</div>
-        <div>Путеводитель по Дагестану для GitHub Pages</div>
+        <div class="footer-brand">Как местный</div>
+        <div class="footer-sub">© 2026 · <a href="https://t.me/like_a_local_bot" target="_blank" rel="noopener noreferrer" style="color:var(--accent);font-weight:600">@like_a_local_bot</a> · Путеводители</div>
       </div>
-
-      <div>
-        <a href="https://t.me/like_a_local_bot" target="_blank" rel="noopener noreferrer" style="color: var(--accent); font-weight:700;">
-          Открыть бота
-        </a>
-      </div>
+      <nav style="display:flex;gap:18px;flex-wrap:wrap">
+        <a href="places.html" style="font-size:14px;font-weight:500;color:var(--muted);transition:color .2s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Места</a>
+        <a href="food.html" style="font-size:14px;font-weight:500;color:var(--muted);transition:color .2s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Кухня</a>
+        <a href="tips.html" style="font-size:14px;font-weight:500;color:var(--muted);transition:color .2s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Советы</a>
+        <a href="tour.html" style="font-size:14px;font-weight:500;color:var(--muted);transition:color .2s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Тур</a>
+      </nav>
     </div>
   </footer>
 
   <script>
     (function () {
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('is-visible');
-            observer.unobserve(entry.target);
-          }
-        });
-      }, {
-        threshold: 0.14,
-        rootMargin: '0px 0px -40px 0px'
+      const burger = document.querySelector('.burger');
+      const mobileMenu = document.getElementById('mobileMenu');
+      document.addEventListener('click', function (e) {
+        if (mobileMenu && !mobileMenu.contains(e.target) && !burger.contains(e.target)) {
+          mobileMenu.classList.remove('open');
+        }
       });
-
-      document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
+      const obs = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) { e.target.classList.add('is-visible'); obs.unobserve(e.target); }
+        });
+      }, { threshold: 0.14, rootMargin: '0px 0px -40px 0px' });
+      document.querySelectorAll('.reveal').forEach(function (el) { obs.observe(el); });
     })();
   </script>
 </body>
