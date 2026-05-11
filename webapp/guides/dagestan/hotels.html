@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="../js/photos.js" defer></script>
   <style>
     :root {
       --bg: #ffffff;
@@ -99,10 +100,18 @@
     .hotels-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px }
     .hotel-card {
       background: #fff; border: 1px solid var(--line); border-radius: var(--radius);
-      padding: 24px 22px; display: flex; flex-direction: column; gap: 6px;
+      overflow: hidden; padding: 0; display: flex; flex-direction: column; gap: 0;
       transition: transform .3s ease, box-shadow .3s ease;
     }
     .hotel-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover) }
+    .hotel-card [data-photo] .auto-photo,
+    .auto-photo {
+      width: 100%; height: 200px; object-fit: cover;
+      border-radius: 12px 12px 0 0; display: block;
+    }
+    .hotel-card .hotel-content {
+      padding: 20px; display: flex; flex-direction: column; gap: 6px; flex: 1;
+    }
     .hotel-name { font-family: 'Unbounded', sans-serif; font-size: 16px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.2 }
     .hotel-stars { color: #f5a523; font-size: 14px; letter-spacing: 2px }
     .hotel-price { font-size: 15px; font-weight: 700; color: var(--accent) }
@@ -211,35 +220,44 @@
       <div class="hotels-grid">
 
         <div class="hotel-card reveal">
-          <div class="hotel-name">Порт Петровск</div>
-          <div class="hotel-stars">★★★★</div>
-          <div class="hotel-price">от 5 500 ₽ / ночь</div>
-          <div class="hotel-address">ул. Ленина, 11, Махачкала</div>
-          <div class="hotel-feature">Бизнес-отель в центре города. Просторные номера, хороший завтрак, парковка. Удобно для тех, кто приехал на несколько дней исследовать регион с разных сторон.</div>
-          <div class="hotel-footer">
-            <a class="map-link" href="https://www.google.com/maps/search/Порт+Петровск+отель+Махачкала/@42.98,47.50,14z" target="_blank" rel="noopener noreferrer">📍 На карте</a>
+          <div data-photo="hotel,lobby,modern,russia" data-alt="Порт Петровск"></div>
+          <div class="hotel-content">
+            <div class="hotel-name">Порт Петровск</div>
+            <div class="hotel-stars">★★★★</div>
+            <div class="hotel-price">от 5 500 ₽ / ночь</div>
+            <div class="hotel-address">ул. Ленина, 11, Махачкала</div>
+            <div class="hotel-feature">Бизнес-отель в центре города. Просторные номера, хороший завтрак, парковка. Удобно для тех, кто приехал на несколько дней исследовать регион с разных сторон.</div>
+            <div class="hotel-footer">
+              <a class="map-link" href="https://www.google.com/maps/search/Порт+Петровск+отель+Махачкала/@42.98,47.50,14z" target="_blank" rel="noopener noreferrer">📍 На карте</a>
+            </div>
           </div>
         </div>
 
         <div class="hotel-card reveal">
-          <div class="hotel-name">Апарт-Отель «Каспий»</div>
-          <div class="hotel-stars">★★★</div>
-          <div class="hotel-price">от 3 200 ₽ / ночь</div>
-          <div class="hotel-address">пр. Шамиля, 45, Махачкала</div>
-          <div class="hotel-feature">Просторные апартаменты с кухней — удобно при длительном пребывании. Хорошее расположение, тихий двор. Wi-Fi и кондиционер в каждом номере.</div>
-          <div class="hotel-footer">
-            <a class="map-link" href="https://www.google.com/maps/search/апарт+отель+Махачкала/@42.97,47.50,13z" target="_blank" rel="noopener noreferrer">📍 На карте</a>
+          <div data-photo="hotel,apartments,caspian" data-alt="Апарт-Отель Каспий"></div>
+          <div class="hotel-content">
+            <div class="hotel-name">Апарт-Отель «Каспий»</div>
+            <div class="hotel-stars">★★★</div>
+            <div class="hotel-price">от 3 200 ₽ / ночь</div>
+            <div class="hotel-address">пр. Шамиля, 45, Махачкала</div>
+            <div class="hotel-feature">Просторные апартаменты с кухней — удобно при длительном пребывании. Хорошее расположение, тихий двор. Wi-Fi и кондиционер в каждом номере.</div>
+            <div class="hotel-footer">
+              <a class="map-link" href="https://www.google.com/maps/search/апарт+отель+Махачкала/@42.97,47.50,13z" target="_blank" rel="noopener noreferrer">📍 На карте</a>
+            </div>
           </div>
         </div>
 
         <div class="hotel-card reveal">
-          <div class="hotel-name">Гостиница «Театральная»</div>
-          <div class="hotel-stars">★★★</div>
-          <div class="hotel-price">от 2 800 ₽ / ночь</div>
-          <div class="hotel-address">пл. Ленина, 2, Махачкала</div>
-          <div class="hotel-feature">Бюджетный вариант в самом центре — 5 минут пешком до набережной. Чисто, всё необходимое есть, персонал приветливый. Хороший выбор для коротких поездок.</div>
-          <div class="hotel-footer">
-            <a class="map-link" href="https://www.google.com/maps/search/гостиница+Театральная+Махачкала/@42.98,47.50,14z" target="_blank" rel="noopener noreferrer">📍 На карте</a>
+          <div data-photo="hotel,room,modern,russia" data-alt="Гостиница Театральная"></div>
+          <div class="hotel-content">
+            <div class="hotel-name">Гостиница «Театральная»</div>
+            <div class="hotel-stars">★★★</div>
+            <div class="hotel-price">от 2 800 ₽ / ночь</div>
+            <div class="hotel-address">пл. Ленина, 2, Махачкала</div>
+            <div class="hotel-feature">Бюджетный вариант в самом центре — 5 минут пешком до набережной. Чисто, всё необходимое есть, персонал приветливый. Хороший выбор для коротких поездок.</div>
+            <div class="hotel-footer">
+              <a class="map-link" href="https://www.google.com/maps/search/гостиница+Театральная+Махачкала/@42.98,47.50,14z" target="_blank" rel="noopener noreferrer">📍 На карте</a>
+            </div>
           </div>
         </div>
 
@@ -249,24 +267,30 @@
       <div class="hotels-grid">
 
         <div class="hotel-card reveal">
-          <div class="hotel-name">Отель «Маяк»</div>
-          <div class="hotel-stars">★★★★</div>
-          <div class="hotel-price">от 6 000 ₽ / ночь</div>
-          <div class="hotel-address">ул. Гагарина, 24, Дербент</div>
-          <div class="hotel-feature">Современный отель в двух шагах от цитадели Нарын-кала. Терраса с видом на море, отличный завтрак. Лучший вариант в Дербенте по соотношению цены и качества.</div>
-          <div class="hotel-footer">
-            <a class="map-link" href="https://www.google.com/maps/search/отель+Маяк+Дербент/@42.06,48.28,14z" target="_blank" rel="noopener noreferrer">📍 На карте</a>
+          <div data-photo="hotel,luxury,spa,pool" data-alt="Отель Маяк Дербент"></div>
+          <div class="hotel-content">
+            <div class="hotel-name">Отель «Маяк»</div>
+            <div class="hotel-stars">★★★★</div>
+            <div class="hotel-price">от 6 000 ₽ / ночь</div>
+            <div class="hotel-address">ул. Гагарина, 24, Дербент</div>
+            <div class="hotel-feature">Современный отель в двух шагах от цитадели Нарын-кала. Терраса с видом на море, отличный завтрак. Лучший вариант в Дербенте по соотношению цены и качества.</div>
+            <div class="hotel-footer">
+              <a class="map-link" href="https://www.google.com/maps/search/отель+Маяк+Дербент/@42.06,48.28,14z" target="_blank" rel="noopener noreferrer">📍 На карте</a>
+            </div>
           </div>
         </div>
 
         <div class="hotel-card reveal">
-          <div class="hotel-name">Гостевой дом «Нарын-Кала»</div>
-          <div class="hotel-stars">★★★</div>
-          <div class="hotel-price">от 3 500 ₽ / ночь</div>
-          <div class="hotel-address">ул. Таги-Заде, 8, Дербент</div>
-          <div class="hotel-feature">Уютные комнаты прямо в старом городе. Хозяева — местные, расскажут всё о Дербенте. Завтрак включён. Живая атмосфера древнего города за окном.</div>
-          <div class="hotel-footer">
-            <a class="map-link" href="https://www.google.com/maps/search/гостевой+дом+Дербент+старый+город/@42.05,48.29,14z" target="_blank" rel="noopener noreferrer">📍 На карте</a>
+          <div data-photo="guesthouse,cozy,villa,garden" data-alt="Гостевой дом Нарын-Кала"></div>
+          <div class="hotel-content">
+            <div class="hotel-name">Гостевой дом «Нарын-Кала»</div>
+            <div class="hotel-stars">★★★</div>
+            <div class="hotel-price">от 3 500 ₽ / ночь</div>
+            <div class="hotel-address">ул. Таги-Заде, 8, Дербент</div>
+            <div class="hotel-feature">Уютные комнаты прямо в старом городе. Хозяева — местные, расскажут всё о Дербенте. Завтрак включён. Живая атмосфера древнего города за окном.</div>
+            <div class="hotel-footer">
+              <a class="map-link" href="https://www.google.com/maps/search/гостевой+дом+Дербент+старый+город/@42.05,48.29,14z" target="_blank" rel="noopener noreferrer">📍 На карте</a>
+            </div>
           </div>
         </div>
 
@@ -287,42 +311,54 @@
       <div class="hotels-grid" style="margin-top:28px">
 
         <div class="hotel-card reveal">
-          <div class="hotel-name">Глэмпинг «Дубки»</div>
-          <div class="hotel-price">от 8 500 ₽ / ночь</div>
-          <div class="hotel-address">пос. Дубки, у Сулакского каньона</div>
-          <div class="hotel-feature">Купольные дома прямо над каньоном — просыпаешься с видом на бирюзовую реку. Баня, завтрак, форель на ужин. Самое атмосферное место для ночёвки в Дагестане.</div>
-          <div class="hotel-footer">
-            <a class="map-link" href="https://www.google.com/maps/search/Дубки+Сулакский+каньон+глэмпинг/@43.02,46.83,12z" target="_blank" rel="noopener noreferrer">📍 На карте</a>
+          <div data-photo="canyon,river,turquoise,nature" data-alt="Глэмпинг Дубки"></div>
+          <div class="hotel-content">
+            <div class="hotel-name">Глэмпинг «Дубки»</div>
+            <div class="hotel-price">от 8 500 ₽ / ночь</div>
+            <div class="hotel-address">пос. Дубки, у Сулакского каньона</div>
+            <div class="hotel-feature">Купольные дома прямо над каньоном — просыпаешься с видом на бирюзовую реку. Баня, завтрак, форель на ужин. Самое атмосферное место для ночёвки в Дагестане.</div>
+            <div class="hotel-footer">
+              <a class="map-link" href="https://www.google.com/maps/search/Дубки+Сулакский+каньон+глэмпинг/@43.02,46.83,12z" target="_blank" rel="noopener noreferrer">📍 На карте</a>
+            </div>
           </div>
         </div>
 
         <div class="hotel-card reveal">
-          <div class="hotel-name">Горный лагерь «Гуниб»</div>
-          <div class="hotel-price">от 7 000 ₽ / ночь</div>
-          <div class="hotel-address">пос. Гуниб, Гунибский район</div>
-          <div class="hotel-feature">Панорамные бочки и шатры на высоте 1500 м. Горный воздух, тишина, звёздное небо без засветки. Конные прогулки по окрестностям в комплекте.</div>
-          <div class="hotel-footer">
-            <a class="map-link" href="https://www.google.com/maps/search/Гуниб+Дагестан/@42.38,46.97,12z" target="_blank" rel="noopener noreferrer">📍 На карте</a>
+          <div data-photo="mountain,village,caucasus,house" data-alt="Горный лагерь Гуниб"></div>
+          <div class="hotel-content">
+            <div class="hotel-name">Горный лагерь «Гуниб»</div>
+            <div class="hotel-price">от 7 000 ₽ / ночь</div>
+            <div class="hotel-address">пос. Гуниб, Гунибский район</div>
+            <div class="hotel-feature">Панорамные бочки и шатры на высоте 1500 м. Горный воздух, тишина, звёздное небо без засветки. Конные прогулки по окрестностям в комплекте.</div>
+            <div class="hotel-footer">
+              <a class="map-link" href="https://www.google.com/maps/search/Гуниб+Дагестан/@42.38,46.97,12z" target="_blank" rel="noopener noreferrer">📍 На карте</a>
+            </div>
           </div>
         </div>
 
         <div class="hotel-card reveal">
-          <div class="hotel-name">«Каспий Ривьера»</div>
-          <div class="hotel-price">от 6 500 ₽ / ночь</div>
-          <div class="hotel-address">Каспийск, пляжная зона</div>
-          <div class="hotel-feature">Шатры и домики прямо у Каспийского моря. Закаты с террасы, звук волн, морской бриз. Сёрфинг и сапборд в аренду прямо на месте.</div>
-          <div class="hotel-footer">
-            <a class="map-link" href="https://www.google.com/maps/search/Каспийск+пляж+Дагестан/@42.87,47.62,12z" target="_blank" rel="noopener noreferrer">📍 На карте</a>
+          <div data-photo="resort,beach,caspian,sea" data-alt="Каспий Ривьера"></div>
+          <div class="hotel-content">
+            <div class="hotel-name">«Каспий Ривьера»</div>
+            <div class="hotel-price">от 6 500 ₽ / ночь</div>
+            <div class="hotel-address">Каспийск, пляжная зона</div>
+            <div class="hotel-feature">Шатры и домики прямо у Каспийского моря. Закаты с террасы, звук волн, морской бриз. Сёрфинг и сапборд в аренду прямо на месте.</div>
+            <div class="hotel-footer">
+              <a class="map-link" href="https://www.google.com/maps/search/Каспийск+пляж+Дагестан/@42.87,47.62,12z" target="_blank" rel="noopener noreferrer">📍 На карте</a>
+            </div>
           </div>
         </div>
 
         <div class="hotel-card reveal">
-          <div class="hotel-name">Эко-лагерь «Сарыкум»</div>
-          <div class="hotel-price">от 5 000 ₽ / ночь</div>
-          <div class="hotel-address">у бархана Сарыкум, 40 км от Махачкалы</div>
-          <div class="hotel-feature">Палаточный лагерь у крупнейшего бархана Европы. Рассветы и закаты над песком — незабываемые фото. Тихо, без суеты, только природа и звёзды.</div>
-          <div class="hotel-footer">
-            <a class="map-link" href="https://www.google.com/maps/search/Бархан+Сарыкум+Дагестан/@43.01,47.22,12z" target="_blank" rel="noopener noreferrer">📍 На карте</a>
+          <div data-photo="glamping,tent,lake,mountains" data-alt="Эко-лагерь Сарыкум"></div>
+          <div class="hotel-content">
+            <div class="hotel-name">Эко-лагерь «Сарыкум»</div>
+            <div class="hotel-price">от 5 000 ₽ / ночь</div>
+            <div class="hotel-address">у бархана Сарыкум, 40 км от Махачкалы</div>
+            <div class="hotel-feature">Палаточный лагерь у крупнейшего бархана Европы. Рассветы и закаты над песком — незабываемые фото. Тихо, без суеты, только природа и звёзды.</div>
+            <div class="hotel-footer">
+              <a class="map-link" href="https://www.google.com/maps/search/Бархан+Сарыкум+Дагестан/@43.01,47.22,12z" target="_blank" rel="noopener noreferrer">📍 На карте</a>
+            </div>
           </div>
         </div>
 

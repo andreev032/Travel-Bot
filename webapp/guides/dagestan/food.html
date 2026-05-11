@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="../js/photos.js" defer></script>
   <style>
     :root {
       --bg: #ffffff;
@@ -96,14 +97,23 @@
     .food-card {
       scroll-snap-align: start;
       border: 1px solid var(--line); border-radius: var(--radius);
-      overflow: hidden; background: #fff;
+      overflow: hidden; background: #fff; padding: 0;
       transition: transform .3s ease, box-shadow .3s ease;
     }
     .food-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover) }
-    .food-image { width: 100%; height: 200px; object-fit: cover; background: #ececec }
-    .food-body { padding: 18px }
+    .food-card [data-photo] .auto-photo {
+      width: 100%; height: 180px; object-fit: cover;
+      border-radius: 12px 12px 0 0; display: block;
+    }
+    .food-card .food-content { padding: 16px }
     .food-title { margin: 0 0 8px; font-family: 'Unbounded', sans-serif; font-size: 16px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2 }
     .food-desc { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.6 }
+    .restaurant-card [data-photo] .auto-photo {
+      width: 100%; height: 160px; object-fit: cover;
+      border-radius: 12px 12px 0 0; display: block;
+    }
+    .restaurant-card { overflow: hidden; padding: 0 }
+    .restaurant-card .restaurant-content { padding: 16px 18px }
 
     /* LIFEHACK */
     .lifehack {
@@ -227,55 +237,40 @@
       <div class="food-row" aria-label="Блюда дагестанской кухни">
 
         <article class="food-card reveal">
-          <img class="food-image" loading="lazy"
-            src="https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80"
-            alt="Хинкал аварский"
-            onerror="this.onerror=null;this.style.background='#ececec'" />
-          <div class="food-body">
+          <div data-photo="dumplings,meat,caucasus,food" data-alt="Хинкал аварский"></div>
+          <div class="food-content">
             <h3 class="food-title">Хинкал аварский</h3>
             <p class="food-desc">Не путать с грузинским хинкали! Тесто + баранина + чеснок + томатный соус. Главное блюдо Дагестана — у каждого народа своя версия.</p>
           </div>
         </article>
 
         <article class="food-card reveal">
-          <img class="food-image" loading="lazy"
-            src="https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=800&q=80"
-            alt="Чуду"
-            onerror="this.onerror=null;this.style.background='#ececec'" />
-          <div class="food-body">
+          <div data-photo="flatbread,stuffed,caucasus,baked" data-alt="Чуду"></div>
+          <div class="food-content">
             <h3 class="food-title">Чуду</h3>
             <p class="food-desc">Тонкие лепёшки с начинкой — творог и зелень, мясо или тыква. Пекут на сухой сковороде. Лучший перекус в дороге между локациями.</p>
           </div>
         </article>
 
         <article class="food-card reveal">
-          <img class="food-image" loading="lazy"
-            src="https://images.unsplash.com/photo-1526318896980-cf78c088247c?auto=format&fit=crop&w=800&q=80"
-            alt="Урбеч"
-            onerror="this.onerror=null;this.style.background='#ececec'" />
-          <div class="food-body">
+          <div data-photo="nut,butter,paste,healthy" data-alt="Урбеч"></div>
+          <div class="food-content">
             <h3 class="food-title">Урбеч</h3>
             <p class="food-desc">Паста из молотых семян льна, конопли или орехов. Энергетическая бомба горцев — с мёдом на хлеб. Лучший сувенир из Дагестана.</p>
           </div>
         </article>
 
         <article class="food-card reveal">
-          <img class="food-image" loading="lazy"
-            src="https://images.unsplash.com/photo-1529193591184-b1d58069ecdd?auto=format&fit=crop&w=800&q=80"
-            alt="Шашлык из баранины"
-            onerror="this.onerror=null;this.style.background='#ececec'" />
-          <div class="food-body">
+          <div data-photo="shashlik,lamb,bbq,grill,caucasus" data-alt="Шашлык из баранины"></div>
+          <div class="food-content">
             <h3 class="food-title">Шашлык из баранины</h3>
             <p class="food-desc">Баранина на углях — здесь её готовят иначе. Маринад минимальный, мясо говорит само за себя. Классика горного ужина под открытым небом.</p>
           </div>
         </article>
 
         <article class="food-card reveal">
-          <img class="food-image" loading="lazy"
-            src="https://images.unsplash.com/photo-1510130387422-82bed34b37e9?auto=format&fit=crop&w=800&q=80"
-            alt="Форель на углях"
-            onerror="this.onerror=null;this.style.background='#ececec'" />
-          <div class="food-body">
+          <div data-photo="grilled,trout,river,fish" data-alt="Форель на углях"></div>
+          <div class="food-content">
             <h3 class="food-title">Форель на углях</h3>
             <p class="food-desc">Дагестанские реки богаты форелью. Едят прямо у воды — только что поймали, сразу на мангал. Лучшая — в посёлке Дубки у Сулакского каньона.</p>
           </div>
@@ -301,48 +296,63 @@
       <div class="restaurants-grid">
 
         <div class="restaurant-card reveal">
-          <div class="restaurant-header">
-            <div class="restaurant-name">Жи Есть</div>
-            <div class="restaurant-price">~500 ₽/чел.</div>
+          <div data-photo="restaurant,interior,caucasus,cozy" data-alt="Жи Есть"></div>
+          <div class="restaurant-content">
+            <div class="restaurant-header">
+              <div class="restaurant-name">Жи Есть</div>
+              <div class="restaurant-price">~500 ₽/чел.</div>
+            </div>
+            <div class="restaurant-address">пр. Шамиля, 71</div>
+            <p class="restaurant-desc">Современная дагестанская кухня с авторской подачей. Хинкал, чуду и шашлык в красивом интерьере. Популярно у местных — бронируй заранее на выходные.</p>
           </div>
-          <div class="restaurant-address">пр. Шамиля, 71</div>
-          <p class="restaurant-desc">Современная дагестанская кухня с авторской подачей. Хинкал, чуду и шашлык в красивом интерьере. Популярно у местных — бронируй заранее на выходные.</p>
         </div>
 
         <div class="restaurant-card reveal">
-          <div class="restaurant-header">
-            <div class="restaurant-name">Дом Культуры</div>
-            <div class="restaurant-price">~600 ₽/чел.</div>
+          <div data-photo="restaurant,loft,bar,modern" data-alt="Дом Культуры"></div>
+          <div class="restaurant-content">
+            <div class="restaurant-header">
+              <div class="restaurant-name">Дом Культуры</div>
+              <div class="restaurant-price">~600 ₽/чел.</div>
+            </div>
+            <div class="restaurant-address">пр. Расула Гамзатова, 51</div>
+            <p class="restaurant-desc">Кафе с видом на море и живой музыкой по вечерам. Большие порции, весёлая атмосфера. Хорошее место для первого ужина в Махачкале.</p>
           </div>
-          <div class="restaurant-address">пр. Расула Гамзатова, 51</div>
-          <p class="restaurant-desc">Кафе с видом на море и живой музыкой по вечерам. Большие порции, весёлая атмосфера. Хорошее место для первого ужина в Махачкале.</p>
         </div>
 
         <div class="restaurant-card reveal">
-          <div class="restaurant-header">
-            <div class="restaurant-name">Галеон</div>
-            <div class="restaurant-price">~800 ₽/чел.</div>
+          <div data-photo="restaurant,sea,view,terrace" data-alt="Галеон"></div>
+          <div class="restaurant-content">
+            <div class="restaurant-header">
+              <div class="restaurant-name">Галеон</div>
+              <div class="restaurant-price">~800 ₽/чел.</div>
+            </div>
+            <div class="restaurant-address">Набережная, 26</div>
+            <p class="restaurant-desc">Рыбный ресторан прямо на набережной Каспия. Форель, осётр, судак — всё свежее. Терраса с видом на море. Лучший выбор для романтического ужина.</p>
           </div>
-          <div class="restaurant-address">Набережная, 26</div>
-          <p class="restaurant-desc">Рыбный ресторан прямо на набережной Каспия. Форель, осётр, судак — всё свежее. Терраса с видом на море. Лучший выбор для романтического ужина.</p>
         </div>
 
         <div class="restaurant-card reveal">
-          <div class="restaurant-header">
-            <div class="restaurant-name">Хинкальная №1</div>
-            <div class="restaurant-price">~350 ₽/чел.</div>
+          <div data-photo="restaurant,local,cozy,traditional" data-alt="Хинкальная №1"></div>
+          <div class="restaurant-content">
+            <div class="restaurant-header">
+              <div class="restaurant-name">Хинкальная №1</div>
+              <div class="restaurant-price">~350 ₽/чел.</div>
+            </div>
+            <div class="restaurant-address">ул. Ярагского, 60</div>
+            <p class="restaurant-desc">Лучший хинкал в городе по версии местных — без компромиссов. Никаких излишеств: просто отличная еда, быстро и недорого. Обязательно к посещению.</p>
           </div>
-          <div class="restaurant-address">ул. Ярагского, 60</div>
-          <p class="restaurant-desc">Лучший хинкал в городе по версии местных — без компромиссов. Никаких излишеств: просто отличная еда, быстро и недорого. Обязательно к посещению.</p>
         </div>
 
         <div class="restaurant-card reveal">
-          <div class="restaurant-header">
-            <div class="restaurant-name">Сад</div>
-            <div class="restaurant-price">~450 ₽/чел.</div>
+          <div data-photo="restaurant,terrace,garden,modern" data-alt="Сад"></div>
+          <div class="restaurant-content">
+            <div class="restaurant-header">
+              <div class="restaurant-name">Сад</div>
+              <div class="restaurant-price">~450 ₽/чел.</div>
+            </div>
+            <div class="restaurant-address">ул. Дахадаева, 12</div>
+            <p class="restaurant-desc">Летнее кафе в зелёном дворике. Шашлык, плов и окрошка в тени деревьев. Спокойная атмосфера, хорошо для обеда в жаркий день.</p>
           </div>
-          <div class="restaurant-address">ул. Дахадаева, 12</div>
-          <p class="restaurant-desc">Летнее кафе в зелёном дворике. Шашлык, плов и окрошка в тени деревьев. Спокойная атмосфера, хорошо для обеда в жаркий день.</p>
         </div>
 
       </div>
@@ -351,30 +361,39 @@
       <div class="restaurants-grid">
 
         <div class="restaurant-card reveal">
-          <div class="restaurant-header">
-            <div class="restaurant-name">Эдем</div>
-            <div class="restaurant-price">~700 ₽/чел.</div>
+          <div data-photo="restaurant,cozy,european,interior" data-alt="Эдем"></div>
+          <div class="restaurant-content">
+            <div class="restaurant-header">
+              <div class="restaurant-name">Эдем</div>
+              <div class="restaurant-price">~700 ₽/чел.</div>
+            </div>
+            <div class="restaurant-address">ул. Советская, 56</div>
+            <p class="restaurant-desc">Ресторан с панорамным видом на Каспийское море. Дагестанская и европейская кухня, большая винная карта с местными позициями. Идеален для ужина после цитадели.</p>
           </div>
-          <div class="restaurant-address">ул. Советская, 56</div>
-          <p class="restaurant-desc">Ресторан с панорамным видом на Каспийское море. Дагестанская и европейская кухня, большая винная карта с местными позициями. Идеален для ужина после цитадели.</p>
         </div>
 
         <div class="restaurant-card reveal">
-          <div class="restaurant-header">
-            <div class="restaurant-name">Цитадель</div>
-            <div class="restaurant-price">~600 ₽/чел.</div>
+          <div data-photo="restaurant,view,terrace,historic" data-alt="Цитадель"></div>
+          <div class="restaurant-content">
+            <div class="restaurant-header">
+              <div class="restaurant-name">Цитадель</div>
+              <div class="restaurant-price">~600 ₽/чел.</div>
+            </div>
+            <div class="restaurant-address">у стен Нарын-калы</div>
+            <p class="restaurant-desc">Открытая терраса прямо у стен древней крепости. Мясо на углях, дагестанские закуски, местное вино. Атмосфера — как нигде в Дербенте.</p>
           </div>
-          <div class="restaurant-address">у стен Нарын-калы</div>
-          <p class="restaurant-desc">Открытая терраса прямо у стен древней крепости. Мясо на углях, дагестанские закуски, местное вино. Атмосфера — как нигде в Дербенте.</p>
         </div>
 
         <div class="restaurant-card reveal">
-          <div class="restaurant-header">
-            <div class="restaurant-name">Старый Город</div>
-            <div class="restaurant-price">~400 ₽/чел.</div>
+          <div data-photo="cafe,narrow,street,historic" data-alt="Старый Город"></div>
+          <div class="restaurant-content">
+            <div class="restaurant-header">
+              <div class="restaurant-name">Старый Город</div>
+              <div class="restaurant-price">~400 ₽/чел.</div>
+            </div>
+            <div class="restaurant-address">ул. Таги-Заде, 12</div>
+            <p class="restaurant-desc">Уютное кафе в лабиринтах старого города. Чуду, урбеч, домашние пироги — всё как у бабушки. Найти сложно, но стоит того: местные едят именно здесь.</p>
           </div>
-          <div class="restaurant-address">ул. Таги-Заде, 12</div>
-          <p class="restaurant-desc">Уютное кафе в лабиринтах старого города. Чуду, урбеч, домашние пироги — всё как у бабушки. Найти сложно, но стоит того: местные едят именно здесь.</p>
         </div>
 
       </div>

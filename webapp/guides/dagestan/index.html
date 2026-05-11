@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="../js/photos.js" defer></script>
   <style>
     :root {
       --bg: #ffffff;
@@ -85,9 +86,12 @@
     .hero {
       min-height: 100svh; position: relative; overflow: hidden;
       display: flex; align-items: flex-end;
-      background:
-        linear-gradient(rgba(0,0,0,.26), rgba(0,0,0,.56)),
-        url('https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/Sulak_Canyon_Dagestan.jpg/1600px-Sulak_Canyon_Dagestan.jpg') center/cover no-repeat;
+      background: #2a1f17;
+    }
+    .hero::before {
+      content: ""; position: absolute; inset: 0;
+      background: linear-gradient(rgba(0,0,0,.26), rgba(0,0,0,.56));
+      pointer-events: none;
     }
     .hero::after {
       content: ""; position: absolute; inset: auto 0 0 0;
@@ -268,7 +272,7 @@
     <a href="https://t.me/like_a_local_bot" target="_blank" rel="noopener noreferrer" style="color:var(--accent);font-weight:700">Открыть бота →</a>
   </nav>
 
-  <section class="hero" aria-label="Заглавный экран">
+  <section class="hero" data-photo-bg="dagestan,sulak,canyon,mountains" aria-label="Заглавный экран">
     <div class="hero-content reveal">
       <div class="hero-kicker">🏔 Северный Кавказ · Россия</div>
       <h1>Дагестан</h1>
