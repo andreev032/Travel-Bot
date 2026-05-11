@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="../js/photos.js" defer></script>
   <style>
     :root {
       --bg: #ffffff;
@@ -96,13 +97,19 @@
     }
     .place-card {
       background: #fff; border: 1px solid var(--line); border-radius: var(--radius);
-      overflow: hidden; transition: transform .3s ease, box-shadow .3s ease;
+      overflow: hidden; padding: 0; transition: transform .3s ease, box-shadow .3s ease;
     }
     .place-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover) }
     .place-card:first-child { grid-column: span 2 }
-    .place-image { width: 100%; height: 200px; object-fit: cover; background: #ededed }
-    .place-card:first-child .place-image { height: 340px }
-    .place-body { padding: 20px; display: flex; flex-direction: column; gap: 12px }
+    .place-card [data-photo] .auto-photo,
+    .activity-card [data-photo] .auto-photo {
+      width: 100%; height: 220px; object-fit: cover;
+      border-radius: 12px 12px 0 0; display: block;
+    }
+    .place-card:first-child [data-photo] .auto-photo { height: 340px }
+    .place-card .place-content { padding: 20px; display: flex; flex-direction: column; gap: 12px }
+    .activity-card { overflow: hidden; padding: 0 }
+    .activity-card .activity-content { padding: 20px 22px; text-align: center }
     .place-num { font-size: 11px; color: var(--accent); font-weight: 800; letter-spacing: .12em; text-transform: uppercase }
     .place-title { margin: 0; font-family: 'Unbounded', sans-serif; font-size: 20px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.2 }
     .place-desc { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.6 }
@@ -147,8 +154,8 @@
       .topbar-actions .btn-primary { padding: 10px 16px; font-size: 13px }
       .places-grid { grid-template-columns: 1fr }
       .place-card:first-child { grid-column: span 1 }
-      .place-card:first-child .place-image { height: 240px }
-      .place-image { height: 200px }
+      .place-card:first-child [data-photo] .auto-photo { height: 240px }
+      .place-card [data-photo] .auto-photo { height: 200px }
       .activities-grid { grid-template-columns: 1fr }
       .section { padding: 52px 0 64px }
       .page-hero { padding: 52px 0 40px }
@@ -211,11 +218,8 @@
       <div class="places-grid">
 
         <article class="place-card reveal">
-          <img class="place-image" loading="lazy"
-            src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/Sulak_Canyon_Dagestan.jpg/1280px-Sulak_Canyon_Dagestan.jpg"
-            alt="Сулакский каньон"
-            onerror="this.onerror=null;this.style.background='#ededed'" />
-          <div class="place-body">
+          <div data-photo="sulak,canyon,dagestan,river,turquoise" data-alt="Сулакский каньон"></div>
+          <div class="place-content">
             <div class="place-num">01</div>
             <h2 class="place-title">Сулакский каньон</h2>
             <p class="place-desc">Один из глубочайших каньонов мира — 1920 метров. Смотровая в посёлке Дубки, прогулки на лодке по бирюзовой реке Сулак. Форель прямо у воды. 100 км от Махачкалы.</p>
@@ -227,11 +231,8 @@
         </article>
 
         <article class="place-card reveal">
-          <img class="place-image" loading="lazy"
-            src="https://images.unsplash.com/photo-1519608487953-e999c86e7455?auto=format&fit=crop&w=1200&q=80"
-            alt="Гамсутль"
-            onerror="this.onerror=null;this.style.background='#ededed'" />
-          <div class="place-body">
+          <div data-photo="abandoned,village,mountain,caucasus" data-alt="Гамсутль"></div>
+          <div class="place-content">
             <div class="place-num">02</div>
             <h2 class="place-title">Гамсутль</h2>
             <p class="place-desc">Заброшенный аул-призрак в горах — каменные дома без людей, потрясающий вид на ущелье. Подъём пешком 40 минут. Последний житель умер в 2015 году.</p>
@@ -243,11 +244,8 @@
         </article>
 
         <article class="place-card reveal">
-          <img class="place-image" loading="lazy"
-            src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/Derbent%2C_Dagestan_aerial_evening_view_2023-04-29.jpg/1280px-Derbent%2C_Dagestan_aerial_evening_view_2023-04-29.jpg"
-            alt="Дербент"
-            onerror="this.onerror=null;this.style.background='#ededed'" />
-          <div class="place-body">
+          <div data-photo="derbent,citadel,ancient,city" data-alt="Дербент"></div>
+          <div class="place-content">
             <div class="place-num">03</div>
             <h2 class="place-title">Дербент</h2>
             <p class="place-desc">Один из старейших городов России — более 5000 лет. Цитадель Нарын-кала включена в список ЮНЕСКО. Старый город — лабиринт узких улочек с виноградными лозами.</p>
@@ -259,11 +257,8 @@
         </article>
 
         <article class="place-card reveal">
-          <img class="place-image" loading="lazy"
-            src="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80"
-            alt="Бархан Сарыкум"
-            onerror="this.onerror=null;this.style.background='#ededed'" />
-          <div class="place-body">
+          <div data-photo="sand,dune,desert,russia" data-alt="Бархан Сарыкум"></div>
+          <div class="place-content">
             <div class="place-num">04</div>
             <h2 class="place-title">Бархан Сарыкум</h2>
             <p class="place-desc">Самый большой бархан в Европе — 262 метра высотой. Здесь снимали «Белое солнце пустыни». Час от Махачкалы. Лучшие фото — на рассвете.</p>
@@ -275,11 +270,8 @@
         </article>
 
         <article class="place-card reveal">
-          <img class="place-image" loading="lazy"
-            src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80"
-            alt="Каспийское море"
-            onerror="this.onerror=null;this.style.background='#ededed'" />
-          <div class="place-body">
+          <div data-photo="caspian,sea,beach,dagestan" data-alt="Каспийское море"></div>
+          <div class="place-content">
             <div class="place-num">05</div>
             <h2 class="place-title">Каспийское море</h2>
             <p class="place-desc">530 км береговой линии. Песчаные пляжи у Каспийска и Избербаша. Вода теплеет в июле, сезон до сентября. Лучшие пляжи — за городом.</p>
@@ -291,11 +283,8 @@
         </article>
 
         <article class="place-card reveal">
-          <img class="place-image" loading="lazy"
-            src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80"
-            alt="Аул Кубачи"
-            onerror="this.onerror=null;this.style.background='#ededed'" />
-          <div class="place-body">
+          <div data-photo="mountain,village,artisan,caucasus" data-alt="Аул Кубачи"></div>
+          <div class="place-content">
             <div class="place-num">06</div>
             <h2 class="place-title">Аул Кубачи</h2>
             <p class="place-desc">Аул мастеров — здесь делают знаменитые кубачинские украшения из серебра. Живой музей народного искусства. Каждый двор — мастерская.</p>
@@ -321,52 +310,73 @@
       <div class="activities-grid">
 
         <div class="activity-card reveal">
-          <div class="activity-emoji">🪂</div>
-          <div class="activity-name">Зиплайн над каньоном</div>
-          <p class="activity-desc">Полёт над Сулакским каньоном, трасса 1,5 км. Адреналин гарантирован — под тобой пропасть глубиной почти 2 км.</p>
-          <div class="activity-badge">Сулакский каньон</div>
+          <div data-photo="zipline,canyon,adventure,extreme" data-alt="Зиплайн над каньоном"></div>
+          <div class="activity-content">
+            <div class="activity-emoji">🪂</div>
+            <div class="activity-name">Зиплайн над каньоном</div>
+            <p class="activity-desc">Полёт над Сулакским каньоном, трасса 1,5 км. Адреналин гарантирован — под тобой пропасть глубиной почти 2 км.</p>
+            <div class="activity-badge">Сулакский каньон</div>
+          </div>
         </div>
 
         <div class="activity-card reveal">
-          <div class="activity-emoji">🚣</div>
-          <div class="activity-name">Рафтинг по Сулаку</div>
-          <p class="activity-desc">Сплав по реке Сулак с порогами 3–4 категории сложности. Инструктор и всё снаряжение включены. Май–октябрь.</p>
-          <div class="activity-badge">Река Сулак</div>
+          <div data-photo="rafting,river,mountain,whitewater" data-alt="Рафтинг по Сулаку"></div>
+          <div class="activity-content">
+            <div class="activity-emoji">🚣</div>
+            <div class="activity-name">Рафтинг по Сулаку</div>
+            <p class="activity-desc">Сплав по реке Сулак с порогами 3–4 категории сложности. Инструктор и всё снаряжение включены. Май–октябрь.</p>
+            <div class="activity-badge">Река Сулак</div>
+          </div>
         </div>
 
         <div class="activity-card reveal">
-          <div class="activity-emoji">⛵</div>
-          <div class="activity-name">Катер по каньону</div>
-          <p class="activity-desc">Моторная лодка по бирюзовой воде Сулакского каньона. Смотровые точки, которые недоступны с берега. 1–2 часа прогулки.</p>
-          <div class="activity-badge">Сулакский каньон</div>
+          <div data-photo="boat,canyon,river,turquoise" data-alt="Катер по каньону"></div>
+          <div class="activity-content">
+            <div class="activity-emoji">⛵</div>
+            <div class="activity-name">Катер по каньону</div>
+            <p class="activity-desc">Моторная лодка по бирюзовой воде Сулакского каньона. Смотровые точки, которые недоступны с берега. 1–2 часа прогулки.</p>
+            <div class="activity-badge">Сулакский каньон</div>
+          </div>
         </div>
 
         <div class="activity-card reveal">
-          <div class="activity-emoji">🚙</div>
-          <div class="activity-name">Джиппинг в горах</div>
-          <p class="activity-desc">Маршруты по горным дорогам, куда обычная машина не проедет. Доступ к отдалённым аулам и видовым точкам. Группы до 6 человек.</p>
-          <div class="activity-badge">Горный Дагестан</div>
+          <div data-photo="jeep,offroad,mountain,trail" data-alt="Джиппинг в горах"></div>
+          <div class="activity-content">
+            <div class="activity-emoji">🚙</div>
+            <div class="activity-name">Джиппинг в горах</div>
+            <p class="activity-desc">Маршруты по горным дорогам, куда обычная машина не проедет. Доступ к отдалённым аулам и видовым точкам. Группы до 6 человек.</p>
+            <div class="activity-badge">Горный Дагестан</div>
+          </div>
         </div>
 
         <div class="activity-card reveal">
-          <div class="activity-emoji">🐴</div>
-          <div class="activity-name">Конная прогулка</div>
-          <p class="activity-desc">Маршруты по горным тропам от 1 до 3 часов. Инструктор сопровождает. Подходит для новичков — лошади спокойные и приученные.</p>
-          <div class="activity-badge">Гунибский район</div>
+          <div data-photo="horse,mountain,trail,caucasus" data-alt="Конная прогулка"></div>
+          <div class="activity-content">
+            <div class="activity-emoji">🐴</div>
+            <div class="activity-name">Конная прогулка</div>
+            <p class="activity-desc">Маршруты по горным тропам от 1 до 3 часов. Инструктор сопровождает. Подходит для новичков — лошади спокойные и приученные.</p>
+            <div class="activity-badge">Гунибский район</div>
+          </div>
         </div>
 
         <div class="activity-card reveal">
-          <div class="activity-emoji">🎯</div>
-          <div class="activity-name">Тарзанка над ущельем</div>
-          <p class="activity-desc">Прыжок над горным ущельем с высоты 40 метров. Страховка надёжная, впечатления — максимальные. Для любителей острых ощущений.</p>
-          <div class="activity-badge">Горный Дагестан</div>
+          <div data-photo="jump,sea,water,summer" data-alt="Тарзанка над ущельем"></div>
+          <div class="activity-content">
+            <div class="activity-emoji">🎯</div>
+            <div class="activity-name">Тарзанка над ущельем</div>
+            <p class="activity-desc">Прыжок над горным ущельем с высоты 40 метров. Страховка надёжная, впечатления — максимальные. Для любителей острых ощущений.</p>
+            <div class="activity-badge">Горный Дагестан</div>
+          </div>
         </div>
 
         <div class="activity-card reveal">
-          <div class="activity-emoji">🏄</div>
-          <div class="activity-name">Сапборд</div>
-          <p class="activity-desc">SUP-сёрфинг по Каспийскому морю или горному озеру. Прокат досок и базовый инструктаж на месте. Тихо, красиво, доступно каждому.</p>
-          <div class="activity-badge">Каспий · горные озёра</div>
+          <div data-photo="sup,paddleboard,lake,mountain" data-alt="Сапборд"></div>
+          <div class="activity-content">
+            <div class="activity-emoji">🏄</div>
+            <div class="activity-name">Сапборд</div>
+            <p class="activity-desc">SUP-сёрфинг по Каспийскому морю или горному озеру. Прокат досок и базовый инструктаж на месте. Тихо, красиво, доступно каждому.</p>
+            <div class="activity-badge">Каспий · горные озёра</div>
+          </div>
         </div>
 
       </div>
