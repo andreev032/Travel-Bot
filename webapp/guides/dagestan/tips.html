@@ -49,7 +49,7 @@
     }
     .brand { font-family: 'Unbounded', sans-serif; font-size: 15px; font-weight: 700; color: #111; white-space: nowrap }
     .nav-links { display: flex; gap: 0; margin-left: auto }
-    .nav-links a { color: var(--muted); font-size: 14px; font-weight: 500; padding: 8px 12px; transition: color .2s }
+    .nav-links a { color: var(--muted); font-size: 12px; font-weight: 500; padding: 6px 7px; transition: color .2s }
     .nav-links a:hover, .nav-links a.active { color: var(--text) }
     .btn {
       display: inline-flex; align-items: center; justify-content: center; gap: 8px;
@@ -66,6 +66,7 @@
       backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
       border-bottom: 1px solid var(--line);
       flex-direction: column; z-index: 999; padding: 16px 24px;
+      overflow-y: auto; max-height: calc(100vh - 72px);
     }
     .mobile-menu.open { display: flex }
     .mobile-menu a { color: var(--muted); padding: 13px 0; font-size: 15px; font-weight: 500; border-bottom: 1px solid var(--line); transition: color .2s }
@@ -114,9 +115,10 @@
     .tip-text { font-size: 14px; color: var(--muted); line-height: 1.65 }
 
     /* INFO BLOCKS */
+    .info-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 24px }
     .info-block {
       background: #fff; border: 1px solid var(--line); border-radius: var(--radius-lg);
-      padding: 28px 32px; margin-top: 16px;
+      padding: 28px 32px;
     }
     .info-block-title { font-family: 'Unbounded', sans-serif; font-size: 18px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 14px }
     .info-block p { font-size: 15px; color: #3d3d3d; line-height: 1.7; margin-bottom: 10px }
@@ -142,12 +144,19 @@
       .topbar-inner { min-height: 66px }
       .nav-links { display: none }
       .burger { display: block; margin-left: auto }
+      .mobile-menu { top: 66px }
       .topbar-actions .btn-primary { padding: 10px 16px; font-size: 13px }
       .dress-grid { grid-template-columns: 1fr }
       .tips-grid { grid-template-columns: 1fr }
+      .info-pair { grid-template-columns: 1fr }
       .section { padding: 52px 0 }
       .page-hero { padding: 52px 0 40px }
       .info-block { padding: 22px 20px }
+    }
+    @media (max-width: 600px) {
+      .dress-grid { grid-template-columns: 1fr }
+      .tips-grid { grid-template-columns: 1fr }
+      .info-pair { grid-template-columns: 1fr }
     }
     @media (max-width: 520px) {
       .container { width: min(var(--container), calc(100% - 20px)) }
@@ -163,7 +172,10 @@
       <nav class="nav-links" aria-label="Разделы">
         <a href="index.html">О регионе</a>
         <a href="places.html">Места</a>
+        <a href="places.html#activities">Активности</a>
         <a href="food.html">Кухня</a>
+        <a href="food.html#restaurants">Рестораны</a>
+        <a href="hotels.html">Отели</a>
         <a href="tips.html" class="active">Советы</a>
         <a href="tour.html">Тур</a>
       </nav>
@@ -177,7 +189,10 @@
   <nav class="mobile-menu" id="mobileMenu" aria-label="Мобильное меню">
     <a href="index.html">О регионе</a>
     <a href="places.html">Места</a>
+    <a href="places.html#activities">Активности</a>
     <a href="food.html">Кухня</a>
+    <a href="food.html#restaurants">Рестораны</a>
+    <a href="hotels.html">Отели</a>
     <a href="tips.html" class="active">Советы</a>
     <a href="tour.html">Тур</a>
     <a href="https://t.me/like_a_local_bot" target="_blank" rel="noopener noreferrer" style="color:var(--accent);font-weight:700">Открыть бота →</a>
@@ -275,7 +290,7 @@
         <h2 class="section-title">Полезно знать</h2>
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:24px">
+      <div class="info-pair">
         <div class="info-block reveal">
           <div class="info-block-title">🛡 Безопасность</div>
           <p>Дагестан — безопасный для туристов регион. Местные очень гостеприимны, часто сами предложат помощь.</p>
@@ -307,6 +322,7 @@
         <a href="index.html" style="font-size:14px;font-weight:500;color:var(--muted)">О регионе</a>
         <a href="places.html" style="font-size:14px;font-weight:500;color:var(--muted)">Места</a>
         <a href="food.html" style="font-size:14px;font-weight:500;color:var(--muted)">Кухня</a>
+        <a href="hotels.html" style="font-size:14px;font-weight:500;color:var(--muted)">Отели</a>
         <a href="tour.html" style="font-size:14px;font-weight:500;color:var(--muted)">Тур</a>
       </nav>
     </div>

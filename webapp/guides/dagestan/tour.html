@@ -49,7 +49,7 @@
     }
     .brand { font-family: 'Unbounded', sans-serif; font-size: 15px; font-weight: 700; color: #111; white-space: nowrap }
     .nav-links { display: flex; gap: 0; margin-left: auto }
-    .nav-links a { color: var(--muted); font-size: 14px; font-weight: 500; padding: 8px 12px; transition: color .2s }
+    .nav-links a { color: var(--muted); font-size: 12px; font-weight: 500; padding: 6px 7px; transition: color .2s }
     .nav-links a:hover, .nav-links a.active { color: var(--text) }
     .btn {
       display: inline-flex; align-items: center; justify-content: center; gap: 8px;
@@ -67,6 +67,7 @@
       backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
       border-bottom: 1px solid var(--line);
       flex-direction: column; z-index: 999; padding: 16px 24px;
+      overflow-y: auto; max-height: calc(100vh - 72px);
     }
     .mobile-menu.open { display: flex }
     .mobile-menu a { color: var(--muted); padding: 13px 0; font-size: 15px; font-weight: 500; border-bottom: 1px solid var(--line); transition: color .2s }
@@ -114,6 +115,9 @@
     .day-label { font-size: 11px; color: var(--muted); letter-spacing: .1em; text-transform: uppercase; font-weight: 700; margin-bottom: 6px }
     .day-title { font-family: 'Unbounded', sans-serif; font-size: 17px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 8px }
     .day-desc { font-size: 14px; color: var(--muted); line-height: 1.7 }
+
+    /* INCLUDED + FAQ two-column layout */
+    .section-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start }
 
     /* INCLUDED */
     .included-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 8px }
@@ -172,14 +176,20 @@
       .topbar-inner { min-height: 66px }
       .nav-links { display: none }
       .burger { display: block; margin-left: auto }
+      .mobile-menu { top: 66px }
       .topbar-actions .btn-primary { padding: 10px 16px; font-size: 13px }
       .day-card { grid-template-columns: 1fr; gap: 8px; padding: 20px }
       .day-num { font-size: 28px }
       .included-grid { grid-template-columns: 1fr }
+      .section-two-col { grid-template-columns: 1fr }
       .cta-block { padding: 36px 24px }
       .section { padding: 52px 0 }
       .page-hero { padding: 52px 0 40px }
       .tour-intro { padding: 24px }
+    }
+    @media (max-width: 600px) {
+      .included-grid { grid-template-columns: 1fr }
+      .section-two-col { grid-template-columns: 1fr }
     }
     @media (max-width: 520px) {
       .container { width: min(var(--container), calc(100% - 20px)) }
@@ -195,7 +205,10 @@
       <nav class="nav-links" aria-label="Разделы">
         <a href="index.html">О регионе</a>
         <a href="places.html">Места</a>
+        <a href="places.html#activities">Активности</a>
         <a href="food.html">Кухня</a>
+        <a href="food.html#restaurants">Рестораны</a>
+        <a href="hotels.html">Отели</a>
         <a href="tips.html">Советы</a>
         <a href="tour.html" class="active">Тур</a>
       </nav>
@@ -209,7 +222,10 @@
   <nav class="mobile-menu" id="mobileMenu" aria-label="Мобильное меню">
     <a href="index.html">О регионе</a>
     <a href="places.html">Места</a>
+    <a href="places.html#activities">Активности</a>
     <a href="food.html">Кухня</a>
+    <a href="food.html#restaurants">Рестораны</a>
+    <a href="hotels.html">Отели</a>
     <a href="tips.html">Советы</a>
     <a href="tour.html" class="active">Тур</a>
     <a href="https://t.me/like_a_local_bot" target="_blank" rel="noopener noreferrer" style="color:var(--accent);font-weight:700">Открыть бота →</a>
@@ -319,7 +335,7 @@
   </section>
 
   <section class="section">
-    <div class="container" style="display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:start">
+    <div class="container section-two-col">
       <div>
         <div class="reveal">
           <div class="eyebrow">Что включено</div>
@@ -394,6 +410,7 @@
         <a href="index.html" style="font-size:14px;font-weight:500;color:var(--muted)">О регионе</a>
         <a href="places.html" style="font-size:14px;font-weight:500;color:var(--muted)">Места</a>
         <a href="food.html" style="font-size:14px;font-weight:500;color:var(--muted)">Кухня</a>
+        <a href="hotels.html" style="font-size:14px;font-weight:500;color:var(--muted)">Отели</a>
         <a href="tips.html" style="font-size:14px;font-weight:500;color:var(--muted)">Советы</a>
       </nav>
     </div>

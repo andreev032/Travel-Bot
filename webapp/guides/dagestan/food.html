@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Кухня Дагестана | Как местный</title>
-  <meta name="description" content="Что попробовать в Дагестане: хинкал, чуду, урбеч, шашлык из баранины, форель на углях. Что привезти домой." />
+  <meta name="description" content="Что попробовать в Дагестане: хинкал, чуду, урбеч, шашлык из баранины, форель на углях. Рестораны Махачкалы и Дербента." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -49,7 +49,7 @@
     }
     .brand { font-family: 'Unbounded', sans-serif; font-size: 15px; font-weight: 700; color: #111; white-space: nowrap }
     .nav-links { display: flex; gap: 0; margin-left: auto }
-    .nav-links a { color: var(--muted); font-size: 14px; font-weight: 500; padding: 8px 12px; transition: color .2s }
+    .nav-links a { color: var(--muted); font-size: 12px; font-weight: 500; padding: 6px 7px; transition: color .2s }
     .nav-links a:hover, .nav-links a.active { color: var(--text) }
     .btn {
       display: inline-flex; align-items: center; justify-content: center; gap: 8px;
@@ -66,6 +66,7 @@
       backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
       border-bottom: 1px solid var(--line);
       flex-direction: column; z-index: 999; padding: 16px 24px;
+      overflow-y: auto; max-height: calc(100vh - 72px);
     }
     .mobile-menu.open { display: flex }
     .mobile-menu a { color: var(--muted); padding: 13px 0; font-size: 15px; font-weight: 500; border-bottom: 1px solid var(--line); transition: color .2s }
@@ -112,6 +113,24 @@
       font-size: 15px; line-height: 1.65; color: #3d3d3d;
     }
 
+    /* RESTAURANTS */
+    .city-label {
+      font-size: 11px; color: var(--accent); font-weight: 800; letter-spacing: .14em; text-transform: uppercase;
+      margin: 32px 0 16px; display: flex; align-items: center; gap: 12px;
+    }
+    .city-label::after { content: ''; flex: 1; height: 1px; background: var(--line) }
+    .restaurants-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px }
+    .restaurant-card {
+      background: #fff; border: 1px solid var(--line); border-radius: var(--radius);
+      padding: 20px 18px; transition: transform .3s ease, box-shadow .3s ease;
+    }
+    .restaurant-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover) }
+    .restaurant-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 6px }
+    .restaurant-name { font-family: 'Unbounded', sans-serif; font-size: 15px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2 }
+    .restaurant-price { font-size: 13px; font-weight: 700; color: var(--accent); white-space: nowrap; flex-shrink: 0 }
+    .restaurant-address { font-size: 13px; color: var(--muted); margin-bottom: 8px }
+    .restaurant-desc { font-size: 14px; color: #3d3d3d; line-height: 1.6 }
+
     /* SOUVENIRS */
     .souvenirs-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 28px }
     .souvenir-card {
@@ -138,11 +157,17 @@
       .topbar-inner { min-height: 66px }
       .nav-links { display: none }
       .burger { display: block; margin-left: auto }
+      .mobile-menu { top: 66px }
       .topbar-actions .btn-primary { padding: 10px 16px; font-size: 13px }
       .food-row { grid-auto-columns: minmax(230px, 82vw) }
+      .restaurants-grid { grid-template-columns: 1fr }
       .souvenirs-grid { grid-template-columns: 1fr }
       .section { padding: 52px 0 }
       .page-hero { padding: 52px 0 40px }
+    }
+    @media (max-width: 600px) {
+      .restaurants-grid { grid-template-columns: 1fr }
+      .souvenirs-grid { grid-template-columns: 1fr }
     }
     @media (max-width: 520px) {
       .container { width: min(var(--container), calc(100% - 20px)) }
@@ -158,7 +183,10 @@
       <nav class="nav-links" aria-label="Разделы">
         <a href="index.html">О регионе</a>
         <a href="places.html">Места</a>
+        <a href="places.html#activities">Активности</a>
         <a href="food.html" class="active">Кухня</a>
+        <a href="food.html#restaurants">Рестораны</a>
+        <a href="hotels.html">Отели</a>
         <a href="tips.html">Советы</a>
         <a href="tour.html">Тур</a>
       </nav>
@@ -172,7 +200,10 @@
   <nav class="mobile-menu" id="mobileMenu" aria-label="Мобильное меню">
     <a href="index.html">О регионе</a>
     <a href="places.html">Места</a>
+    <a href="places.html#activities">Активности</a>
     <a href="food.html" class="active">Кухня</a>
+    <a href="food.html#restaurants">Рестораны</a>
+    <a href="hotels.html">Отели</a>
     <a href="tips.html">Советы</a>
     <a href="tour.html">Тур</a>
     <a href="https://t.me/like_a_local_bot" target="_blank" rel="noopener noreferrer" style="color:var(--accent);font-weight:700">Открыть бота →</a>
@@ -258,7 +289,99 @@
     </div>
   </section>
 
-  <section class="section" style="background:#fafafa; border-top:1px solid var(--line); border-bottom:1px solid var(--line)">
+  <section id="restaurants" class="section" style="background:#fafafa; border-top:1px solid var(--line); border-bottom:1px solid var(--line)">
+    <div class="container">
+      <div class="reveal">
+        <div class="eyebrow">Где поесть</div>
+        <h2 class="section-title">Рестораны</h2>
+        <p class="section-lead">Проверенные места в Махачкале и Дербенте — от уличных кафе до ресторанов с видом.</p>
+      </div>
+
+      <div class="city-label">Махачкала</div>
+      <div class="restaurants-grid">
+
+        <div class="restaurant-card reveal">
+          <div class="restaurant-header">
+            <div class="restaurant-name">Жи Есть</div>
+            <div class="restaurant-price">~500 ₽/чел.</div>
+          </div>
+          <div class="restaurant-address">пр. Шамиля, 71</div>
+          <p class="restaurant-desc">Современная дагестанская кухня с авторской подачей. Хинкал, чуду и шашлык в красивом интерьере. Популярно у местных — бронируй заранее на выходные.</p>
+        </div>
+
+        <div class="restaurant-card reveal">
+          <div class="restaurant-header">
+            <div class="restaurant-name">Дом Культуры</div>
+            <div class="restaurant-price">~600 ₽/чел.</div>
+          </div>
+          <div class="restaurant-address">пр. Расула Гамзатова, 51</div>
+          <p class="restaurant-desc">Кафе с видом на море и живой музыкой по вечерам. Большие порции, весёлая атмосфера. Хорошее место для первого ужина в Махачкале.</p>
+        </div>
+
+        <div class="restaurant-card reveal">
+          <div class="restaurant-header">
+            <div class="restaurant-name">Галеон</div>
+            <div class="restaurant-price">~800 ₽/чел.</div>
+          </div>
+          <div class="restaurant-address">Набережная, 26</div>
+          <p class="restaurant-desc">Рыбный ресторан прямо на набережной Каспия. Форель, осётр, судак — всё свежее. Терраса с видом на море. Лучший выбор для романтического ужина.</p>
+        </div>
+
+        <div class="restaurant-card reveal">
+          <div class="restaurant-header">
+            <div class="restaurant-name">Хинкальная №1</div>
+            <div class="restaurant-price">~350 ₽/чел.</div>
+          </div>
+          <div class="restaurant-address">ул. Ярагского, 60</div>
+          <p class="restaurant-desc">Лучший хинкал в городе по версии местных — без компромиссов. Никаких излишеств: просто отличная еда, быстро и недорого. Обязательно к посещению.</p>
+        </div>
+
+        <div class="restaurant-card reveal">
+          <div class="restaurant-header">
+            <div class="restaurant-name">Сад</div>
+            <div class="restaurant-price">~450 ₽/чел.</div>
+          </div>
+          <div class="restaurant-address">ул. Дахадаева, 12</div>
+          <p class="restaurant-desc">Летнее кафе в зелёном дворике. Шашлык, плов и окрошка в тени деревьев. Спокойная атмосфера, хорошо для обеда в жаркий день.</p>
+        </div>
+
+      </div>
+
+      <div class="city-label">Дербент</div>
+      <div class="restaurants-grid">
+
+        <div class="restaurant-card reveal">
+          <div class="restaurant-header">
+            <div class="restaurant-name">Эдем</div>
+            <div class="restaurant-price">~700 ₽/чел.</div>
+          </div>
+          <div class="restaurant-address">ул. Советская, 56</div>
+          <p class="restaurant-desc">Ресторан с панорамным видом на Каспийское море. Дагестанская и европейская кухня, большая винная карта с местными позициями. Идеален для ужина после цитадели.</p>
+        </div>
+
+        <div class="restaurant-card reveal">
+          <div class="restaurant-header">
+            <div class="restaurant-name">Цитадель</div>
+            <div class="restaurant-price">~600 ₽/чел.</div>
+          </div>
+          <div class="restaurant-address">у стен Нарын-калы</div>
+          <p class="restaurant-desc">Открытая терраса прямо у стен древней крепости. Мясо на углях, дагестанские закуски, местное вино. Атмосфера — как нигде в Дербенте.</p>
+        </div>
+
+        <div class="restaurant-card reveal">
+          <div class="restaurant-header">
+            <div class="restaurant-name">Старый Город</div>
+            <div class="restaurant-price">~400 ₽/чел.</div>
+          </div>
+          <div class="restaurant-address">ул. Таги-Заде, 12</div>
+          <p class="restaurant-desc">Уютное кафе в лабиринтах старого города. Чуду, урбеч, домашние пироги — всё как у бабушки. Найти сложно, но стоит того: местные едят именно здесь.</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
     <div class="container">
       <div class="reveal">
         <div class="eyebrow">Сувениры</div>
@@ -295,6 +418,7 @@
       <nav style="display:flex;gap:18px;flex-wrap:wrap">
         <a href="index.html" style="font-size:14px;font-weight:500;color:var(--muted)">О регионе</a>
         <a href="places.html" style="font-size:14px;font-weight:500;color:var(--muted)">Места</a>
+        <a href="hotels.html" style="font-size:14px;font-weight:500;color:var(--muted)">Отели</a>
         <a href="tips.html" style="font-size:14px;font-weight:500;color:var(--muted)">Советы</a>
         <a href="tour.html" style="font-size:14px;font-weight:500;color:var(--muted)">Тур</a>
       </nav>

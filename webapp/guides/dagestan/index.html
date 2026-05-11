@@ -50,7 +50,7 @@
     }
     .brand { font-family: 'Unbounded', sans-serif; font-size: 15px; font-weight: 700; color: #111; white-space: nowrap }
     .nav-links { display: flex; gap: 0; margin-left: auto }
-    .nav-links a { color: var(--muted); font-size: 14px; font-weight: 500; padding: 8px 12px; transition: color .2s }
+    .nav-links a { color: var(--muted); font-size: 12px; font-weight: 500; padding: 6px 7px; transition: color .2s }
     .nav-links a:hover, .nav-links a.active { color: var(--text) }
     .topbar-actions { display: flex; align-items: center; gap: 10px }
     .btn {
@@ -74,6 +74,7 @@
       backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
       border-bottom: 1px solid var(--line);
       flex-direction: column; z-index: 999; padding: 16px 24px;
+      overflow-y: auto; max-height: calc(100vh - 72px);
     }
     .mobile-menu.open { display: flex }
     .mobile-menu a { color: var(--muted); padding: 13px 0; font-size: 15px; font-weight: 500; border-bottom: 1px solid var(--line); transition: color .2s }
@@ -141,7 +142,7 @@
     .section-header-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap }
 
     /* PLACE CARDS */
-    .places-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; margin-top: 28px }
+    .places-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; margin-top: 28px }
     .place-card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; transition: transform .3s ease, box-shadow .3s ease }
     .place-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover) }
     .place-image { width: 100%; height: 200px; object-fit: cover; background: #ededed }
@@ -212,6 +213,7 @@
       .topbar-inner { min-height: 66px }
       .nav-links { display: none }
       .burger { display: block; margin-left: auto }
+      .mobile-menu { top: 66px }
       .topbar-actions .btn-primary { padding: 10px 16px; font-size: 13px }
       .places-grid { grid-template-columns: 1fr }
       .section { padding: 56px 0 }
@@ -221,9 +223,12 @@
       .hero-content { padding: 100px 0 56px }
       .stats-wrap { margin-top: -24px }
     }
+    @media (max-width: 600px) {
+      .stats { grid-template-columns: 1fr }
+      .places-grid { grid-template-columns: 1fr }
+    }
     @media (max-width: 520px) {
       .container { width: min(var(--container), calc(100% - 20px)) }
-      .stats { grid-template-columns: repeat(2, 1fr) }
       .footer-inner { flex-direction: column; align-items: flex-start }
       .section-header-row { flex-direction: column; align-items: flex-start }
     }
@@ -237,7 +242,10 @@
       <nav class="nav-links" aria-label="Разделы">
         <a href="index.html" class="active">О регионе</a>
         <a href="places.html">Места</a>
+        <a href="places.html#activities">Активности</a>
         <a href="food.html">Кухня</a>
+        <a href="food.html#restaurants">Рестораны</a>
+        <a href="hotels.html">Отели</a>
         <a href="tips.html">Советы</a>
         <a href="tour.html">Тур</a>
       </nav>
@@ -251,7 +259,10 @@
   <nav class="mobile-menu" id="mobileMenu" aria-label="Мобильное меню">
     <a href="index.html" class="active">О регионе</a>
     <a href="places.html">Места</a>
+    <a href="places.html#activities">Активности</a>
     <a href="food.html">Кухня</a>
+    <a href="food.html#restaurants">Рестораны</a>
+    <a href="hotels.html">Отели</a>
     <a href="tips.html">Советы</a>
     <a href="tour.html">Тур</a>
     <a href="https://t.me/like_a_local_bot" target="_blank" rel="noopener noreferrer" style="color:var(--accent);font-weight:700">Открыть бота →</a>
@@ -288,9 +299,9 @@
           <div class="stat-label">народов живут в регионе</div>
         </div>
         <div class="stat reveal">
-          <div class="stat-icon">⏱</div>
-          <div class="stat-value">Май–окт</div>
-          <div class="stat-label">лучшее время для поездки</div>
+          <div class="stat-icon">🏨</div>
+          <div class="stat-value">Отели</div>
+          <div class="stat-label">и глэмпинги в подборке</div>
         </div>
       </div>
     </div>
@@ -302,9 +313,9 @@
       <div class="container">
         <div class="section-header-row section-header reveal">
           <div>
-            <div class="eyebrow">Где побывать</div>
-            <h2 class="section-title">Главные места</h2>
-            <p class="section-lead">С этих трёх точек начинается знакомство с Дагестаном.</p>
+            <div class="eyebrow">Путеводитель</div>
+            <h2 class="section-title">С чего начать</h2>
+            <p class="section-lead">Четыре страницы, которые помогут спланировать поездку в Дагестан.</p>
           </div>
           <a class="btn btn-secondary" href="places.html">Все места →</a>
         </div>
@@ -316,11 +327,11 @@
               alt="Сулакский каньон"
               onerror="this.onerror=null;this.style.background='#ededed'" />
             <div class="place-body">
-              <h3 class="place-title">Сулакский каньон</h3>
-              <p class="place-desc">Один из глубочайших каньонов мира — 1920 м. Бирюзовая вода, прогулки на лодке, форель прямо у реки.</p>
+              <h3 class="place-title">Места Дагестана</h3>
+              <p class="place-desc">6 точек, без которых знакомство с регионом будет неполным — каньон, горные аулы, Дербент, Каспий.</p>
               <div class="place-footer">
-                <span class="place-tag">Май–октябрь</span>
-                <a class="map-link" href="https://www.google.com/maps/search/Сулакский+каньон/@43.0,46.8,10z" target="_blank" rel="noopener noreferrer">📍 Карта</a>
+                <span class="place-tag">6 мест + 7 активностей</span>
+                <a class="map-link" href="places.html">→ Открыть</a>
               </div>
             </div>
           </article>
@@ -331,11 +342,11 @@
               alt="Дербент"
               onerror="this.onerror=null;this.style.background='#ededed'" />
             <div class="place-body">
-              <h3 class="place-title">Дербент</h3>
-              <p class="place-desc">5000 лет истории. Цитадель Нарын-кала в списке ЮНЕСКО. Старый город — лабиринт узких улочек.</p>
+              <h3 class="place-title">Кухня Дагестана</h3>
+              <p class="place-desc">Хинкал, чуду, форель на углях и урбеч. Рестораны Махачкалы и Дербента — где есть по-настоящему.</p>
               <div class="place-footer">
-                <span class="place-tag">Весь год</span>
-                <a class="map-link" href="https://www.google.com/maps/search/Дербент/@42.05,48.28,13z" target="_blank" rel="noopener noreferrer">📍 Карта</a>
+                <span class="place-tag">5 блюд + 8 ресторанов</span>
+                <a class="map-link" href="food.html">→ Открыть</a>
               </div>
             </div>
           </article>
@@ -343,14 +354,29 @@
           <article class="place-card reveal">
             <img class="place-image" loading="lazy"
               src="https://images.unsplash.com/photo-1519608487953-e999c86e7455?auto=format&fit=crop&w=1200&q=80"
-              alt="Гамсутль"
+              alt="Горы Дагестана"
               onerror="this.onerror=null;this.style.background='#ededed'" />
             <div class="place-body">
-              <h3 class="place-title">Гамсутль</h3>
-              <p class="place-desc">Заброшенный аул-призрак в горах. Каменные дома без людей, вид на ущелье. Подъём пешком 40 минут.</p>
+              <h3 class="place-title">Советы и традиции</h3>
+              <p class="place-desc">Дресс-код, наличные, связь, транспорт — всё, что нужно знать до поездки. Без этого в Дагестане сложно.</p>
               <div class="place-footer">
-                <span class="place-tag">Май–октябрь</span>
-                <a class="map-link" href="https://www.google.com/maps/search/Гамсутль/@42.5,46.6,13z" target="_blank" rel="noopener noreferrer">📍 Карта</a>
+                <span class="place-tag">Практические советы</span>
+                <a class="map-link" href="tips.html">→ Открыть</a>
+              </div>
+            </div>
+          </article>
+
+          <article class="place-card reveal">
+            <img class="place-image" loading="lazy"
+              src="https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80"
+              alt="Отели и глэмпинги Дагестана"
+              onerror="this.onerror=null;this.style.background='#ededed'" />
+            <div class="place-body">
+              <h3 class="place-title">Отели и глэмпинги</h3>
+              <p class="place-desc">Где остановиться: отели в Махачкале и Дербенте, купольные дома у Сулакского каньона и шатры в горах.</p>
+              <div class="place-footer">
+                <span class="place-tag">5 отелей + 4 глэмпинга</span>
+                <a class="map-link" href="hotels.html">→ Открыть</a>
               </div>
             </div>
           </article>
@@ -450,10 +476,11 @@
         <div class="footer-sub">© 2026 · <a href="https://t.me/like_a_local_bot" target="_blank" rel="noopener noreferrer" style="color:var(--accent);font-weight:600">@like_a_local_bot</a> · Путеводители</div>
       </div>
       <nav style="display:flex;gap:18px;flex-wrap:wrap">
-        <a href="places.html" style="font-size:14px;font-weight:500;color:var(--muted);transition:color .2s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Места</a>
-        <a href="food.html" style="font-size:14px;font-weight:500;color:var(--muted);transition:color .2s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Кухня</a>
-        <a href="tips.html" style="font-size:14px;font-weight:500;color:var(--muted);transition:color .2s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Советы</a>
-        <a href="tour.html" style="font-size:14px;font-weight:500;color:var(--muted);transition:color .2s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Тур</a>
+        <a href="places.html" style="font-size:14px;font-weight:500;color:var(--muted)">Места</a>
+        <a href="food.html" style="font-size:14px;font-weight:500;color:var(--muted)">Кухня</a>
+        <a href="hotels.html" style="font-size:14px;font-weight:500;color:var(--muted)">Отели</a>
+        <a href="tips.html" style="font-size:14px;font-weight:500;color:var(--muted)">Советы</a>
+        <a href="tour.html" style="font-size:14px;font-weight:500;color:var(--muted)">Тур</a>
       </nav>
     </div>
   </footer>

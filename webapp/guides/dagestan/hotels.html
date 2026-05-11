@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Отели и глэмпинги Дагестана | Как местный</title>
+  <meta name="description" content="Где остановиться в Дагестане: лучшие отели Махачкалы и Дербента, глэмпинги у Сулакского каньона и в горах." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #ffffff;
+      --text: #111111;
+      --muted: #6f6f6f;
+      --line: #e8e8e8;
+      --accent: #C4622D;
+      --accent-dark: #a24e22;
+      --accent-bg: #fff7f1;
+      --shadow: 0 10px 30px rgba(17,17,17,.06);
+      --shadow-hover: 0 20px 40px rgba(17,17,17,.10);
+      --radius: 16px;
+      --radius-lg: 28px;
+      --container: 1180px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0 }
+    html { scroll-behavior: smooth }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Manrope', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    img { max-width: 100%; display: block }
+    a { color: inherit; text-decoration: none }
+    .container { width: min(var(--container), calc(100% - 32px)); margin: 0 auto }
+
+    /* TOPBAR */
+    .topbar {
+      position: sticky; top: 0; z-index: 1000;
+      background: rgba(255,255,255,.92);
+      backdrop-filter: saturate(180%) blur(14px);
+      -webkit-backdrop-filter: saturate(180%) blur(14px);
+      border-bottom: 1px solid rgba(17,17,17,.06);
+    }
+    .topbar-inner {
+      display: flex; align-items: center; gap: 16px;
+      min-height: 72px; max-width: 1180px; margin: 0 auto; padding: 0 24px;
+    }
+    .brand { font-family: 'Unbounded', sans-serif; font-size: 15px; font-weight: 700; color: #111; white-space: nowrap }
+    .nav-links { display: flex; gap: 0; margin-left: auto }
+    .nav-links a { color: var(--muted); font-size: 12px; font-weight: 500; padding: 6px 7px; transition: color .2s }
+    .nav-links a:hover, .nav-links a.active { color: var(--text) }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      border: none; border-radius: 999px; padding: 11px 20px;
+      font: 600 14px/1 'Manrope', sans-serif; cursor: pointer; transition: .25s ease;
+      text-decoration: none; white-space: nowrap;
+    }
+    .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 8px 20px rgba(196,98,45,.22) }
+    .btn-primary:hover { background: var(--accent-dark); transform: translateY(-1px) }
+    .burger { display: none; background: none; border: none; cursor: pointer; padding: 8px; color: var(--text); font-size: 22px; line-height: 1 }
+    .mobile-menu {
+      display: none; position: fixed; top: 72px; left: 0; right: 0;
+      background: rgba(255,255,255,.98);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--line);
+      flex-direction: column; z-index: 999; padding: 16px 24px;
+      overflow-y: auto; max-height: calc(100vh - 72px);
+    }
+    .mobile-menu.open { display: flex }
+    .mobile-menu a { color: var(--muted); padding: 13px 0; font-size: 15px; font-weight: 500; border-bottom: 1px solid var(--line); transition: color .2s }
+    .mobile-menu a:last-child { border-bottom: none }
+    .mobile-menu a:hover, .mobile-menu a.active { color: var(--accent) }
+
+    /* PAGE HERO */
+    .page-hero {
+      border-top: 4px solid var(--accent);
+      padding: 72px 0 56px;
+      border-bottom: 1px solid var(--line);
+    }
+    .eyebrow { display: inline-block; margin-bottom: 12px; color: var(--accent); font-size: 13px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase }
+    .page-title { font-family: 'Unbounded', sans-serif; font-size: clamp(36px, 6vw, 72px); font-weight: 900; letter-spacing: -0.06em; line-height: .95; margin: 0 0 14px }
+    .page-sub { color: var(--muted); font-size: 18px; line-height: 1.6; max-width: 600px; margin: 0 }
+
+    /* SECTION */
+    .section { padding: 72px 0 }
+    .section-title { font-family: 'Unbounded', sans-serif; margin: 0 0 12px; font-size: clamp(28px, 3.5vw, 48px); line-height: 1.02; letter-spacing: -0.05em; font-weight: 900 }
+    .section-lead { margin: 0 0 32px; color: var(--muted); font-size: 17px; line-height: 1.6 }
+
+    /* CITY LABEL */
+    .city-label {
+      font-size: 11px; color: var(--accent); font-weight: 800; letter-spacing: .14em; text-transform: uppercase;
+      margin: 36px 0 16px; display: flex; align-items: center; gap: 12px;
+    }
+    .city-label::after { content: ''; flex: 1; height: 1px; background: var(--line) }
+
+    /* HOTELS GRID */
+    .hotels-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px }
+    .hotel-card {
+      background: #fff; border: 1px solid var(--line); border-radius: var(--radius);
+      padding: 24px 22px; display: flex; flex-direction: column; gap: 6px;
+      transition: transform .3s ease, box-shadow .3s ease;
+    }
+    .hotel-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover) }
+    .hotel-name { font-family: 'Unbounded', sans-serif; font-size: 16px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.2 }
+    .hotel-stars { color: #f5a523; font-size: 14px; letter-spacing: 2px }
+    .hotel-price { font-size: 15px; font-weight: 700; color: var(--accent) }
+    .hotel-address { font-size: 13px; color: var(--muted) }
+    .hotel-feature { font-size: 14px; color: #3d3d3d; line-height: 1.6; flex: 1; margin-top: 4px }
+    .hotel-footer { display: flex; align-items: center; justify-content: flex-end; margin-top: 12px }
+
+    /* MAP LINK */
+    .map-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--accent-bg); color: var(--accent);
+      border: 1px solid #f1d8ca; border-radius: 999px;
+      padding: 10px 14px; font-size: 13px; font-weight: 700; transition: .25s ease; flex-shrink: 0;
+    }
+    .map-link:hover { background: var(--accent); color: #fff; border-color: var(--accent) }
+
+    /* TIP BLOCK */
+    .tip-block {
+      margin-top: 40px; padding: 20px 24px;
+      border-left: 3px solid var(--accent);
+      background: var(--accent-bg); border-radius: 0 var(--radius) var(--radius) 0;
+      font-size: 15px; line-height: 1.65; color: #3d3d3d;
+    }
+
+    /* FOOTER */
+    .footer { border-top: 1px solid var(--line); padding: 28px 0 40px; color: var(--muted) }
+    .footer-inner { display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap }
+    .footer-brand { font-family: 'Unbounded', sans-serif; font-weight: 700; color: #222; font-size: 14px; margin-bottom: 4px }
+    .footer-sub { font-size: 13px }
+
+    /* ANIMATIONS */
+    .reveal { opacity: 0; transform: translateY(24px); transition: opacity .7s ease, transform .7s ease; will-change: opacity, transform }
+    .reveal.is-visible { opacity: 1; transform: translateY(0) }
+
+    @media (max-width: 760px) {
+      .topbar-inner { min-height: 66px }
+      .nav-links { display: none }
+      .burger { display: block; margin-left: auto }
+      .mobile-menu { top: 66px }
+      .topbar-actions .btn-primary { padding: 10px 16px; font-size: 13px }
+      .hotels-grid { grid-template-columns: 1fr }
+      .section { padding: 52px 0 64px }
+      .page-hero { padding: 52px 0 40px }
+    }
+    @media (max-width: 600px) {
+      .hotels-grid { grid-template-columns: 1fr }
+    }
+    @media (max-width: 520px) {
+      .container { width: min(var(--container), calc(100% - 20px)) }
+      .footer-inner { flex-direction: column; align-items: flex-start }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="index.html">Как местный</a>
+      <nav class="nav-links" aria-label="Разделы">
+        <a href="index.html">О регионе</a>
+        <a href="places.html">Места</a>
+        <a href="places.html#activities">Активности</a>
+        <a href="food.html">Кухня</a>
+        <a href="food.html#restaurants">Рестораны</a>
+        <a href="hotels.html" class="active">Отели</a>
+        <a href="tips.html">Советы</a>
+        <a href="tour.html">Тур</a>
+      </nav>
+      <div style="display:flex;align-items:center;gap:10px">
+        <a class="btn btn-primary" href="https://t.me/like_a_local_bot" target="_blank" rel="noopener noreferrer">Открыть бота</a>
+      </div>
+      <button class="burger" aria-label="Открыть меню" onclick="document.getElementById('mobileMenu').classList.toggle('open')">&#9776;</button>
+    </div>
+  </header>
+
+  <nav class="mobile-menu" id="mobileMenu" aria-label="Мобильное меню">
+    <a href="index.html">О регионе</a>
+    <a href="places.html">Места</a>
+    <a href="places.html#activities">Активности</a>
+    <a href="food.html">Кухня</a>
+    <a href="food.html#restaurants">Рестораны</a>
+    <a href="hotels.html" class="active">Отели</a>
+    <a href="tips.html">Советы</a>
+    <a href="tour.html">Тур</a>
+    <a href="https://t.me/like_a_local_bot" target="_blank" rel="noopener noreferrer" style="color:var(--accent);font-weight:700">Открыть бота →</a>
+  </nav>
+
+  <div class="page-hero">
+    <div class="container reveal">
+      <div class="eyebrow">Где остановиться</div>
+      <h1 class="page-title">Отели и глэмпинги</h1>
+      <p class="page-sub">Проверенные варианты в Махачкале и Дербенте, плюс глэмпинги у Сулакского каньона и в горах.</p>
+    </div>
+  </div>
+
+  <section class="section">
+    <div class="container">
+
+      <div class="reveal">
+        <div class="eyebrow">Отели</div>
+        <h2 class="section-title">Где жить в городах</h2>
+        <p class="section-lead">Удобная база для поездок по региону — выбирай по бюджету и расположению.</p>
+      </div>
+
+      <div class="city-label">Махачкала</div>
+      <div class="hotels-grid">
+
+        <div class="hotel-card reveal">
+          <div class="hotel-name">Порт Петровск</div>
+          <div class="hotel-stars">★★★★</div>
+          <div class="hotel-price">от 5 500 ₽ / ночь</div>
+          <div class="hotel-address">ул. Ленина, 11, Махачкала</div>
+          <div class="hotel-feature">Бизнес-отель в центре города. Просторные номера, хороший завтрак, парковка. Удобно для тех, кто приехал на несколько дней исследовать регион с разных сторон.</div>
+          <div class="hotel-footer">
+            <a class="map-link" href="https://www.google.com/maps/search/Порт+Петровск+отель+Махачкала/@42.98,47.50,14z" target="_blank" rel="noopener noreferrer">📍 На карте</a>
+          </div>
+        </div>
+
+        <div class="hotel-card reveal">
+          <div class="hotel-name">Апарт-Отель «Каспий»</div>
+          <div class="hotel-stars">★★★</div>
+          <div class="hotel-price">от 3 200 ₽ / ночь</div>
+          <div class="hotel-address">пр. Шамиля, 45, Махачкала</div>
+          <div class="hotel-feature">Просторные апартаменты с кухней — удобно при длительном пребывании. Хорошее расположение, тихий двор. Wi-Fi и кондиционер в каждом номере.</div>
+          <div class="hotel-footer">
+            <a class="map-link" href="https://www.google.com/maps/search/апарт+отель+Махачкала/@42.97,47.50,13z" target="_blank" rel="noopener noreferrer">📍 На карте</a>
+          </div>
+        </div>
+
+        <div class="hotel-card reveal">
+          <div class="hotel-name">Гостиница «Театральная»</div>
+          <div class="hotel-stars">★★★</div>
+          <div class="hotel-price">от 2 800 ₽ / ночь</div>
+          <div class="hotel-address">пл. Ленина, 2, Махачкала</div>
+          <div class="hotel-feature">Бюджетный вариант в самом центре — 5 минут пешком до набережной. Чисто, всё необходимое есть, персонал приветливый. Хороший выбор для коротких поездок.</div>
+          <div class="hotel-footer">
+            <a class="map-link" href="https://www.google.com/maps/search/гостиница+Театральная+Махачкала/@42.98,47.50,14z" target="_blank" rel="noopener noreferrer">📍 На карте</a>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="city-label">Дербент</div>
+      <div class="hotels-grid">
+
+        <div class="hotel-card reveal">
+          <div class="hotel-name">Отель «Маяк»</div>
+          <div class="hotel-stars">★★★★</div>
+          <div class="hotel-price">от 6 000 ₽ / ночь</div>
+          <div class="hotel-address">ул. Гагарина, 24, Дербент</div>
+          <div class="hotel-feature">Современный отель в двух шагах от цитадели Нарын-кала. Терраса с видом на море, отличный завтрак. Лучший вариант в Дербенте по соотношению цены и качества.</div>
+          <div class="hotel-footer">
+            <a class="map-link" href="https://www.google.com/maps/search/отель+Маяк+Дербент/@42.06,48.28,14z" target="_blank" rel="noopener noreferrer">📍 На карте</a>
+          </div>
+        </div>
+
+        <div class="hotel-card reveal">
+          <div class="hotel-name">Гостевой дом «Нарын-Кала»</div>
+          <div class="hotel-stars">★★★</div>
+          <div class="hotel-price">от 3 500 ₽ / ночь</div>
+          <div class="hotel-address">ул. Таги-Заде, 8, Дербент</div>
+          <div class="hotel-feature">Уютные комнаты прямо в старом городе. Хозяева — местные, расскажут всё о Дербенте. Завтрак включён. Живая атмосфера древнего города за окном.</div>
+          <div class="hotel-footer">
+            <a class="map-link" href="https://www.google.com/maps/search/гостевой+дом+Дербент+старый+город/@42.05,48.29,14z" target="_blank" rel="noopener noreferrer">📍 На карте</a>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <section class="section" style="background:#fafafa; border-top:1px solid var(--line); border-bottom:1px solid var(--line)">
+    <div class="container">
+
+      <div class="reveal">
+        <div class="eyebrow">Глэмпинги</div>
+        <h2 class="section-title">Под звёздным небом</h2>
+        <p class="section-lead">Купольные дома, шатры и бочки — в лучших местах Дагестана.</p>
+      </div>
+
+      <div class="hotels-grid" style="margin-top:28px">
+
+        <div class="hotel-card reveal">
+          <div class="hotel-name">Глэмпинг «Дубки»</div>
+          <div class="hotel-price">от 8 500 ₽ / ночь</div>
+          <div class="hotel-address">пос. Дубки, у Сулакского каньона</div>
+          <div class="hotel-feature">Купольные дома прямо над каньоном — просыпаешься с видом на бирюзовую реку. Баня, завтрак, форель на ужин. Самое атмосферное место для ночёвки в Дагестане.</div>
+          <div class="hotel-footer">
+            <a class="map-link" href="https://www.google.com/maps/search/Дубки+Сулакский+каньон+глэмпинг/@43.02,46.83,12z" target="_blank" rel="noopener noreferrer">📍 На карте</a>
+          </div>
+        </div>
+
+        <div class="hotel-card reveal">
+          <div class="hotel-name">Горный лагерь «Гуниб»</div>
+          <div class="hotel-price">от 7 000 ₽ / ночь</div>
+          <div class="hotel-address">пос. Гуниб, Гунибский район</div>
+          <div class="hotel-feature">Панорамные бочки и шатры на высоте 1500 м. Горный воздух, тишина, звёздное небо без засветки. Конные прогулки по окрестностям в комплекте.</div>
+          <div class="hotel-footer">
+            <a class="map-link" href="https://www.google.com/maps/search/Гуниб+Дагестан/@42.38,46.97,12z" target="_blank" rel="noopener noreferrer">📍 На карте</a>
+          </div>
+        </div>
+
+        <div class="hotel-card reveal">
+          <div class="hotel-name">«Каспий Ривьера»</div>
+          <div class="hotel-price">от 6 500 ₽ / ночь</div>
+          <div class="hotel-address">Каспийск, пляжная зона</div>
+          <div class="hotel-feature">Шатры и домики прямо у Каспийского моря. Закаты с террасы, звук волн, морской бриз. Сёрфинг и сапборд в аренду прямо на месте.</div>
+          <div class="hotel-footer">
+            <a class="map-link" href="https://www.google.com/maps/search/Каспийск+пляж+Дагестан/@42.87,47.62,12z" target="_blank" rel="noopener noreferrer">📍 На карте</a>
+          </div>
+        </div>
+
+        <div class="hotel-card reveal">
+          <div class="hotel-name">Эко-лагерь «Сарыкум»</div>
+          <div class="hotel-price">от 5 000 ₽ / ночь</div>
+          <div class="hotel-address">у бархана Сарыкум, 40 км от Махачкалы</div>
+          <div class="hotel-feature">Палаточный лагерь у крупнейшего бархана Европы. Рассветы и закаты над песком — незабываемые фото. Тихо, без суеты, только природа и звёзды.</div>
+          <div class="hotel-footer">
+            <a class="map-link" href="https://www.google.com/maps/search/Бархан+Сарыкум+Дагестан/@43.01,47.22,12z" target="_blank" rel="noopener noreferrer">📍 На карте</a>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="tip-block reveal">
+        💡 <strong>Бронируй заранее</strong> — летом Дагестан очень популярен. Июль–август разбирают за 2–3 недели. Для глэмпингов — за месяц и более.
+      </div>
+
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div>
+        <div class="footer-brand">Как местный</div>
+        <div class="footer-sub">© 2026 · <a href="https://t.me/like_a_local_bot" target="_blank" rel="noopener noreferrer" style="color:var(--accent);font-weight:600">@like_a_local_bot</a> · Путеводители</div>
+      </div>
+      <nav style="display:flex;gap:18px;flex-wrap:wrap">
+        <a href="index.html" style="font-size:14px;font-weight:500;color:var(--muted)">О регионе</a>
+        <a href="places.html" style="font-size:14px;font-weight:500;color:var(--muted)">Места</a>
+        <a href="food.html" style="font-size:14px;font-weight:500;color:var(--muted)">Кухня</a>
+        <a href="tips.html" style="font-size:14px;font-weight:500;color:var(--muted)">Советы</a>
+        <a href="tour.html" style="font-size:14px;font-weight:500;color:var(--muted)">Тур</a>
+      </nav>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      const burger = document.querySelector('.burger');
+      const mobileMenu = document.getElementById('mobileMenu');
+      document.addEventListener('click', function (e) {
+        if (mobileMenu && !mobileMenu.contains(e.target) && !burger.contains(e.target)) {
+          mobileMenu.classList.remove('open');
+        }
+      });
+      const obs = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) { e.target.classList.add('is-visible'); obs.unobserve(e.target); }
+        });
+      }, { threshold: 0.14, rootMargin: '0px 0px -40px 0px' });
+      document.querySelectorAll('.reveal').forEach(function (el) { obs.observe(el); });
+    })();
+  </script>
+</body>
+</html>
