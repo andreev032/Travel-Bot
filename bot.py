@@ -9630,11 +9630,11 @@ async def show_waters_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     premium = is_premium(user_id)
     if premium:
         my_btn = KeyboardButton(
-            "✅ Мои отметки ⭐",
+            "✅ Мои отметки",
             web_app=WebAppInfo(url=WATERS_URL),
         )
     else:
-        my_btn = KeyboardButton("✅ Мои отметки ⭐")
+        my_btn = KeyboardButton("✅ Мои отметки")
     await update.message.reply_text(
         "🌊 *Океаны, моря и реки*\n\nУзнай всё о водах планеты и отметь где ты побывал.",
         parse_mode="Markdown",
@@ -9655,7 +9655,7 @@ async def waters_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE
         return await show_folder_mytrips(update, context)
     if text == "📖 Справочник":
         return await show_waters_ref_type(update, context)
-    if text == "✅ Мои отметки ⭐":
+    if text == "✅ Мои отметки":
         # Без премиума кнопка приходит как обычный текст — показываем premium-замок.
         await _send_premium_lock(update)
         return WATERS_MENU
