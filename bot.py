@@ -1450,6 +1450,7 @@ def get_folder_knowledge_kb():
             [KeyboardButton("📖 Инструкция для новичка"), KeyboardButton("🚁 Дроны")],
             [KeyboardButton("🛋 Лаунджи аэропортов"),     KeyboardButton("🚢 Круизы")],
             [KeyboardButton("🎬 Фильмы о путешествиях"),  KeyboardButton("🏛 Чудеса и наследие")],
+            [KeyboardButton("🏫 Языковые школы")],
             [KeyboardButton("◀️ Назад"),                   KeyboardButton(HOME_BTN)],
         ],
         resize_keyboard=True,
@@ -4345,8 +4346,10 @@ async def _handle_premium_plan(update: Update, plan: str) -> int:
 async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
 
-    # ◀️ Назад из подменю папок → главное меню
+    # ◀️ Назад из подменю папок → главное меню (или обратно в папку Знания)
     if text == "◀️ Назад":
+        if context.user_data.pop("back_to_knowledge", False):
+            return await show_folder_knowledge(update, context)
         return await go_home(update, context)
 
     # ── Folder buttons ──────────────────────────────────────────────────────
@@ -4462,6 +4465,71 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await cruise_menu_handler(update, context)
     elif text == "🏛 Чудеса и наследие":
         return await show_wonders_menu(update, context)
+    elif text == "🏫 Языковые школы":
+        context.user_data["back_to_knowledge"] = True
+        await update.message.reply_text(
+            "🏫 Языковые школы английского в мире\n\n"
+            "Учить английский за границей — это не только учёба, но и путешествие. Вот лучшие направления по бюджету:\n\n"
+            "━━━━━━━━━━━━━━━\n"
+            "💚 БЮДЖЕТНЫЕ (от €100–200/нед)\n"
+            "━━━━━━━━━━━━━━━\n\n"
+            "🇿🇦 ЮАР — Кейптаун\n"
+            "Самый дешёвый англоязычный вариант в мире. Плюс сафари и природа.\n"
+            "💰 от €100–150/нед | Виза нужна\n"
+            "🏫 ESP Cape Town, Good Hope Studies\n"
+            "🔗 esp.co.za\n\n"
+            "🇵🇭 Филиппины — Себу, Багио\n"
+            "Уникальный формат: почти 100% индивидуальных уроков за минимальные деньги.\n"
+            "💰 от $150–300/нед (всё включено!) | Виза не нужна до 30 дней\n"
+            "🏫 CIA (Centre for International Affairs), OEG Cebu\n\n"
+            "🇨🇾 Кипр — Лимасол, Пафос\n"
+            "Средиземноморье, английский официальный язык.\n"
+            "💰 от €120–180/нед | Нужна кипрская виза или действующий шенген\n"
+            "🏫 English in Cyprus, The English School\n"
+            "🔗 englishincyprus.com\n\n"
+            "🇲🇹 Мальта — Сент-Джулианс, Слима\n"
+            "Самое популярное направление в Европе среди русскоязычных.\n"
+            "💰 от €150–200/нед | Нужен шенген\n"
+            "🏫 EC Malta, IELS, Maltalingua, Gateway School\n"
+            "🔗 maltalingua.com\n\n"
+            "━━━━━━━━━━━━━━━\n"
+            "💛 СРЕДНИЙ БЮДЖЕТ (€200–400/нед)\n"
+            "━━━━━━━━━━━━━━━\n\n"
+            "🇮🇪 Ирландия — Дублин, Голуэй, Корк\n"
+            "Носители языка, атмосферные города, пабы и зелёные холмы.\n"
+            "💰 от €200–350/нед | Нужна ирландская виза\n"
+            "🏫 Kaplan, EC Dublin, Grafton College\n"
+            "🔗 grafton.ie\n\n"
+            "🇬🇧 Великобритания — Лондон, Оксфорд, Борнмут\n"
+            "Классика и престиж. Британский акцент.\n"
+            "💰 от £250–450/нед | Нужна UK виза\n"
+            "🏫 St Giles, Kaplan, EC London\n"
+            "🔗 stgiles.co.uk\n\n"
+            "━━━━━━━━━━━━━━━\n"
+            "💰 ДОРОГИЕ (от €400+/нед)\n"
+            "━━━━━━━━━━━━━━━\n\n"
+            "🇺🇸 США — Нью-Йорк, Бостон, Майами\n"
+            "💰 от $400–600/нед | Нужна американская виза\n\n"
+            "🇨🇦 Канада — Торонто, Ванкувер\n"
+            "💰 от CAD 400/нед | Нужна канадская виза\n\n"
+            "🇦🇺 Австралия — Сидней, Мельбурн, Голд-Кост\n"
+            "💰 от AUD 350/нед | Нужна австралийская виза\n\n"
+            "━━━━━━━━━━━━━━━\n"
+            "📌 ВАЖНО ЗНАТЬ\n"
+            "━━━━━━━━━━━━━━━\n"
+            "• Виза студента нужна при обучении дольше 3 месяцев\n"
+            "• Аккредитация: ищи школы с IALC, EAQUALS, Cambridge English\n"
+            "• Лучшее время: сентябрь–ноябрь (меньше народу, ниже цены)\n"
+            "• Проживание в семье дешевле резиденции и даёт практику 24/7\n"
+            "• Минимальный возраст в большинстве школ: 16–18 лет\n"
+            "⚠️ Информация актуальна на момент написания. Цены, визовые требования и условия школ могут меняться — уточняйте на официальных сайтах перед поездкой.",
+            reply_markup=ReplyKeyboardMarkup(
+                [[KeyboardButton("◀️ Назад"), KeyboardButton(HOME_BTN)]],
+                resize_keyboard=True,
+                one_time_keyboard=True,
+            ),
+        )
+        return MAIN_MENU
     elif text == "⭐ Премиум":
         return await show_premium_screen(update, context)
     elif text == "💳 Подключить Премиум" or text == "💳 Продлить подписку":
