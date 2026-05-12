@@ -29,6 +29,20 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 TOKEN            = os.getenv("BOT_TOKEN")
+
+import re
+
+class TokenFilter(logging.Filter):
+    def __init__(self, token):
+        self.pattern = re.compile(re.escape(token))
+    def filter(self, record):
+        record.msg = self.pattern.sub('[BOT_TOKEN]', str(record.msg))
+        return True
+
+token_filter = TokenFilter(os.environ['BOT_TOKEN'])
+logging.getLogger('httpx').addFilter(token_filter)
+logging.getLogger('telegram').addFilter(token_filter)
+
 # CHANNEL_ID     = -1002079377291   # основной канал — вернуть после проверки
 CHANNEL_ID       = int(os.getenv("CHANNEL_ID", "-1002079377291"))   # ВРЕМЕННО: тестовый канал для проверки расписания
 TEST_CHANNEL_ID  = int(os.getenv("TEST_CHANNEL_ID", "-1003580791059"))   # тестовый канал — команда /testpost
