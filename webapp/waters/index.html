@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Мои воды</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      height: 100%; overflow: hidden;
+      background: #0d1117; color: #c9d1d9;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      display: flex; flex-direction: column;
+    }
+
+    /* ── Header ── */
+    #header {
+      background: #161b22;
+      border-bottom: 1px solid #30363d;
+      padding: 10px 12px 8px;
+      flex-shrink: 0;
+    }
+    #search {
+      width: 100%; background: #21262d; border: 1px solid #30363d;
+      border-radius: 8px; padding: 9px 12px; color: #c9d1d9;
+      font-size: 14px; outline: none;
+    }
+    #search::placeholder { color: #484f58; }
+    #search:focus { border-color: #58a6ff; }
+
+    /* ── Counter bar ── */
+    #counter-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 7px 12px; background: #0d1117;
+      border-bottom: 1px solid #21262d; flex-shrink: 0; gap: 8px;
+    }
+    #counter-label { font-size: 13px; color: #8b949e; white-space: nowrap; }
+    #counter-badge {
+      background: #21262d; color: #484f58;
+      font-size: 12px; font-weight: 700;
+      padding: 3px 11px; border-radius: 20px;
+      min-width: 64px; text-align: center;
+      transition: background .2s, color .2s;
+    }
+    #counter-badge.has { background: #238636; color: #fff; }
+    #status-msg {
+      font-size: 11px; color: #484f58; margin-left: auto;
+      white-space: nowrap;
+    }
+    #status-msg.err { color: #f85149; }
+
+    /* ── List ── */
+    #list {
+      overflow-y: auto; flex: 1; padding: 4px 10px 90px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .cat-header {
+      display: flex; align-items: center; gap: 8px;
+      padding: 14px 4px 6px; font-size: 13px; font-weight: 700;
+      color: #8b949e; letter-spacing: .02em; user-select: none;
+    }
+    .cat-header:first-child { padding-top: 8px; }
+    .cat-count {
+      background: #21262d; color: #484f58;
+      font-size: 11px; font-weight: 700;
+      padding: 2px 8px; border-radius: 20px;
+      transition: background .2s, color .2s;
+    }
+    .cat-count.has { background: #238636; color: #fff; }
+
+    .row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 8px; border-radius: 8px;
+      cursor: pointer; transition: background .12s;
+      user-select: none;
+    }
+    .row:active { background: #1c2128; }
+    .row.on { background: #0f2617; }
+    .row.pending { opacity: 0.55; }
+    .flag { font-size: 20px; width: 26px; text-align: center; flex-shrink: 0; }
+    .info { flex: 1; min-width: 0; }
+    .name { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .row.on .name { color: #3fb950; }
+    .country { font-size: 11px; color: #484f58; margin-top: 1px;
+               white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .row.on .country { color: #2ea043; }
+    .box {
+      width: 21px; height: 21px; border: 2px solid #30363d;
+      border-radius: 5px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .12s, border-color .12s;
+    }
+    .row.on .box { background: #238636; border-color: #238636; }
+    .tick { display: none; }
+    .row.on .tick { display: block; }
+    .empty { text-align: center; color: #484f58; font-size: 14px; padding: 36px 0; }
+
+    /* ── Bottom button ── */
+    #done-wrap {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      padding: 10px 12px 14px;
+      background: linear-gradient(transparent, #0d1117 38%);
+      pointer-events: none;
+    }
+    #btn-done {
+      width: 100%; padding: 13px;
+      background: linear-gradient(135deg, #238636, #2ea043);
+      color: #fff; border: none; border-radius: 10px;
+      font-size: 15px; font-weight: 700; cursor: pointer;
+      transition: opacity .15s; pointer-events: all;
+    }
+    #btn-done:active { opacity: .8; }
+  </style>
+</head>
+<body>
+
+<div id="header">
+  <input id="search" type="text" placeholder="🔍 Поиск..."
+         autocomplete="off" oninput="filter(this.value)">
+</div>
+<div id="counter-bar">
+  <span id="counter-label">Посещено</span>
+  <span id="counter-badge">0 из 0</span>
+  <span id="status-msg"></span>
+</div>
+<div id="list"><div class="empty">Загрузка…</div></div>
+<div id="done-wrap">
+  <button id="btn-done" onclick="closeApp()">Закрыть</button>
+</div>
+
+<script>
+const tg = window.Telegram.WebApp;
+tg.ready(); tg.expand();
+if (tg.setHeaderColor)     tg.setHeaderColor('#161b22');
+if (tg.setBackgroundColor) tg.setBackgroundColor('#0d1117');
+
+const API_BASE = "https://travel-bot-production-9c46.up.railway.app";
+const initData = tg.initData || "";
+
+const CATEGORIES = [
+  { id: "ocean",    title: "🌍 Океаны",          icon: "🌍" },
+  { id: "sea",      title: "🌊 Моря",            icon: "🌊" },
+  { id: "river",    title: "🏞 Реки",            icon: "🏞" },
+  { id: "lake",     title: "🏔 Озёра",           icon: "🏔" },
+  { id: "internal", title: "⚠️ Внутренние воды", icon: "⚠️" },
+];
+
+let allItems = [];     // {id, name, type, ocean_id, countries[]}
+let visited  = new Set();  // Set of water_id
+let filterQuery = "";
+
+const listEl   = document.getElementById("list");
+const badgeEl  = document.getElementById("counter-badge");
+const statusEl = document.getElementById("status-msg");
+let renderedRows = [];
+
+function setStatus(text, isErr) {
+  statusEl.textContent = text || "";
+  statusEl.classList.toggle("err", !!isErr);
+}
+
+async function loadData() {
+  try {
+    const res = await fetch(`${API_BASE}/api/waters`, {
+      method: "GET",
+      headers: { "X-Telegram-Init-Data": initData }
+    });
+    if (!res.ok) {
+      const msg = res.status === 401 ? "Откройте через бота" : `Ошибка ${res.status}`;
+      setStatus(msg, true);
+      listEl.innerHTML = `<div class="empty">${msg}</div>`;
+      return;
+    }
+    const data = await res.json();
+    allItems = data.items || [];
+    visited  = new Set(data.visited || []);
+    setStatus("");
+    render();
+  } catch (e) {
+    setStatus("Нет связи", true);
+    listEl.innerHTML = '<div class="empty">Не удалось загрузить</div>';
+  }
+}
+
+async function toggle(waterId, rowEl) {
+  const wasOn = visited.has(waterId);
+  // Optimistic update
+  if (wasOn) visited.delete(waterId);
+  else       visited.add(waterId);
+  rowEl.classList.toggle("on", visited.has(waterId));
+  rowEl.classList.add("pending");
+  updateCounter();
+
+  try {
+    const res = await fetch(`${API_BASE}/api/waters`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Telegram-Init-Data": initData,
+      },
+      body: JSON.stringify({ water_id: waterId, action: "toggle" }),
+    });
+    if (!res.ok) throw new Error("status " + res.status);
+    const data = await res.json();
+    if (typeof data.visited === "boolean") {
+      if (data.visited) visited.add(waterId);
+      else              visited.delete(waterId);
+      rowEl.classList.toggle("on", data.visited);
+    }
+    setStatus("");
+  } catch (e) {
+    // Revert
+    if (wasOn) visited.add(waterId);
+    else       visited.delete(waterId);
+    rowEl.classList.toggle("on", visited.has(waterId));
+    setStatus("Ошибка сохранения", true);
+  } finally {
+    rowEl.classList.remove("pending");
+    updateCounter();
+  }
+}
+
+function render() {
+  const q = filterQuery.trim().toLowerCase();
+  listEl.innerHTML = "";
+  renderedRows = [];
+
+  let totalVisible = 0;
+
+  CATEGORIES.forEach(cat => {
+    const items = allItems.filter(w => w.type === cat.id);
+    if (items.length === 0) return;
+
+    const visibleItems = items.filter(w => {
+      if (!q) return true;
+      if (w.name.toLowerCase().includes(q)) return true;
+      return (w.countries || []).some(c => c.toLowerCase().includes(q));
+    });
+    if (visibleItems.length === 0) return;
+
+    const catVisited = items.filter(w => visited.has(w.id)).length;
+
+    const hdr = document.createElement("div");
+    hdr.className = "cat-header";
+    hdr.innerHTML = `<span>${cat.title}</span>
+      <span class="cat-count${catVisited > 0 ? " has" : ""}" data-cat="${cat.id}">
+        ${catVisited}/${items.length}
+      </span>`;
+    listEl.appendChild(hdr);
+
+    visibleItems.forEach(w => {
+      const isOn = visited.has(w.id);
+      const row = document.createElement("div");
+      row.className = "row" + (isOn ? " on" : "");
+      const countries = (w.countries || []).join(", ");
+      row.innerHTML = `
+        <span class="flag">${cat.icon}</span>
+        <div class="info">
+          <div class="name"></div>
+          <div class="country"></div>
+        </div>
+        <div class="box">
+          <svg class="tick" width="13" height="10" viewBox="0 0 13 10" fill="none">
+            <path d="M1.5 5L5 8.5L11.5 1.5" stroke="#fff" stroke-width="2.2"
+                  stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>`;
+      row.querySelector(".name").textContent = w.name;
+      row.querySelector(".country").textContent = countries;
+      row.addEventListener("click", () => {
+        if (!row.classList.contains("pending")) toggle(w.id, row);
+      });
+      listEl.appendChild(row);
+      renderedRows.push({ id: w.id, el: row });
+      totalVisible++;
+    });
+  });
+
+  if (totalVisible === 0) {
+    listEl.innerHTML = '<div class="empty">Ничего не найдено</div>';
+  }
+  updateCounter();
+}
+
+function updateCounter() {
+  const total = allItems.length;
+  badgeEl.textContent = visited.size + " из " + total;
+  badgeEl.classList.toggle("has", visited.size > 0);
+
+  CATEGORIES.forEach(cat => {
+    const items = allItems.filter(w => w.type === cat.id);
+    const el = listEl.querySelector(`.cat-count[data-cat="${cat.id}"]`);
+    if (!el) return;
+    const cnt = items.filter(w => visited.has(w.id)).length;
+    el.textContent = cnt + "/" + items.length;
+    el.classList.toggle("has", cnt > 0);
+  });
+}
+
+function filter(val) {
+  filterQuery = val;
+  render();
+}
+
+function closeApp() {
+  tg.close();
+}
+
+loadData();
+</script>
+</body>
+</html>
