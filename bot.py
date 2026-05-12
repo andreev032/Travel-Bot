@@ -124,23 +124,23 @@ async def init_db(app) -> None:
                     created_at  TIMESTAMP DEFAULT NOW()
                 )
             """)
-            # Waters v2 migration: upgrade constraint to include 'internal' type
+            # Waters v3 migration: upgrade constraint to include 'lake' type
             try:
-                cur.execute("SAVEPOINT waters_v2_migration")
+                cur.execute("SAVEPOINT waters_v3_migration")
                 cur.execute("ALTER TABLE waters DROP CONSTRAINT IF EXISTS waters_type_check")
                 cur.execute(
                     "ALTER TABLE waters ADD CONSTRAINT waters_type_check "
-                    "CHECK (type IN ('ocean', 'sea', 'river', 'internal'))"
+                    "CHECK (type IN ('ocean', 'sea', 'river', 'lake', 'internal'))"
                 )
-                cur.execute("RELEASE SAVEPOINT waters_v2_migration")
+                cur.execute("RELEASE SAVEPOINT waters_v3_migration")
             except Exception:
-                cur.execute("ROLLBACK TO SAVEPOINT waters_v2_migration")
-                cur.execute("RELEASE SAVEPOINT waters_v2_migration")
+                cur.execute("ROLLBACK TO SAVEPOINT waters_v3_migration")
+                cur.execute("RELEASE SAVEPOINT waters_v3_migration")
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS waters (
                     id         SERIAL PRIMARY KEY,
                     name       TEXT NOT NULL,
-                    type       TEXT NOT NULL CHECK (type IN ('ocean', 'sea', 'river', 'internal')),
+                    type       TEXT NOT NULL CHECK (type IN ('ocean', 'sea', 'river', 'lake', 'internal')),
                     ocean_id   INTEGER REFERENCES waters(id),
                     countries  TEXT[],
                     length_km  INTEGER,
@@ -172,13 +172,47 @@ async def init_db(app) -> None:
 
 
 def _populate_waters_if_empty(conn) -> None:
-    """Заполняет таблицу waters данными v2 (если нет 'internal' записей — перезаполняет)."""
+    """Заполняет таблицу waters данными v3 (если нет 'internal' — перезаполняет; если нет 'lake' — добавляет озёра)."""
     try:
         with conn.cursor() as cur:
             cur.execute("SELECT COUNT(*) FROM waters WHERE type='internal'")
-            if cur.fetchone()[0] > 0:
-                return  # v2 data already present
-            # Wipe and repopulate (CASCADE also clears user_waters)
+            has_v2 = cur.fetchone()[0] > 0
+            if has_v2:
+                # v2 data present — check if v3 lakes are missing
+                cur.execute("SELECT COUNT(*) FROM waters WHERE type='lake'")
+                if cur.fetchone()[0] == 0:
+                    cur.execute("SELECT name, id FROM waters WHERE type='ocean'")
+                    ocean_ids = {row[0]: row[1] for row in cur.fetchall()}
+                    atl = ocean_ids["Атлантический океан"]
+                    arc = ocean_ids["Северный Ледовитый океан"]
+                    lakes = [
+                        # Атлантический океан (бассейн)
+                        ("Виктория",   atl, ["Танзания","Уганда","Кения"]),
+                        ("Танганьика", atl, ["ДРК","Танзания","Бурунди","Замбия"]),
+                        ("Чад",        atl, ["Нигер","Нигерия","Чад","Камерун"]),
+                        ("Титикака",   atl, ["Перу","Боливия"]),
+                        ("Женевское",  atl, ["Швейцария","Франция"]),
+                        ("Балатон",    atl, ["Венгрия"]),
+                        # Северный Ледовитый океан (бассейн)
+                        ("Верхнее",    arc, ["США","Канада"]),
+                        ("Гурон",      arc, ["США","Канада"]),
+                        ("Мичиган",    arc, ["США"]),
+                        ("Эри",        arc, ["США","Канада"]),
+                        ("Онтарио",    arc, ["США","Канада"]),
+                        ("Байкал",     arc, ["Россия"]),
+                        ("Балхаш",     arc, ["Казахстан"]),
+                        ("Иссык-Куль", arc, ["Кыргызстан"]),
+                        ("Ладожское",  arc, ["Россия"]),
+                    ]
+                    for name, ocean_id, countries in lakes:
+                        cur.execute(
+                            "INSERT INTO waters (name, type, ocean_id, countries) VALUES (%s, 'lake', %s, %s)",
+                            (name, ocean_id, countries),
+                        )
+                    conn.commit()
+                    logger.info("waters v3: добавлены озёра ✓")
+                return
+            # No v2 data — wipe and repopulate everything
             cur.execute("TRUNCATE waters CASCADE")
 
             # ── 5 океанов ────────────────────────────────────────────────────
@@ -333,8 +367,34 @@ def _populate_waters_if_empty(conn) -> None:
                     "INSERT INTO waters (name, type, ocean_id, countries, length_km) VALUES (%s, 'internal', NULL, %s, %s)",
                     (name, countries, length_km),
                 )
+
+            # ── Озёра ─────────────────────────────────────────────────────────
+            lakes = [
+                # Атлантический океан (бассейн)
+                ("Виктория",   atl, ["Танзания","Уганда","Кения"]),
+                ("Танганьика", atl, ["ДРК","Танзания","Бурунди","Замбия"]),
+                ("Чад",        atl, ["Нигер","Нигерия","Чад","Камерун"]),
+                ("Титикака",   atl, ["Перу","Боливия"]),
+                ("Женевское",  atl, ["Швейцария","Франция"]),
+                ("Балатон",    atl, ["Венгрия"]),
+                # Северный Ледовитый океан (бассейн)
+                ("Верхнее",    arc, ["США","Канада"]),
+                ("Гурон",      arc, ["США","Канада"]),
+                ("Мичиган",    arc, ["США"]),
+                ("Эри",        arc, ["США","Канада"]),
+                ("Онтарио",    arc, ["США","Канада"]),
+                ("Байкал",     arc, ["Россия"]),
+                ("Балхаш",     arc, ["Казахстан"]),
+                ("Иссык-Куль", arc, ["Кыргызстан"]),
+                ("Ладожское",  arc, ["Россия"]),
+            ]
+            for name, ocean_id, countries in lakes:
+                cur.execute(
+                    "INSERT INTO waters (name, type, ocean_id, countries) VALUES (%s, 'lake', %s, %s)",
+                    (name, ocean_id, countries),
+                )
         conn.commit()
-        logger.info("waters v2: таблица заполнена данными ✓")
+        logger.info("waters v3: таблица заполнена данными ✓")
     except Exception as e:
         logger.error("_populate_waters_if_empty: %s: %s", type(e).__name__, e)
         conn.rollback()
@@ -9297,6 +9357,7 @@ def user_waters_stats(user_id: int) -> dict:
         oceans   = waters_get_all("ocean")
         seas     = waters_get_all("sea")
         rivers   = waters_get_all("river")
+        lakes    = waters_get_all("lake")
         internal = waters_get_all("internal")
         return {
             "oceans_visited":   sum(1 for o in oceans   if o["id"] in visited),
@@ -9305,13 +9366,16 @@ def user_waters_stats(user_id: int) -> dict:
             "seas_total":       len(seas),
             "rivers_visited":   sum(1 for r in rivers   if r["id"] in visited),
             "rivers_total":     len(rivers),
+            "lakes_visited":    sum(1 for l in lakes    if l["id"] in visited),
+            "lakes_total":      len(lakes),
             "internal_visited": sum(1 for w in internal if w["id"] in visited),
             "internal_total":   len(internal),
         }
     except Exception as e:
         logger.error("user_waters_stats: %s: %s", type(e).__name__, e)
         return {"oceans_visited": 0, "oceans_total": 0, "seas_visited": 0, "seas_total": 0,
-                "rivers_visited": 0, "rivers_total": 0, "internal_visited": 0, "internal_total": 0}
+                "rivers_visited": 0, "rivers_total": 0, "lakes_visited": 0, "lakes_total": 0,
+                "internal_visited": 0, "internal_total": 0}
 
 
 # ── WATERS: reference text builders ──────────────────────────────────────────
@@ -9335,35 +9399,44 @@ def _build_ocean_ref_text(ocean_name: str) -> str:
                 )
                 seas = cur.fetchall()
                 cur.execute(
-                    "SELECT name, length_km FROM waters WHERE type='river' AND ocean_id=%s ORDER BY id",
+                    "SELECT name, countries FROM waters WHERE type='river' AND ocean_id=%s ORDER BY id",
                     (ocean_id,)
                 )
                 rivers = cur.fetchall()
+                cur.execute(
+                    "SELECT name, countries FROM waters WHERE type='lake' AND ocean_id=%s ORDER BY id",
+                    (ocean_id,)
+                )
+                lakes = cur.fetchall()
         finally:
             conn.close()
     except Exception as e:
         logger.error("_build_ocean_ref_text: %s: %s", type(e).__name__, e)
         return "Ошибка загрузки данных."
 
-    lines = [f"🌍 *{ocean_name}*"]
+    lines = [f"🌊 *{ocean_name}*"]
     if countries:
-        lines.append(f"Омывает: {', '.join(countries)}")
+        lines.append(f"\n🗺 *Омывает страны:*\n{', '.join(countries)}")
     if seas:
-        lines.append(f"\n🌊 *Моря ({len(seas)}):*")
+        lines.append(f"\n🌊 *Моря:*")
         for s in seas:
             entry = f"• {s[0]}"
             if s[1]:
-                shown = s[1][:3]
-                entry += f" — {', '.join(shown)}"
-                if len(s[1]) > 3:
-                    entry += f" и ещё {len(s[1]) - 3}"
+                entry += f" — {', '.join(s[1])}"
             lines.append(entry)
     if rivers:
-        lines.append(f"\n🏞 *Реки ({len(rivers)}):*")
+        lines.append(f"\n🏞 *Реки:*")
         for r in rivers:
             entry = f"• {r[0]}"
             if r[1]:
-                entry += f" — {r[1]:,} км".replace(",", " ")
+                entry += f" — {', '.join(r[1])}"
+            lines.append(entry)
+    if lakes:
+        lines.append(f"\n🏔 *Озёра:*")
+        for l in lakes:
+            entry = f"• {l[0]}"
+            if l[1]:
+                entry += f" — {', '.join(l[1])}"
             lines.append(entry)
     return "\n".join(lines)
 
@@ -9378,20 +9451,18 @@ def _build_internal_ref_text() -> str:
         return "Данные не найдены."
     seas   = [w for w in items if not w.get("length_km")]
     rivers = [w for w in items if w.get("length_km")]
-    lines  = ["🏞 *Внутренние воды*", "Водоёмы без стока в Мировой океан."]
+    lines  = ["🏞 *Внутренние воды*", "\n⚠️ Эти воды не имеют выхода в океан"]
     if seas:
-        lines.append(f"\n🌊 *Моря ({len(seas)}):*")
+        lines.append("\n🌊 *Моря:*")
         for s in seas:
             entry = f"• {s['name']}"
             if s["countries"]:
                 entry += f" — {', '.join(s['countries'])}"
             lines.append(entry)
     if rivers:
-        lines.append(f"\n🏞 *Реки ({len(rivers)}):*")
+        lines.append("\n🏞 *Реки:*")
         for r in rivers:
             entry = f"• {r['name']}"
-            if r["length_km"]:
-                entry += f" — {r['length_km']:,} км".replace(",", " ")
             if r["countries"]:
                 entry += f" — {', '.join(r['countries'])}"
             lines.append(entry)
@@ -9539,56 +9610,60 @@ async def waters_my_type_handler(update: Update, context: ContextTypes.DEFAULT_T
 # ── WATERS: WATERS_MY_LIST ────────────────────────────────────────────────────
 
 async def _render_waters_my(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    user_id  = update.effective_user.id
-    visited  = user_waters_get_ids(user_id)
-    oceans   = waters_get_all("ocean")
-    seas_all = waters_get_all("sea")
-    rivers   = waters_get_all("river")
-    internal = waters_get_all("internal")
+    user_id   = update.effective_user.id
+    visited   = user_waters_get_ids(user_id)
+    oceans    = waters_get_all("ocean")
+    seas_all  = waters_get_all("sea")
+    rivers    = waters_get_all("river")
+    lakes_all = waters_get_all("lake")
+    internal  = waters_get_all("internal")
 
     seas_by_ocean: dict[int, list] = {}
     for s in seas_all:
         seas_by_ocean.setdefault(s["ocean_id"], []).append(s)
 
-    ov = sum(1 for o in oceans   if o["id"] in visited)
-    sv = sum(1 for s in seas_all if s["id"] in visited)
-    rv = sum(1 for r in rivers   if r["id"] in visited)
-    iv = sum(1 for w in internal if w["id"] in visited)
+    rivers_by_ocean: dict[int, list] = {}
+    for r in rivers:
+        rivers_by_ocean.setdefault(r["ocean_id"], []).append(r)
+
+    lakes_by_ocean: dict[int, list] = {}
+    for l in lakes_all:
+        lakes_by_ocean.setdefault(l["ocean_id"], []).append(l)
+
+    ov = sum(1 for o in oceans    if o["id"] in visited)
+    sv = sum(1 for s in seas_all  if s["id"] in visited)
+    rv = sum(1 for r in rivers    if r["id"] in visited)
+    lv = sum(1 for l in lakes_all if l["id"] in visited)
 
     stats = (
         f"🌊 *Мои воды*\n\n"
-        f"🌍 Океанов: {ov}/{len(oceans)}\n"
-        f"🌊 Морей: {sv}/{len(seas_all)}\n"
-        f"🏞 Рек: {rv}/{len(rivers)}\n"
-        f"🏝 Внутренних: {iv}/{len(internal)}"
+        f"🌍 Океанов: {ov}/{len(oceans)} · 🌊 Морей: {sv}/{len(seas_all)} · 🏞 Рек: {rv}/{len(rivers)} · 🏔 Озёр: {lv}/{len(lakes_all)}"
     )
 
     rows: list[list[str]] = []
 
-    rows.append(["─── 🌍 Океаны ───"])
     for o in oceans:
-        mark = "✅" if o["id"] in visited else "◻️"
-        rows.append([f"{mark} {o['name']}"])
+        mark = "✓ " if o["id"] in visited else ""
+        rows.append([f"{mark}{o['name']}"])
 
     for o in oceans:
-        group = seas_by_ocean.get(o["id"], [])
-        if not group:
-            continue
-        short = o["name"].replace("Северный Ледовитый", "Сев. Ледовитый")
-        rows.append([f"─── 🌊 {short} ───"])
-        for s in group:
-            mark = "✅" if s["id"] in visited else "◻️"
-            rows.append([f"{mark} {s['name']}"])
+        for s in seas_by_ocean.get(o["id"], []):
+            mark = "✓ " if s["id"] in visited else ""
+            rows.append([f"{mark}{s['name']}"])
 
-    rows.append(["─── 🏞 Реки ───"])
-    for r in rivers:
-        mark = "✅" if r["id"] in visited else "◻️"
-        rows.append([f"{mark} {r['name']}"])
+    for o in oceans:
+        for r in rivers_by_ocean.get(o["id"], []):
+            mark = "✓ " if r["id"] in visited else ""
+            rows.append([f"{mark}{r['name']}"])
 
-    rows.append(["─── 🏝 Внутренние воды ───"])
+    for o in oceans:
+        for l in lakes_by_ocean.get(o["id"], []):
+            mark = "✓ " if l["id"] in visited else ""
+            rows.append([f"{mark}{l['name']}"])
+
     for w in internal:
-        mark = "✅" if w["id"] in visited else "◻️"
-        rows.append([f"{mark} {w['name']}"])
+        mark = "✓ " if w["id"] in visited else ""
+        rows.append([f"{mark}{w['name']}"])
 
     rows.append(["◀️ Назад", HOME_BTN])
 
@@ -9607,9 +9682,7 @@ async def waters_my_list_handler(update: Update, context: ContextTypes.DEFAULT_T
         return await go_home(update, context)
     if text == "◀️ Назад":
         return await show_waters_menu(update, context)
-    if text.startswith("─"):
-        return await _render_waters_my(update, context)
-    clean = text.lstrip("✅◻️ ").strip()
+    clean = text[2:] if text.startswith("✓ ") else text
     water = _waters_find_by_name(clean)
     if water:
         user_waters_toggle(user_id, water["id"])
