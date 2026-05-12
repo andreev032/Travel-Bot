@@ -44,11 +44,6 @@
       transition: background .2s, color .2s;
     }
     #counter-badge.has { background: #238636; color: #fff; }
-    #status-msg {
-      font-size: 11px; color: #484f58; margin-left: auto;
-      white-space: nowrap;
-    }
-    #status-msg.err { color: #f85149; }
 
     /* ── List ── */
     #list {
@@ -78,7 +73,6 @@
     }
     .row:active { background: #1c2128; }
     .row.on { background: #0f2617; }
-    .row.pending { opacity: 0.55; }
     .flag { font-size: 20px; width: 26px; text-align: center; flex-shrink: 0; }
     .info { flex: 1; min-width: 0; }
     .name { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -123,7 +117,6 @@
 <div id="counter-bar">
   <span id="counter-label">Посещено</span>
   <span id="counter-badge">0 из 0</span>
-  <span id="status-msg"></span>
 </div>
 <div id="list"></div>
 <div id="done-wrap">
@@ -136,11 +129,10 @@ tg.ready(); tg.expand();
 if (tg.setHeaderColor)     tg.setHeaderColor('#161b22');
 if (tg.setBackgroundColor) tg.setBackgroundColor('#0d1117');
 
-const API_BASE = "https://travel-bot-production-9c46.up.railway.app";
-const initData = tg.initData || "";
+const KEY = 'waters_visited';
 
 /* ═══════════════════════════════════════════
-   ДАННЫЕ — захардкожены, не зависят от API
+   ДАННЫЕ
 ═══════════════════════════════════════════ */
 const WATERS_LIST = [
   // ── Океаны (5) ──────────────────────────────────────────────
@@ -287,74 +279,20 @@ const CATEGORIES = [
 /* ═══════════════════════════════════════════
    СОСТОЯНИЕ
 ═══════════════════════════════════════════ */
-let visited = new Set();
+let visited = new Set(JSON.parse(localStorage.getItem(KEY) || '[]'));
 let filterQuery = "";
 
-const listEl   = document.getElementById("list");
-const badgeEl  = document.getElementById("counter-badge");
-const statusEl = document.getElementById("status-msg");
+const listEl  = document.getElementById("list");
+const badgeEl = document.getElementById("counter-badge");
 
-function setStatus(text, isErr) {
-  statusEl.textContent = text || "";
-  statusEl.classList.toggle("err", !!isErr);
-}
+function save() { localStorage.setItem(KEY, JSON.stringify([...visited])); }
 
-/* ═══════════════════════════════════════════
-   API — только visited
-═══════════════════════════════════════════ */
-async function loadVisited() {
-  try {
-    const res = await fetch(`${API_BASE}/api/waters`, {
-      method: "GET",
-      headers: { "X-Telegram-Init-Data": initData },
-    });
-    if (!res.ok) {
-      setStatus(res.status === 401 ? "Откройте через бота" : `Ошибка ${res.status}`, true);
-      return;
-    }
-    const data = await res.json();
-    visited = new Set(data.visited || []);
-    setStatus("");
-    render();
-  } catch (e) {
-    setStatus("Нет связи", true);
-  }
-}
-
-async function toggle(id, rowEl) {
-  const wasOn = visited.has(id);
-  if (wasOn) visited.delete(id);
-  else       visited.add(id);
+function toggle(id, rowEl) {
+  if (visited.has(id)) visited.delete(id);
+  else                 visited.add(id);
+  save();
   rowEl.classList.toggle("on", visited.has(id));
-  rowEl.classList.add("pending");
   updateCounter();
-
-  try {
-    const res = await fetch(`${API_BASE}/api/waters`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Telegram-Init-Data": initData,
-      },
-      body: JSON.stringify({ id, action: "toggle" }),
-    });
-    if (!res.ok) throw new Error("status " + res.status);
-    const data = await res.json();
-    if (typeof data.visited === "boolean") {
-      if (data.visited) visited.add(id);
-      else              visited.delete(id);
-      rowEl.classList.toggle("on", data.visited);
-    }
-    setStatus("");
-  } catch (e) {
-    if (wasOn) visited.add(id);
-    else       visited.delete(id);
-    rowEl.classList.toggle("on", visited.has(id));
-    setStatus("Ошибка сохранения", true);
-  } finally {
-    rowEl.classList.remove("pending");
-    updateCounter();
-  }
 }
 
 /* ═══════════════════════════════════════════
@@ -405,9 +343,7 @@ function render() {
         </div>`;
       row.querySelector(".name").textContent    = w.name;
       row.querySelector(".country").textContent = w.countries || "";
-      row.addEventListener("click", () => {
-        if (!row.classList.contains("pending")) toggle(w.id, row);
-      });
+      row.addEventListener("click", () => toggle(w.id, row));
       listEl.appendChild(row);
       totalVisible++;
     });
@@ -444,8 +380,7 @@ function closeApp() { tg.close(); }
 /* ═══════════════════════════════════════════
    INIT
 ═══════════════════════════════════════════ */
-render();         // мгновенный показ списка
-loadVisited();    // подгрузка отметок поверх
+render();
 </script>
 </body>
 </html>
