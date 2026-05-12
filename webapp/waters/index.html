@@ -125,7 +125,7 @@
   <span id="counter-badge">0 из 0</span>
   <span id="status-msg"></span>
 </div>
-<div id="list"><div class="empty">Загрузка…</div></div>
+<div id="list"></div>
 <div id="done-wrap">
   <button id="btn-done" onclick="closeApp()">Закрыть</button>
 </div>
@@ -139,57 +139,193 @@ if (tg.setBackgroundColor) tg.setBackgroundColor('#0d1117');
 const API_BASE = "https://travel-bot-production-9c46.up.railway.app";
 const initData = tg.initData || "";
 
-const CATEGORIES = [
-  { id: "ocean",    title: "🌍 Океаны",          icon: "🌍" },
-  { id: "sea",      title: "🌊 Моря",            icon: "🌊" },
-  { id: "river",    title: "🏞 Реки",            icon: "🏞" },
-  { id: "lake",     title: "🏔 Озёра",           icon: "🏔" },
-  { id: "internal", title: "⚠️ Внутренние воды", icon: "⚠️" },
+/* ═══════════════════════════════════════════
+   ДАННЫЕ — захардкожены, не зависят от API
+═══════════════════════════════════════════ */
+const WATERS_LIST = [
+  // ── Океаны (5) ──────────────────────────────────────────────
+  { id: 'pacific',  name: 'Тихий океан',              type: 'ocean', countries: 'Россия, США, Канада, Мексика, Япония, Китай, Австралия и др.' },
+  { id: 'atlantic', name: 'Атлантический океан',      type: 'ocean', countries: 'США, Великобритания, Франция, Бразилия, ЮАР и др.' },
+  { id: 'indian',   name: 'Индийский океан',          type: 'ocean', countries: 'Индия, Австралия, ЮАР, Индонезия, ОАЭ и др.' },
+  { id: 'arctic',   name: 'Северный Ледовитый океан', type: 'ocean', countries: 'Россия, США, Канада, Норвегия, Дания (Гренландия)' },
+  { id: 'southern', name: 'Южный океан',              type: 'ocean', countries: 'Антарктида, Аргентина, Чили, ЮАР, Австралия, Новая Зеландия' },
+
+  // ── Моря (60) ───────────────────────────────────────────────
+  // Тихий океан (20)
+  { id: 'bering',        name: 'Берингово море',          type: 'sea', ocean: 'pacific', countries: 'Россия, США' },
+  { id: 'okhotsk',       name: 'Охотское море',           type: 'sea', ocean: 'pacific', countries: 'Россия, Япония' },
+  { id: 'japan',         name: 'Японское море',           type: 'sea', ocean: 'pacific', countries: 'Россия, Япония, Южная Корея, Северная Корея' },
+  { id: 'east_china',    name: 'Восточно-Китайское море', type: 'sea', ocean: 'pacific', countries: 'Китай, Япония, Южная Корея, Тайвань' },
+  { id: 'yellow',        name: 'Жёлтое море',             type: 'sea', ocean: 'pacific', countries: 'Китай, Южная Корея, Северная Корея' },
+  { id: 'south_china',   name: 'Южно-Китайское море',     type: 'sea', ocean: 'pacific', countries: 'Китай, Вьетнам, Филиппины, Малайзия, Бруней, Индонезия, Тайвань' },
+  { id: 'philippine',    name: 'Филиппинское море',       type: 'sea', ocean: 'pacific', countries: 'Япония, Филиппины, Тайвань' },
+  { id: 'sulawesi',      name: 'Сулавесийское море',      type: 'sea', ocean: 'pacific', countries: 'Индонезия, Малайзия, Филиппины' },
+  { id: 'molucca',       name: 'Молуккское море',         type: 'sea', ocean: 'pacific', countries: 'Индонезия' },
+  { id: 'java',          name: 'Яванское море',           type: 'sea', ocean: 'pacific', countries: 'Индонезия' },
+  { id: 'flores',        name: 'Море Флорес',             type: 'sea', ocean: 'pacific', countries: 'Индонезия' },
+  { id: 'banda',         name: 'Море Банда',              type: 'sea', ocean: 'pacific', countries: 'Индонезия, Восточный Тимор' },
+  { id: 'savu',          name: 'Море Саву',               type: 'sea', ocean: 'pacific', countries: 'Индонезия, Восточный Тимор' },
+  { id: 'timor',         name: 'Тиморское море',          type: 'sea', ocean: 'pacific', countries: 'Индонезия, Восточный Тимор, Австралия' },
+  { id: 'arafura',       name: 'Арафурское море',         type: 'sea', ocean: 'pacific', countries: 'Австралия, Индонезия, Папуа Новая Гвинея' },
+  { id: 'coral',         name: 'Коралловое море',         type: 'sea', ocean: 'pacific', countries: 'Австралия, Папуа Новая Гвинея, Соломоновы Острова' },
+  { id: 'tasman',        name: 'Тасманово море',          type: 'sea', ocean: 'pacific', countries: 'Австралия, Новая Зеландия' },
+  { id: 'solomon',       name: 'Море Соломона',           type: 'sea', ocean: 'pacific', countries: 'Папуа Новая Гвинея, Соломоновы Острова' },
+  { id: 'fiji_sea',      name: 'Море Фиджи',              type: 'sea', ocean: 'pacific', countries: 'Фиджи, Вануату' },
+  { id: 'halmahera',     name: 'Хальмахерское море',      type: 'sea', ocean: 'pacific', countries: 'Индонезия' },
+  // Атлантический океан (18)
+  { id: 'mediterranean', name: 'Средиземное море',        type: 'sea', ocean: 'atlantic', countries: 'Испания, Франция, Монако, Италия, Словения, Хорватия, Босния и Герцеговина, Черногория, Албания, Греция, Турция, Сирия, Ливан, Израиль, Египет, Ливия, Тунис, Алжир, Марокко, Мальта, Кипр' },
+  { id: 'black',         name: 'Чёрное море',             type: 'sea', ocean: 'atlantic', countries: 'Россия, Украина, Румыния, Болгария, Турция, Грузия' },
+  { id: 'azov',          name: 'Азовское море',           type: 'sea', ocean: 'atlantic', countries: 'Россия, Украина' },
+  { id: 'caribbean',     name: 'Карибское море',          type: 'sea', ocean: 'atlantic', countries: 'Мексика, Куба, Ямайка, Гаити, Доминиканская Республика, Пуэрто-Рико, Колумбия, Венесуэла, Панама, Коста-Рика, Гондурас, Никарагуа, Гватемала, Белиз, Тринидад и Тобаго' },
+  { id: 'north_sea',     name: 'Северное море',           type: 'sea', ocean: 'atlantic', countries: 'Великобритания, Норвегия, Дания, Германия, Нидерланды, Бельгия, Франция' },
+  { id: 'baltic',        name: 'Балтийское море',         type: 'sea', ocean: 'atlantic', countries: 'Россия, Финляндия, Швеция, Эстония, Латвия, Литва, Польша, Германия, Дания' },
+  { id: 'irish',         name: 'Ирландское море',         type: 'sea', ocean: 'atlantic', countries: 'Великобритания, Ирландия' },
+  { id: 'norwegian',     name: 'Норвежское море',         type: 'sea', ocean: 'atlantic', countries: 'Норвегия, Исландия' },
+  { id: 'greenland',     name: 'Гренландское море',       type: 'sea', ocean: 'atlantic', countries: 'Норвегия, Исландия, Дания (Гренландия)' },
+  { id: 'labrador',      name: 'Лабрадорское море',       type: 'sea', ocean: 'atlantic', countries: 'Канада, Дания (Гренландия)' },
+  { id: 'sargasso',      name: 'Саргассово море',         type: 'sea', ocean: 'atlantic', countries: '' },
+  { id: 'weddell',       name: 'Море Уэдделла',           type: 'sea', ocean: 'atlantic', countries: 'Антарктида' },
+  { id: 'tyrrhenian',    name: 'Тирренское море',         type: 'sea', ocean: 'atlantic', countries: 'Италия, Франция' },
+  { id: 'adriatic',      name: 'Адриатическое море',      type: 'sea', ocean: 'atlantic', countries: 'Италия, Словения, Хорватия, Босния и Герцеговина, Черногория, Албания' },
+  { id: 'ionian',        name: 'Ионическое море',         type: 'sea', ocean: 'atlantic', countries: 'Италия, Греция, Албания' },
+  { id: 'aegean',        name: 'Эгейское море',           type: 'sea', ocean: 'atlantic', countries: 'Греция, Турция' },
+  { id: 'marmara',       name: 'Мраморное море',          type: 'sea', ocean: 'atlantic', countries: 'Турция' },
+  { id: 'ligurian',      name: 'Лигурийское море',        type: 'sea', ocean: 'atlantic', countries: 'Италия, Франция, Монако' },
+  // Индийский океан (7)
+  { id: 'red',           name: 'Красное море',            type: 'sea', ocean: 'indian', countries: 'Египет, Саудовская Аравия, Иордания, Израиль, Судан, Джибути, Эритрея, Йемен' },
+  { id: 'arabian',       name: 'Аравийское море',         type: 'sea', ocean: 'indian', countries: 'Индия, Пакистан, Оман, Йемен, Иран' },
+  { id: 'persian_gulf',  name: 'Персидский залив',        type: 'sea', ocean: 'indian', countries: 'Иран, Ирак, Кувейт, Саудовская Аравия, Бахрейн, Катар, ОАЭ, Оман' },
+  { id: 'bengal',        name: 'Бенгальский залив',       type: 'sea', ocean: 'indian', countries: 'Индия, Бангладеш, Мьянма, Таиланд, Шри-Ланка' },
+  { id: 'andaman',       name: 'Андаманское море',        type: 'sea', ocean: 'indian', countries: 'Мьянма, Таиланд, Индонезия, Малайзия' },
+  { id: 'laccadive',     name: 'Лаккадивское море',       type: 'sea', ocean: 'indian', countries: 'Индия, Мальдивы, Шри-Ланка' },
+  { id: 'mozambique',    name: 'Мозамбикский пролив',     type: 'sea', ocean: 'indian', countries: 'Мозамбик, Мадагаскар' },
+  // Северный Ледовитый океан (10)
+  { id: 'barents',       name: 'Баренцево море',          type: 'sea', ocean: 'arctic', countries: 'Россия, Норвегия' },
+  { id: 'white',         name: 'Белое море',              type: 'sea', ocean: 'arctic', countries: 'Россия' },
+  { id: 'kara',          name: 'Карское море',            type: 'sea', ocean: 'arctic', countries: 'Россия' },
+  { id: 'laptev',        name: 'Море Лаптевых',           type: 'sea', ocean: 'arctic', countries: 'Россия' },
+  { id: 'east_siberian', name: 'Восточно-Сибирское море', type: 'sea', ocean: 'arctic', countries: 'Россия' },
+  { id: 'chukchi',       name: 'Чукотское море',          type: 'sea', ocean: 'arctic', countries: 'Россия, США' },
+  { id: 'beaufort',      name: 'Море Бофорта',            type: 'sea', ocean: 'arctic', countries: 'Канада, США' },
+  { id: 'hudson',        name: 'Гудзонов залив',          type: 'sea', ocean: 'arctic', countries: 'Канада' },
+  { id: 'lincoln',       name: 'Море Линкольна',          type: 'sea', ocean: 'arctic', countries: 'Канада, Дания (Гренландия)' },
+  { id: 'baffin',        name: 'Море Баффина',            type: 'sea', ocean: 'arctic', countries: 'Канада, Дания (Гренландия)' },
+  // Южный океан (5)
+  { id: 'ross',          name: 'Море Росса',              type: 'sea', ocean: 'southern', countries: 'Антарктида' },
+  { id: 'bellingshausen',name: 'Море Беллинсгаузена',     type: 'sea', ocean: 'southern', countries: 'Антарктида' },
+  { id: 'amundsen',      name: 'Море Амундсена',          type: 'sea', ocean: 'southern', countries: 'Антарктида' },
+  { id: 'davis',         name: 'Море Дейвиса',            type: 'sea', ocean: 'southern', countries: 'Антарктида, Австралия' },
+  { id: 'lazarev',       name: 'Море Лазарева',           type: 'sea', ocean: 'southern', countries: 'Антарктида' },
+
+  // ── Реки (25) ───────────────────────────────────────────────
+  // Тихий океан (6)
+  { id: 'yangtze',     name: 'Янцзы',     type: 'river', ocean: 'pacific',  countries: 'Китай' },
+  { id: 'yellow_river',name: 'Хуанхэ',    type: 'river', ocean: 'pacific',  countries: 'Китай' },
+  { id: 'mekong',      name: 'Меконг',    type: 'river', ocean: 'pacific',  countries: 'Китай, Мьянма, Лаос, Таиланд, Камбоджа, Вьетнам' },
+  { id: 'yukon',       name: 'Юкон',      type: 'river', ocean: 'pacific',  countries: 'США, Канада' },
+  { id: 'amur',        name: 'Амур',      type: 'river', ocean: 'pacific',  countries: 'Россия, Китай' },
+  { id: 'columbia',    name: 'Колумбия',  type: 'river', ocean: 'pacific',  countries: 'США, Канада' },
+  // Атлантический океан (10)
+  { id: 'amazon',      name: 'Амазонка',  type: 'river', ocean: 'atlantic', countries: 'Бразилия, Перу, Колумбия' },
+  { id: 'nile',        name: 'Нил',       type: 'river', ocean: 'atlantic', countries: 'Эфиопия, Судан, Египет, Уганда, Руанда, Бурунди, ДРК, Танзания, Кения' },
+  { id: 'mississippi', name: 'Миссисипи', type: 'river', ocean: 'atlantic', countries: 'США' },
+  { id: 'parana',      name: 'Парана',    type: 'river', ocean: 'atlantic', countries: 'Бразилия, Парагвай, Аргентина' },
+  { id: 'congo',       name: 'Конго',     type: 'river', ocean: 'atlantic', countries: 'ДРК, Конго' },
+  { id: 'niger',       name: 'Нигер',     type: 'river', ocean: 'atlantic', countries: 'Гвинея, Мали, Нигер, Нигерия' },
+  { id: 'danube',      name: 'Дунай',     type: 'river', ocean: 'atlantic', countries: 'Германия, Австрия, Словакия, Венгрия, Хорватия, Сербия, Болгария, Румыния, Молдова, Украина' },
+  { id: 'zambezi',     name: 'Замбези',   type: 'river', ocean: 'atlantic', countries: 'Замбия, Ангола, Намибия, Ботсвана, Зимбабве, Мозамбик' },
+  { id: 'orinoco',     name: 'Ориноко',   type: 'river', ocean: 'atlantic', countries: 'Венесуэла, Колумбия' },
+  { id: 'rhine',       name: 'Рейн',      type: 'river', ocean: 'atlantic', countries: 'Швейцария, Германия, Нидерланды' },
+  // Индийский океан (4)
+  { id: 'indus',       name: 'Инд',       type: 'river', ocean: 'indian',   countries: 'Китай, Индия, Пакистан' },
+  { id: 'ganges',      name: 'Ганг',      type: 'river', ocean: 'indian',   countries: 'Индия, Бангладеш' },
+  { id: 'tigris',      name: 'Тигр',      type: 'river', ocean: 'indian',   countries: 'Турция, Сирия, Ирак' },
+  { id: 'euphrates',   name: 'Евфрат',    type: 'river', ocean: 'indian',   countries: 'Турция, Сирия, Ирак' },
+  // Северный Ледовитый океан (5)
+  { id: 'yenisei',     name: 'Енисей',    type: 'river', ocean: 'arctic',   countries: 'Россия, Монголия' },
+  { id: 'ob',          name: 'Обь',       type: 'river', ocean: 'arctic',   countries: 'Россия, Казахстан' },
+  { id: 'lena',        name: 'Лена',      type: 'river', ocean: 'arctic',   countries: 'Россия' },
+  { id: 'irtysh',      name: 'Иртыш',     type: 'river', ocean: 'arctic',   countries: 'Китай, Казахстан, Россия' },
+  { id: 'mackenzie',   name: 'Маккензи',  type: 'river', ocean: 'arctic',   countries: 'Канада' },
+
+  // ── Озёра (15) ──────────────────────────────────────────────
+  // Атлантический океан (6)
+  { id: 'victoria',   name: 'Виктория',    type: 'lake', ocean: 'atlantic', countries: 'Танзания, Уганда, Кения' },
+  { id: 'tanganyika', name: 'Танганьика',  type: 'lake', ocean: 'atlantic', countries: 'Танзания, ДР Конго, Замбия, Бурунди' },
+  { id: 'chad_lake',  name: 'Чад',         type: 'lake', ocean: 'atlantic', countries: 'Чад, Нигер, Нигерия, Камерун' },
+  { id: 'titicaca',   name: 'Титикака',    type: 'lake', ocean: 'atlantic', countries: 'Перу, Боливия' },
+  { id: 'geneva',     name: 'Женевское',   type: 'lake', ocean: 'atlantic', countries: 'Швейцария, Франция' },
+  { id: 'balaton',    name: 'Балатон',     type: 'lake', ocean: 'atlantic', countries: 'Венгрия' },
+  // Северный Ледовитый океан (9)
+  { id: 'superior',   name: 'Верхнее',     type: 'lake', ocean: 'arctic',   countries: 'США, Канада' },
+  { id: 'huron',      name: 'Гурон',       type: 'lake', ocean: 'arctic',   countries: 'США, Канада' },
+  { id: 'michigan',   name: 'Мичиган',     type: 'lake', ocean: 'arctic',   countries: 'США' },
+  { id: 'erie',       name: 'Эри',         type: 'lake', ocean: 'arctic',   countries: 'США, Канада' },
+  { id: 'ontario',    name: 'Онтарио',     type: 'lake', ocean: 'arctic',   countries: 'США, Канада' },
+  { id: 'baikal',     name: 'Байкал',      type: 'lake', ocean: 'arctic',   countries: 'Россия' },
+  { id: 'balkhash',   name: 'Балхаш',      type: 'lake', ocean: 'arctic',   countries: 'Казахстан' },
+  { id: 'issyk_kul',  name: 'Иссык-Куль',  type: 'lake', ocean: 'arctic',   countries: 'Кыргызстан' },
+  { id: 'ladoga',     name: 'Ладожское',   type: 'lake', ocean: 'arctic',   countries: 'Россия' },
+
+  // ── Внутренние воды (6) ─────────────────────────────────────
+  { id: 'caspian',  name: 'Каспийское море', type: 'internal', countries: 'Россия, Казахстан, Туркменистан, Иран, Азербайджан' },
+  { id: 'dead_sea', name: 'Мёртвое море',    type: 'internal', countries: 'Израиль, Иордания, Палестина' },
+  { id: 'aral',     name: 'Аральское море',  type: 'internal', countries: 'Казахстан, Узбекистан' },
+  { id: 'volga',    name: 'Волга',           type: 'internal', countries: 'Россия' },
+  { id: 'jordan',   name: 'Иордан',          type: 'internal', countries: 'Израиль, Иордания, Сирия, Палестина' },
+  { id: 'ili',      name: 'Или',             type: 'internal', countries: 'Китай, Казахстан' },
 ];
 
-let allItems = [];     // {id, name, type, ocean_id, countries[]}
-let visited  = new Set();  // Set of water_id
+const CATEGORIES = [
+  { id: 'ocean',    title: '🌍 Океаны',          icon: '🌍' },
+  { id: 'sea',      title: '🌊 Моря',            icon: '🌊' },
+  { id: 'river',    title: '🏞 Реки',            icon: '🏞' },
+  { id: 'lake',     title: '🏔 Озёра',           icon: '🏔' },
+  { id: 'internal', title: '⚠️ Внутренние воды', icon: '⚠️' },
+];
+
+/* ═══════════════════════════════════════════
+   СОСТОЯНИЕ
+═══════════════════════════════════════════ */
+let visited = new Set();
 let filterQuery = "";
 
 const listEl   = document.getElementById("list");
 const badgeEl  = document.getElementById("counter-badge");
 const statusEl = document.getElementById("status-msg");
-let renderedRows = [];
 
 function setStatus(text, isErr) {
   statusEl.textContent = text || "";
   statusEl.classList.toggle("err", !!isErr);
 }
 
-async function loadData() {
+/* ═══════════════════════════════════════════
+   API — только visited
+═══════════════════════════════════════════ */
+async function loadVisited() {
   try {
     const res = await fetch(`${API_BASE}/api/waters`, {
       method: "GET",
-      headers: { "X-Telegram-Init-Data": initData }
+      headers: { "X-Telegram-Init-Data": initData },
     });
     if (!res.ok) {
-      const msg = res.status === 401 ? "Откройте через бота" : `Ошибка ${res.status}`;
-      setStatus(msg, true);
-      listEl.innerHTML = `<div class="empty">${msg}</div>`;
+      setStatus(res.status === 401 ? "Откройте через бота" : `Ошибка ${res.status}`, true);
       return;
     }
     const data = await res.json();
-    allItems = data.items || [];
-    visited  = new Set(data.visited || []);
+    visited = new Set(data.visited || []);
     setStatus("");
     render();
   } catch (e) {
     setStatus("Нет связи", true);
-    listEl.innerHTML = '<div class="empty">Не удалось загрузить</div>';
   }
 }
 
-async function toggle(waterId, rowEl) {
-  const wasOn = visited.has(waterId);
-  // Optimistic update
-  if (wasOn) visited.delete(waterId);
-  else       visited.add(waterId);
-  rowEl.classList.toggle("on", visited.has(waterId));
+async function toggle(id, rowEl) {
+  const wasOn = visited.has(id);
+  if (wasOn) visited.delete(id);
+  else       visited.add(id);
+  rowEl.classList.toggle("on", visited.has(id));
   rowEl.classList.add("pending");
   updateCounter();
 
@@ -200,21 +336,20 @@ async function toggle(waterId, rowEl) {
         "Content-Type": "application/json",
         "X-Telegram-Init-Data": initData,
       },
-      body: JSON.stringify({ water_id: waterId, action: "toggle" }),
+      body: JSON.stringify({ id, action: "toggle" }),
     });
     if (!res.ok) throw new Error("status " + res.status);
     const data = await res.json();
     if (typeof data.visited === "boolean") {
-      if (data.visited) visited.add(waterId);
-      else              visited.delete(waterId);
+      if (data.visited) visited.add(id);
+      else              visited.delete(id);
       rowEl.classList.toggle("on", data.visited);
     }
     setStatus("");
   } catch (e) {
-    // Revert
-    if (wasOn) visited.add(waterId);
-    else       visited.delete(waterId);
-    rowEl.classList.toggle("on", visited.has(waterId));
+    if (wasOn) visited.add(id);
+    else       visited.delete(id);
+    rowEl.classList.toggle("on", visited.has(id));
     setStatus("Ошибка сохранения", true);
   } finally {
     rowEl.classList.remove("pending");
@@ -222,21 +357,23 @@ async function toggle(waterId, rowEl) {
   }
 }
 
+/* ═══════════════════════════════════════════
+   РЕНДЕР
+═══════════════════════════════════════════ */
 function render() {
   const q = filterQuery.trim().toLowerCase();
   listEl.innerHTML = "";
-  renderedRows = [];
 
   let totalVisible = 0;
 
   CATEGORIES.forEach(cat => {
-    const items = allItems.filter(w => w.type === cat.id);
+    const items = WATERS_LIST.filter(w => w.type === cat.id);
     if (items.length === 0) return;
 
     const visibleItems = items.filter(w => {
       if (!q) return true;
       if (w.name.toLowerCase().includes(q)) return true;
-      return (w.countries || []).some(c => c.toLowerCase().includes(q));
+      return (w.countries || "").toLowerCase().includes(q);
     });
     if (visibleItems.length === 0) return;
 
@@ -254,7 +391,6 @@ function render() {
       const isOn = visited.has(w.id);
       const row = document.createElement("div");
       row.className = "row" + (isOn ? " on" : "");
-      const countries = (w.countries || []).join(", ");
       row.innerHTML = `
         <span class="flag">${cat.icon}</span>
         <div class="info">
@@ -267,13 +403,12 @@ function render() {
                   stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </div>`;
-      row.querySelector(".name").textContent = w.name;
-      row.querySelector(".country").textContent = countries;
+      row.querySelector(".name").textContent    = w.name;
+      row.querySelector(".country").textContent = w.countries || "";
       row.addEventListener("click", () => {
         if (!row.classList.contains("pending")) toggle(w.id, row);
       });
       listEl.appendChild(row);
-      renderedRows.push({ id: w.id, el: row });
       totalVisible++;
     });
   });
@@ -285,12 +420,12 @@ function render() {
 }
 
 function updateCounter() {
-  const total = allItems.length;
+  const total = WATERS_LIST.length;
   badgeEl.textContent = visited.size + " из " + total;
   badgeEl.classList.toggle("has", visited.size > 0);
 
   CATEGORIES.forEach(cat => {
-    const items = allItems.filter(w => w.type === cat.id);
+    const items = WATERS_LIST.filter(w => w.type === cat.id);
     const el = listEl.querySelector(`.cat-count[data-cat="${cat.id}"]`);
     if (!el) return;
     const cnt = items.filter(w => visited.has(w.id)).length;
@@ -304,11 +439,13 @@ function filter(val) {
   render();
 }
 
-function closeApp() {
-  tg.close();
-}
+function closeApp() { tg.close(); }
 
-loadData();
+/* ═══════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════ */
+render();         // мгновенный показ списка
+loadVisited();    // подгрузка отметок поверх
 </script>
 </body>
 </html>
