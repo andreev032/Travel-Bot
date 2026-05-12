@@ -1169,6 +1169,20 @@ def _cors_headers():
     }
 
 
+_WATER_CODE_RE = re.compile(r"^[a-z0-9_]{1,40}$")
+
+
+def _ensure_user_water_marks(cur) -> None:
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS user_water_marks (
+            user_id BIGINT NOT NULL,
+            code    TEXT   NOT NULL,
+            marked_at TIMESTAMP DEFAULT NOW(),
+            PRIMARY KEY (user_id, code)
+        )
+    """)
+
+
 @_flask_app.route("/api/waters", methods=["GET", "POST", "OPTIONS"])
 def api_waters():
     if flask_request.method == "OPTIONS":
@@ -1192,23 +1206,16 @@ def api_waters():
             conn = get_db_connection()
             try:
                 with conn.cursor() as cur:
+                    _ensure_user_water_marks(cur)
                     cur.execute(
-                        "SELECT id, name, type, ocean_id, countries FROM waters ORDER BY type, id"
-                    )
-                    items = [
-                        {"id": r[0], "name": r[1], "type": r[2],
-                         "ocean_id": r[3], "countries": r[4] or []}
-                        for r in cur.fetchall()
-                    ]
-                    cur.execute(
-                        "SELECT water_id FROM user_waters WHERE user_id=%s",
+                        "SELECT code FROM user_water_marks WHERE user_id=%s",
                         (user_id,),
                     )
                     visited = [r[0] for r in cur.fetchall()]
+                conn.commit()
             finally:
                 conn.close()
-            return (json.dumps({"items": items, "visited": visited},
-                               ensure_ascii=False),
+            return (json.dumps({"visited": visited}),
                     200,
                     {**_cors_headers(), "Content-Type": "application/json"})
         except Exception as e:
@@ -1216,53 +1223,47 @@ def api_waters():
             return (json.dumps({"error": "internal"}), 500,
                     {**_cors_headers(), "Content-Type": "application/json"})
 
-    # POST: toggle a water id
+    # POST: toggle / add / remove for a string code
     body = flask_request.get_json(silent=True) or {}
-    water_id = body.get("water_id")
+    code = body.get("id")
     action = body.get("action", "toggle")
-    if not isinstance(water_id, int):
-        return (json.dumps({"error": "bad water_id"}), 400,
+    if not isinstance(code, str) or not _WATER_CODE_RE.match(code):
+        return (json.dumps({"error": "bad id"}), 400,
                 {**_cors_headers(), "Content-Type": "application/json"})
     try:
         conn = get_db_connection()
         try:
             with conn.cursor() as cur:
-                cur.execute(
-                    "SELECT 1 FROM waters WHERE id=%s",
-                    (water_id,),
-                )
-                if not cur.fetchone():
-                    return (json.dumps({"error": "water not found"}), 404,
-                            {**_cors_headers(), "Content-Type": "application/json"})
+                _ensure_user_water_marks(cur)
                 if action == "add":
                     cur.execute(
-                        "INSERT INTO user_waters (user_id, water_id) VALUES (%s, %s) "
+                        "INSERT INTO user_water_marks (user_id, code) VALUES (%s, %s) "
                         "ON CONFLICT DO NOTHING",
-                        (user_id, water_id),
+                        (user_id, code),
                     )
                     visited_now = True
                 elif action == "remove":
                     cur.execute(
-                        "DELETE FROM user_waters WHERE user_id=%s AND water_id=%s",
-                        (user_id, water_id),
+                        "DELETE FROM user_water_marks WHERE user_id=%s AND code=%s",
+                        (user_id, code),
                     )
                     visited_now = False
                 else:  # toggle
                     cur.execute(
-                        "SELECT 1 FROM user_waters WHERE user_id=%s AND water_id=%s",
-                        (user_id, water_id),
+                        "SELECT 1 FROM user_water_marks WHERE user_id=%s AND code=%s",
+                        (user_id, code),
                     )
                     if cur.fetchone():
                         cur.execute(
-                            "DELETE FROM user_waters WHERE user_id=%s AND water_id=%s",
-                            (user_id, water_id),
+                            "DELETE FROM user_water_marks WHERE user_id=%s AND code=%s",
+                            (user_id, code),
                         )
                         visited_now = False
                     else:
                         cur.execute(
-                            "INSERT INTO user_waters (user_id, water_id) VALUES (%s, %s) "
+                            "INSERT INTO user_water_marks (user_id, code) VALUES (%s, %s) "
                             "ON CONFLICT DO NOTHING",
-                            (user_id, water_id),
+                            (user_id, code),
                         )
                         visited_now = True
             conn.commit()
