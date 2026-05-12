@@ -156,6 +156,14 @@ async def init_db(app) -> None:
                     PRIMARY KEY (user_id, water_id)
                 )
             """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS user_water_marks (
+                    user_id   BIGINT NOT NULL,
+                    code      TEXT   NOT NULL,
+                    marked_at TIMESTAMP DEFAULT NOW(),
+                    PRIMARY KEY (user_id, code)
+                )
+            """)
         conn.commit()
         _populate_waters_if_empty(conn)
         with conn.cursor() as cur:
@@ -1172,17 +1180,6 @@ def _cors_headers():
 _WATER_CODE_RE = re.compile(r"^[a-z0-9_]{1,40}$")
 
 
-def _ensure_user_water_marks(cur) -> None:
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS user_water_marks (
-            user_id BIGINT NOT NULL,
-            code    TEXT   NOT NULL,
-            marked_at TIMESTAMP DEFAULT NOW(),
-            PRIMARY KEY (user_id, code)
-        )
-    """)
-
-
 @_flask_app.route("/api/waters", methods=["GET", "POST", "OPTIONS"])
 def api_waters():
     if flask_request.method == "OPTIONS":
@@ -1194,6 +1191,10 @@ def api_waters():
     )
     user = _validate_init_data(init_data)
     if not user:
+        _flask_app.logger.warning(
+            "waters auth failed: has_init_data=%s len=%s",
+            bool(init_data), len(init_data) if init_data else 0,
+        )
         return (json.dumps({"error": "unauthorized"}), 401,
                 {**_cors_headers(), "Content-Type": "application/json"})
     user_id = int(user.get("id", 0))
@@ -1206,20 +1207,21 @@ def api_waters():
             conn = get_db_connection()
             try:
                 with conn.cursor() as cur:
-                    _ensure_user_water_marks(cur)
                     cur.execute(
                         "SELECT code FROM user_water_marks WHERE user_id=%s",
                         (user_id,),
                     )
                     visited = [r[0] for r in cur.fetchall()]
-                conn.commit()
             finally:
                 conn.close()
             return (json.dumps({"visited": visited}),
                     200,
                     {**_cors_headers(), "Content-Type": "application/json"})
         except Exception as e:
-            logger.error("api_waters GET: %s: %s", type(e).__name__, e)
+            _flask_app.logger.error(
+                "waters load error user_id=%s: %s: %s\n%s",
+                user_id, type(e).__name__, e, traceback.format_exc(),
+            )
             return (json.dumps({"error": "internal"}), 500,
                     {**_cors_headers(), "Content-Type": "application/json"})
 
@@ -1228,13 +1230,16 @@ def api_waters():
     code = body.get("id")
     action = body.get("action", "toggle")
     if not isinstance(code, str) or not _WATER_CODE_RE.match(code):
+        _flask_app.logger.warning(
+            "waters save bad id: user_id=%s code=%r action=%r body=%r",
+            user_id, code, action, body,
+        )
         return (json.dumps({"error": "bad id"}), 400,
                 {**_cors_headers(), "Content-Type": "application/json"})
     try:
         conn = get_db_connection()
         try:
             with conn.cursor() as cur:
-                _ensure_user_water_marks(cur)
                 if action == "add":
                     cur.execute(
                         "INSERT INTO user_water_marks (user_id, code) VALUES (%s, %s) "
@@ -1273,7 +1278,10 @@ def api_waters():
                 200,
                 {**_cors_headers(), "Content-Type": "application/json"})
     except Exception as e:
-        logger.error("api_waters POST: %s: %s", type(e).__name__, e)
+        _flask_app.logger.error(
+            "waters save error user_id=%s code=%s action=%s: %s: %s\n%s",
+            user_id, code, action, type(e).__name__, e, traceback.format_exc(),
+        )
         return (json.dumps({"error": "internal"}), 500,
                 {**_cors_headers(), "Content-Type": "application/json"})
 
