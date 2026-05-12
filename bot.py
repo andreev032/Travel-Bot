@@ -1173,11 +1173,31 @@ def _cors_headers():
     return {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, X-Telegram-Init-Data",
+        "Access-Control-Allow-Headers": "Content-Type, X-Telegram-Init-Data, Authorization",
     }
 
 
 _WATER_CODE_RE = re.compile(r"^[a-z0-9_]{1,40}$")
+
+
+def _extract_init_data(json_body: dict | None) -> str:
+    """Берёт initData из любого из трёх источников: Authorization: tma <data>,
+    X-Telegram-Init-Data header, body['initData'], query ?initData=...
+    Некоторые Telegram-клиенты стрипают custom-заголовки при cross-origin
+    fetch — поэтому WebApp дублирует initData во все три транспорта."""
+    auth = flask_request.headers.get("Authorization", "")
+    if auth.startswith("tma "):
+        data = auth[4:].strip()
+        if data:
+            return data
+    header_data = flask_request.headers.get("X-Telegram-Init-Data", "")
+    if header_data:
+        return header_data
+    if json_body and isinstance(json_body.get("initData"), str):
+        body_data = json_body["initData"]
+        if body_data:
+            return body_data
+    return flask_request.args.get("initData", "")
 
 
 @_flask_app.route("/api/waters", methods=["GET", "POST", "OPTIONS"])
@@ -1185,15 +1205,22 @@ def api_waters():
     if flask_request.method == "OPTIONS":
         return ("", 204, _cors_headers())
 
-    init_data = (
-        flask_request.headers.get("X-Telegram-Init-Data")
-        or flask_request.args.get("initData", "")
+    # Для POST читаем JSON один раз заранее: и для auth, и для логики.
+    json_body = (
+        flask_request.get_json(silent=True) if flask_request.method == "POST" else None
     )
+    init_data = _extract_init_data(json_body)
     user = _validate_init_data(init_data)
     if not user:
         _flask_app.logger.warning(
-            "waters auth failed: has_init_data=%s len=%s",
-            bool(init_data), len(init_data) if init_data else 0,
+            "waters auth failed: method=%s has_auth_hdr=%s has_init_hdr=%s "
+            "has_init_body=%s has_init_qs=%s len=%s",
+            flask_request.method,
+            flask_request.headers.get("Authorization", "").startswith("tma "),
+            bool(flask_request.headers.get("X-Telegram-Init-Data")),
+            bool(json_body and json_body.get("initData")),
+            bool(flask_request.args.get("initData")),
+            len(init_data) if init_data else 0,
         )
         return (json.dumps({"error": "unauthorized"}), 401,
                 {**_cors_headers(), "Content-Type": "application/json"})
@@ -1226,7 +1253,7 @@ def api_waters():
                     {**_cors_headers(), "Content-Type": "application/json"})
 
     # POST: toggle / add / remove for a string code
-    body = flask_request.get_json(silent=True) or {}
+    body = json_body or {}
     code = body.get("id")
     action = body.get("action", "toggle")
     if not isinstance(code, str) or not _WATER_CODE_RE.match(code):

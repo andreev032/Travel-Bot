@@ -137,7 +137,21 @@ if (tg.setHeaderColor)     tg.setHeaderColor('#161b22');
 if (tg.setBackgroundColor) tg.setBackgroundColor('#0d1117');
 
 const API_BASE = "https://travel-bot-production-9c46.up.railway.app";
-const initData = tg.initData || "";
+
+// initData читается СВЕЖЕ при каждом запросе (на случай поздней инициализации SDK)
+// и отправляется тремя способами параллельно: некоторые клиенты Telegram (Desktop,
+// старые Android) могут стрипать custom-заголовки при cross-origin fetch — поэтому
+// дублируем через query/body. Сервер принимает любой из трёх источников.
+function getInitData() {
+  return (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) || "";
+}
+function authHeaders() {
+  const data = getInitData();
+  return {
+    "Authorization": "tma " + data,
+    "X-Telegram-Init-Data": data,
+  };
+}
 
 /* ═══════════════════════════════════════════
    ДАННЫЕ — захардкожены, не зависят от API
@@ -303,10 +317,16 @@ function setStatus(text, isErr) {
    API — только visited
 ═══════════════════════════════════════════ */
 async function loadVisited() {
+  const initData = getInitData();
+  if (!initData) {
+    setStatus("Откройте через бота", true);
+    return;
+  }
   try {
-    const res = await fetch(`${API_BASE}/api/waters`, {
+    const url = `${API_BASE}/api/waters?initData=${encodeURIComponent(initData)}`;
+    const res = await fetch(url, {
       method: "GET",
-      headers: { "X-Telegram-Init-Data": initData },
+      headers: authHeaders(),
     });
     if (!res.ok) {
       setStatus(res.status === 401 ? "Откройте через бота" : `Ошибка ${res.status}`, true);
@@ -330,13 +350,19 @@ async function toggle(id, rowEl) {
   updateCounter();
 
   try {
+    const initData = getInitData();
+    if (!initData) {
+      throw new Error("no initData");
+    }
     const res = await fetch(`${API_BASE}/api/waters`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-Telegram-Init-Data": initData,
+        ...authHeaders(),
       },
-      body: JSON.stringify({ id, action: "toggle" }),
+      // initData в body — дублирующий канал на случай, если custom-заголовки
+      // будут стрипнуты прокси/клиентом Telegram.
+      body: JSON.stringify({ id, action: "toggle", initData }),
     });
     if (!res.ok) throw new Error("status " + res.status);
     const data = await res.json();
