@@ -120,5 +120,11 @@ SHOP_MENU, SHOP_TYPING = range(38)
 - Каждый раздел заканчивается: `[◀️ Назад]` + `[🏠 Главное меню]`
 - `HOME_BTN` → `go_home()` + сброс `context.user_data`
 - Fallbacks: `/start`, `/menu`, `/cancel`, `HOME_BTN`
+## WebApp — правила
+- Все WebApp хранят данные ТОЛЬКО в localStorage — никакого fetch/API
+- Новый WebApp = копировать `webapp/countries/index.html` как базу, менять только данные
+- Ключи: `countries_visited`, `attractions_visited`, `waters_visited`
+- bot.py не трогать при изменении WebApp файлов
+
 ## Соглашения по веткам
 `feature/` новая функция · `fix/` баг · `docs/` документация · `refactor/` рефакторинг
