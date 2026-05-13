@@ -36,16 +36,18 @@ class TokenFilter(logging.Filter):
     def __init__(self, token):
         self.pattern = re.compile(re.escape(token))
 
-    def _mask(self, value):
-        return self.pattern.sub('***', str(value))
+    def _mask_if_needed(self, value):
+        if isinstance(value, str) and self.pattern.search(value):
+            return self.pattern.sub('***', value)
+        return value
 
     def filter(self, record):
-        record.msg = self._mask(record.msg)
+        record.msg = self.pattern.sub('***', str(record.msg))
         if record.args:
             if isinstance(record.args, dict):
-                record.args = {k: self._mask(v) for k, v in record.args.items()}
+                record.args = {k: self._mask_if_needed(v) for k, v in record.args.items()}
             else:
-                record.args = tuple(self._mask(a) for a in record.args)
+                record.args = tuple(self._mask_if_needed(a) for a in record.args)
         return True
 
 token_filter = TokenFilter(os.environ['BOT_TOKEN'])
