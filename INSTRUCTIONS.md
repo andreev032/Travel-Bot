@@ -258,3 +258,14 @@ SHOP_MENU, SHOP_TYPING  = range(38)
 - Перед созданием ветки — `git fetch origin main`
 - Одна ветка = одна задача = один PR
 - После мержа PR Railway деплоит автоматически (~2 мин)
+
+---
+
+## ЮKassa
+
+- Shop ID: `1350203` (хранится в `bot.py`, не в env)
+- Secret Key: `YOOKASSA_SECRET_KEY` (Railway env)
+- Webhook Secret: `YOOKASSA_WEBHOOK_SECRET` (Railway env, опционально — без него проверка пропускается с предупреждением)
+- Рекуррент включён — карты сохраняются, автосписание работает
+- СБП подключён через Умный платёж
+- Email для чеков: fallback `{user_id}@likealocal.bot` — колонки `email` в `users` нет

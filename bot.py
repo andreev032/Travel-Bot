@@ -993,22 +993,8 @@ def yookassa_activate_premium(user_id: int, plan: str, payment_method_id: str | 
 
 
 def _get_user_email(user_id: int) -> str:
-    """Возвращает email пользователя из БД, либо fallback для чека ЮKassa."""
-    fallback = "aka09011987@gmail.com"
-    try:
-        conn = get_db_connection()
-        try:
-            with conn.cursor() as cur:
-                cur.execute("SELECT email FROM users WHERE user_id = %s", (user_id,))
-                row = cur.fetchone()
-                if row and row[0]:
-                    return row[0]
-        finally:
-            conn.close()
-    except Exception as e:
-        logger.warning("_get_user_email: user_id=%s: %s: %s — using fallback",
-                       user_id, type(e).__name__, e)
-    return fallback
+    """Возвращает fallback-email для чека ЮKassa (колонки email в users нет)."""
+    return f"{user_id}@likealocal.bot"
 
 
 def _get_payment_method_id(user_id: int) -> str | None:
