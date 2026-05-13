@@ -1324,7 +1324,7 @@ async def process_recurring_payments(bot) -> None:
                     SELECT user_id, subscription_type, yookassa_payment_method_id
                     FROM users
                     WHERE yookassa_payment_method_id IS NOT NULL
-                      AND premium_expires_at BETWEEN NOW() AND NOW() + INTERVAL '3 days'
+                      AND DATE(premium_expires_at) = CURRENT_DATE
                       AND subscription_type IN ('month', 'year')
                 """)
                 rows = cur.fetchall()
