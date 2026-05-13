@@ -1011,6 +1011,25 @@ def _get_user_email(user_id: int) -> str:
     return fallback
 
 
+def _get_payment_method_id(user_id: int) -> str | None:
+    """Возвращает сохранённый yookassa_payment_method_id для пользователя, или None."""
+    try:
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT yookassa_payment_method_id FROM users WHERE user_id = %s",
+                    (user_id,),
+                )
+                row = cur.fetchone()
+                return row[0] if row and row[0] else None
+        finally:
+            conn.close()
+    except Exception as e:
+        logger.warning("_get_payment_method_id: user_id=%s: %s: %s", user_id, type(e).__name__, e)
+        return None
+
+
 def yookassa_create_payment(user_id: int, plan: str) -> str:
     """Создаёт платёж в ЮKassa и возвращает confirmation_url."""
     amount = "200.00" if plan == "month" else "1490.00"
@@ -1019,7 +1038,7 @@ def yookassa_create_payment(user_id: int, plan: str) -> str:
     email = _get_user_email(user_id)
     payment = YKPayment.create({
         "amount": {"value": amount, "currency": "RUB"},
-        "payment_method_data": {"type": "bank_card"},
+        "save_payment_method": True,
         "confirmation": {
             "type": "redirect",
             "return_url": "https://t.me/like_a_local_bot",
@@ -1131,7 +1150,7 @@ def yookassa_webhook():
 
     user_id = int(user_id_str)
     payment_method = obj.get("payment_method", {})
-    pm_id = payment_method.get("id") if obj.get("save_payment_method") else None
+    pm_id = payment_method.get("id") if payment_method.get("saved") else None
 
     new_expires_at = yookassa_activate_premium(user_id, plan, pm_id)
     logger.info("YooKassa: премиум активирован user_id=%s plan=%s pm_id=%s", user_id, plan, pm_id)
@@ -4319,8 +4338,38 @@ async def premium_buy_callback_reply(update: Update, context: ContextTypes.DEFAU
 
 
 async def _handle_premium_plan(update: Update, plan: str) -> int:
-    """Создаёт платёж ЮKassa и отправляет пользователю ссылку на оплату."""
+    """Создаёт платёж ЮKassa. Если есть сохранённая карта — списывает без редиректа."""
     user_id = update.effective_user.id
+    pm_id = _get_payment_method_id(user_id)
+
+    if pm_id:
+        await update.message.reply_text("⏳ Списываем с сохранённой карты...")
+        try:
+            success = yookassa_charge_renewal(user_id, plan, pm_id)
+            if success:
+                new_expires_at = yookassa_activate_premium(user_id, plan, pm_id)
+                plan_label = "Год" if plan == "year" else "Месяц"
+                date_str = new_expires_at.strftime("%d.%m.%Y") if new_expires_at else "—"
+                await update.message.reply_text(
+                    "✅ Оплата прошла успешно!\n\n"
+                    f"📅 Премиум активен до: {date_str}\n"
+                    f"📦 Тариф: {plan_label}",
+                    reply_markup=ReplyKeyboardMarkup(
+                        [["◀️ Назад", "🏠 Главное меню"]],
+                        resize_keyboard=True,
+                    ),
+                )
+                return MAIN_MENU
+            else:
+                await update.message.reply_text(
+                    "⚠️ Не удалось списать с сохранённой карты. Попробуй оплатить через форму."
+                )
+        except Exception as e:
+            logger.error("_handle_premium_plan auto-charge user_id=%s plan=%s: %s: %s", user_id, plan, type(e).__name__, e)
+            await update.message.reply_text(
+                "⚠️ Ошибка автоплатежа. Попробуем оплатить через форму."
+            )
+
     try:
         url = yookassa_create_payment(user_id, plan)
         label = "200₽ / месяц" if plan == "month" else "1490₽ / год"
