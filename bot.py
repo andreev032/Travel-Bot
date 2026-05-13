@@ -1327,39 +1327,82 @@ def _start_flask_server() -> None:
 
 # ── Автопродление (фоновая задача) ─────────────────────────────────────
 
-async def autorenewal_scheduler(bot) -> None:
-    """Раз в сутки проверяет пользователей с истекающим премиумом и списывает автоплатёж."""
-    while True:
-        await asyncio.sleep(86400)  # 24 часа
+async def process_recurring_payments(bot) -> None:
+    """Списывает автоплатёж для всех пользователей с истекающим премиумом."""
+    logger.info("process_recurring_payments: запуск")
+    try:
+        conn = get_db_connection()
         try:
-            conn = get_db_connection()
-            try:
-                with conn.cursor() as cur:
-                    cur.execute("""
-                        SELECT user_id, subscription_type, yookassa_payment_method_id
-                        FROM users
-                        WHERE is_premium = TRUE
-                          AND premium_expires_at BETWEEN NOW() AND NOW() + INTERVAL '3 days'
-                          AND yookassa_payment_method_id IS NOT NULL
-                    """)
-                    rows = cur.fetchall()
-            finally:
-                conn.close()
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT user_id, subscription_type, yookassa_payment_method_id
+                    FROM users
+                    WHERE yookassa_payment_method_id IS NOT NULL
+                      AND premium_expires_at BETWEEN NOW() AND NOW() + INTERVAL '3 days'
+                      AND subscription_type IN ('month', 'year')
+                """)
+                rows = cur.fetchall()
+        finally:
+            conn.close()
+    except Exception as e:
+        logger.error("process_recurring_payments: ошибка запроса к БД: %s: %s", type(e).__name__, e)
+        return
 
-            for user_id, plan, pm_id in rows:
-                success = yookassa_charge_renewal(user_id, plan or "month", pm_id)
-                if success:
-                    yookassa_activate_premium(user_id, plan or "month")
-                    try:
-                        await bot.send_message(
-                            chat_id=user_id,
-                            text="✅ Подписка Как местный Премиум продлена!",
-                        )
-                    except Exception:
-                        pass
-                    logger.info("autorenewal: продлён user_id=%s plan=%s", user_id, plan)
-                else:
-                    logger.warning("autorenewal: не удалось списать user_id=%s", user_id)
+    logger.info("process_recurring_payments: кандидатов на продление: %d", len(rows))
+    for user_id, plan, pm_id in rows:
+        plan = plan or "month"
+        logger.info("process_recurring_payments: обработка user_id=%s plan=%s", user_id, plan)
+        try:
+            success = yookassa_charge_renewal(user_id, plan, pm_id)
+            if success:
+                new_expires_at = yookassa_activate_premium(user_id, plan, pm_id)
+                plan_label = "Год" if plan == "year" else "Месяц"
+                date_str = new_expires_at.strftime("%d.%m.%Y") if new_expires_at else "—"
+                try:
+                    await bot.send_message(
+                        chat_id=user_id,
+                        text=(
+                            "✅ Подписка продлена автоматически!\n\n"
+                            f"📅 Премиум активен до: {date_str}\n"
+                            f"📦 Тариф: {plan_label}"
+                        ),
+                    )
+                except Exception as notify_err:
+                    logger.warning("process_recurring_payments: уведомление user_id=%s: %s", user_id, notify_err)
+                logger.info("process_recurring_payments: продлён user_id=%s plan=%s до %s", user_id, plan, date_str)
+            else:
+                try:
+                    await bot.send_message(
+                        chat_id=user_id,
+                        text="⚠️ Не удалось автоматически продлить подписку. Зайди в бот и продли вручную.",
+                        reply_markup=InlineKeyboardMarkup([
+                            [InlineKeyboardButton("Продлить", callback_data="premium_buy")],
+                        ]),
+                    )
+                except Exception as notify_err:
+                    logger.warning("process_recurring_payments: уведомление об ошибке user_id=%s: %s", user_id, notify_err)
+                logger.warning("process_recurring_payments: не удалось списать user_id=%s plan=%s", user_id, plan)
+        except Exception as e:
+            logger.error("process_recurring_payments: ошибка user_id=%s: %s: %s", user_id, type(e).__name__, e)
+
+
+async def autorenewal_scheduler(bot) -> None:
+    """Ждёт 10:00 МСК и запускает process_recurring_payments каждые сутки."""
+    _MSK = ZoneInfo("Europe/Moscow")
+    while True:
+        now = datetime.now(_MSK)
+        next_run = now.replace(hour=10, minute=0, second=0, microsecond=0)
+        if now >= next_run:
+            next_run = next_run + timedelta(days=1)
+        sleep_secs = (next_run - now).total_seconds()
+        logger.info(
+            "autorenewal_scheduler: следующий запуск через %.0f сек (%s МСК)",
+            sleep_secs,
+            next_run.strftime("%Y-%m-%d %H:%M"),
+        )
+        await asyncio.sleep(sleep_secs)
+        try:
+            await process_recurring_payments(bot)
         except Exception as e:
             logger.error("autorenewal_scheduler: %s: %s", type(e).__name__, e)
 
@@ -4338,38 +4381,8 @@ async def premium_buy_callback_reply(update: Update, context: ContextTypes.DEFAU
 
 
 async def _handle_premium_plan(update: Update, plan: str) -> int:
-    """Создаёт платёж ЮKassa. Если есть сохранённая карта — списывает без редиректа."""
+    """Создаёт платёж ЮKassa и отправляет пользователю ссылку на оплату."""
     user_id = update.effective_user.id
-    pm_id = _get_payment_method_id(user_id)
-
-    if pm_id:
-        await update.message.reply_text("⏳ Списываем с сохранённой карты...")
-        try:
-            success = yookassa_charge_renewal(user_id, plan, pm_id)
-            if success:
-                new_expires_at = yookassa_activate_premium(user_id, plan, pm_id)
-                plan_label = "Год" if plan == "year" else "Месяц"
-                date_str = new_expires_at.strftime("%d.%m.%Y") if new_expires_at else "—"
-                await update.message.reply_text(
-                    "✅ Оплата прошла успешно!\n\n"
-                    f"📅 Премиум активен до: {date_str}\n"
-                    f"📦 Тариф: {plan_label}",
-                    reply_markup=ReplyKeyboardMarkup(
-                        [["◀️ Назад", "🏠 Главное меню"]],
-                        resize_keyboard=True,
-                    ),
-                )
-                return MAIN_MENU
-            else:
-                await update.message.reply_text(
-                    "⚠️ Не удалось списать с сохранённой карты. Попробуй оплатить через форму."
-                )
-        except Exception as e:
-            logger.error("_handle_premium_plan auto-charge user_id=%s plan=%s: %s: %s", user_id, plan, type(e).__name__, e)
-            await update.message.reply_text(
-                "⚠️ Ошибка автоплатежа. Попробуем оплатить через форму."
-            )
-
     try:
         url = yookassa_create_payment(user_id, plan)
         label = "200₽ / месяц" if plan == "month" else "1490₽ / год"
