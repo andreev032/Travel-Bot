@@ -189,6 +189,24 @@ async def init_db(app) -> None:
                     PRIMARY KEY (user_id, code)
                 )
             """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS onboarding_messages (
+                    user_id BIGINT,
+                    day     INT,
+                    sent_at TIMESTAMP DEFAULT NOW(),
+                    PRIMARY KEY (user_id, day)
+                )
+            """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS feedback (
+                    id         SERIAL PRIMARY KEY,
+                    user_id    BIGINT,
+                    username   TEXT,
+                    first_name TEXT,
+                    text       TEXT,
+                    created_at TIMESTAMP DEFAULT NOW()
+                )
+            """)
         conn.commit()
         _populate_waters_if_empty(conn)
         with conn.cursor() as cur:
@@ -946,7 +964,8 @@ MAIN_MENU, ANSWERING, HELP_MENU, HELP_TOPIC, TRANSLATING, VISA_MENU, VISA_CATEGO
     SHOP_MENU, SHOP_TYPING, \
     EVENTS_MENU, EVENTS_TOPIC, \
     WEATHER_INPUT, \
-    WATERS_MENU, WATERS_REF_TYPE, WATERS_REF_LIST = range(44)
+    WATERS_MENU, WATERS_REF_TYPE, WATERS_REF_LIST, \
+    FEEDBACK_TYPING = range(45)
 
 # Замени на реальный HTTPS-URL после деплоя webapp/index.html
 WEBAPP_URL      = "https://andreev032.github.io/Travel-Bot/"
@@ -1402,6 +1421,247 @@ async def autorenewal_scheduler(bot) -> None:
             await process_recurring_payments(bot)
         except Exception as e:
             logger.error("autorenewal_scheduler: %s: %s", type(e).__name__, e)
+
+
+# ── ONBOARDING ────────────────────────────────────────────────────────────────
+
+def _mark_onboarding_sent(user_id: int, day: int) -> None:
+    try:
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "INSERT INTO onboarding_messages (user_id, day) VALUES (%s, %s) ON CONFLICT DO NOTHING",
+                    (user_id, day),
+                )
+            conn.commit()
+        finally:
+            conn.close()
+    except Exception as e:
+        logger.error("_mark_onboarding_sent user=%s day=%s: %s", user_id, day, e)
+
+
+def _save_feedback(user_id: int, username: str | None, first_name: str | None, text: str) -> None:
+    try:
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "INSERT INTO feedback (user_id, username, first_name, text) VALUES (%s, %s, %s, %s)",
+                    (user_id, username, first_name, text),
+                )
+            conn.commit()
+        finally:
+            conn.close()
+    except Exception as e:
+        logger.error("_save_feedback user=%s: %s", user_id, e)
+
+
+def _get_onboarding_users(day: int, buyers_only: bool = False) -> list[tuple]:
+    """Возвращает список (user_id, username, first_name) для дня онбординга."""
+    interval = f"{day} days"
+    try:
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                if buyers_only:
+                    cur.execute(
+                        """
+                        SELECT user_id, username, first_name FROM users
+                        WHERE first_seen <= NOW() - INTERVAL %s
+                          AND user_id != %s
+                          AND (subscription_type IS NULL OR subscription_type = 'trial')
+                          AND user_id NOT IN (
+                              SELECT user_id FROM onboarding_messages WHERE day = %s
+                          )
+                        """,
+                        (interval, ADMIN_ID, day),
+                    )
+                else:
+                    cur.execute(
+                        """
+                        SELECT user_id, username, first_name FROM users
+                        WHERE first_seen <= NOW() - INTERVAL %s
+                          AND user_id != %s
+                          AND user_id NOT IN (
+                              SELECT user_id FROM onboarding_messages WHERE day = %s
+                          )
+                        """,
+                        (interval, ADMIN_ID, day),
+                    )
+                return cur.fetchall()
+        finally:
+            conn.close()
+    except Exception as e:
+        logger.error("_get_onboarding_users day=%s: %s", day, e)
+        return []
+
+
+_ONB_DAY1_TEXT = (
+    "🌍 Кстати, ты уже отметил страны где побывал?\n\n"
+    "Многие начинают именно с этого — получается неожиданно интересно, "
+    "сколько мест уже за плечами 🗺\n\n"
+    "Попробуй прямо сейчас!"
+)
+
+_ONB_DAY3_TEXT = (
+    "✈️ Как дела с путешествиями?\n\n"
+    "Мы строим «Как местный» как лучший русскоязычный помощник по путешествиям — "
+    "и твоё мнение важнее любой аналитики.\n\n"
+    "Что попробовал? Что понравилось или нет? Чего не хватает? "
+    "Хотим сделать по-настоящему крутой продукт 🙌"
+)
+
+_ONB_DAY5_TEXT = (
+    "⏳ Через 2 дня закончится твой бесплатный период\n\n"
+    "Останется бесплатным навсегда:\n"
+    "🌍 Мои страны · 🏆 Рейтинг · 🧭 Планирование · 🛠 Инструменты · 📚 Знания · 🎮 Все игры\n\n"
+    "Станет платным:\n"
+    "📖 Дневник · 📊 Статистика · 🏛 Достопримечательности · "
+    "🇷🇺 Путешествия по России · 🌊 Отметки водоёмов · 💰 Общий счёт\n\n"
+    "Подписка — 200₽/мес или 1490₽/год"
+)
+
+_ONB_DAY7_TEXT = (
+    "🎒 Твой бесплатный период завершился\n\n"
+    "Спасибо что был с нами эти 7 дней!\n\n"
+    "Большая часть функций остаётся бесплатной — пользуйся. "
+    "Если хочешь продолжить вести дневник, статистику и всё остальное — "
+    "подписка всего 200₽/мес или 1490₽/год 🙌"
+)
+
+_ONB_DAY14_TEXT = (
+    "👋 Давно не виделись!\n\n"
+    "Если что-то не понравилось — напиши, это реально помогает нам стать лучше.\n\n"
+    "Если просто не было времени — возвращайся когда будешь готов 😊"
+)
+
+_ONB_PREMIUM_KB = InlineKeyboardMarkup([[
+    InlineKeyboardButton("⭐ Оформить подписку", callback_data="onb_premium"),
+]])
+
+
+async def send_onboarding_messages(bot) -> None:
+    """Рассылает онбординг-сообщения всем подходящим пользователям."""
+    _days_cfg = [
+        (1,  _ONB_DAY1_TEXT,  InlineKeyboardMarkup([[InlineKeyboardButton("🌍 Мои страны", callback_data="onb_mytrips")]]), False),
+        (3,  _ONB_DAY3_TEXT,  InlineKeyboardMarkup([[InlineKeyboardButton("📝 Оставить отзыв", callback_data="onb_feedback")]]), False),
+        (5,  _ONB_DAY5_TEXT,  _ONB_PREMIUM_KB, True),
+        (7,  _ONB_DAY7_TEXT,  _ONB_PREMIUM_KB, True),
+        (14, _ONB_DAY14_TEXT, _ONB_PREMIUM_KB, True),
+    ]
+    for day, text, kb, non_buyers_only in _days_cfg:
+        users = _get_onboarding_users(day, buyers_only=non_buyers_only)
+        for user_id, username, first_name in users:
+            try:
+                await bot.send_message(chat_id=user_id, text=text, reply_markup=kb)
+                _mark_onboarding_sent(user_id, day)
+                logger.info("onboarding day%s sent → user_id=%s", day, user_id)
+            except Exception as e:
+                logger.warning("onboarding day%s user=%s: %s", day, user_id, e)
+
+
+async def onboarding_scheduler(bot) -> None:
+    """Ждёт 12:00 МСК и запускает send_onboarding_messages каждые сутки."""
+    _MSK = ZoneInfo("Europe/Moscow")
+    while True:
+        now = datetime.now(_MSK)
+        next_run = now.replace(hour=12, minute=0, second=0, microsecond=0)
+        if now >= next_run:
+            next_run = next_run + timedelta(days=1)
+        sleep_secs = (next_run - now).total_seconds()
+        logger.info(
+            "onboarding_scheduler: следующий запуск через %.0f сек (%s МСК)",
+            sleep_secs,
+            next_run.strftime("%Y-%m-%d %H:%M"),
+        )
+        await asyncio.sleep(sleep_secs)
+        try:
+            await send_onboarding_messages(bot)
+        except Exception as e:
+            logger.error("onboarding_scheduler: %s: %s", type(e).__name__, e)
+
+
+# ── ONBOARDING CALLBACK HANDLERS ─────────────────────────────────────────────
+
+async def onb_mytrips_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Колбэк кнопки [🌍 Мои страны] из онбординг-сообщения дня 1."""
+    query = update.callback_query
+    await query.answer()
+    user_id = query.from_user.id
+    await context.bot.send_message(
+        chat_id=user_id,
+        text="🗺 *Мои путешествия*\n\nВыбери раздел:",
+        parse_mode="Markdown",
+        reply_markup=get_folder_mytrips_kb(user_id),
+    )
+    return MAIN_MENU
+
+
+async def onb_feedback_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Колбэк кнопки [📝 Оставить отзыв] из онбординг-сообщения дня 3."""
+    query = update.callback_query
+    await query.answer()
+    await context.bot.send_message(
+        chat_id=query.from_user.id,
+        text="Напиши всё что думаешь — что понравилось, что нет, чего не хватает. Любая мелочь важна 👇",
+        reply_markup=ReplyKeyboardMarkup([[HOME_BTN]], resize_keyboard=True, one_time_keyboard=True),
+    )
+    return FEEDBACK_TYPING
+
+
+async def onb_premium_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Колбэк кнопки [⭐ Оформить подписку] из онбординг-сообщений дней 5/7/14."""
+    query = update.callback_query
+    await query.answer()
+    user_id = query.from_user.id
+    premium = is_premium(user_id)
+    if premium:
+        info = get_premium_info(user_id)
+        until_str = info["until"].strftime("%d.%m.%Y") if info.get("until") else "—"
+        msg = (
+            "⭐ *Как местный Премиум*\n\n"
+            f"✅ Премиум активен до: *{until_str}*\n\n"
+            "Нажми «⭐ Премиум» в главном меню для управления подпиской."
+        )
+    else:
+        msg = (
+            "⭐ *Как местный Премиум*\n\n"
+            "📔 Дневник путешественника\n"
+            "📊 Моя статистика\n"
+            "🏛 Мои достопримечательности\n"
+            "🇷🇺 Путешествия по России\n"
+            "🌊 Отметки водоёмов\n"
+            "💰 Общий счёт\n\n"
+            "💳 200₽/мес · 1490₽/год\n\n"
+            "Нажми «⭐ Премиум» в главном меню для оформления."
+        )
+    await context.bot.send_message(
+        chat_id=user_id,
+        text=msg,
+        parse_mode="Markdown",
+        reply_markup=get_main_keyboard(),
+    )
+    return MAIN_MENU
+
+
+async def feedback_typing_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Принимает текст отзыва, сохраняет в БД, уведомляет админа."""
+    user = update.effective_user
+    text = update.message.text
+    _save_feedback(user.id, user.username, user.first_name, text)
+    # Уведомление администратора
+    username_str = f"@{user.username}" if user.username else str(user.id)
+    admin_text = f"📝 Новый отзыв от {username_str} ({user.id}):\n{text}"
+    try:
+        await context.bot.send_message(chat_id=ADMIN_ID, text=admin_text)
+    except Exception as e:
+        logger.warning("feedback notify admin: %s", e)
+    await update.message.reply_text(
+        "Спасибо! Твой отзыв очень важен для нас 🙏",
+        reply_markup=get_main_keyboard(),
+    )
+    return MAIN_MENU
 
 
 def get_main_keyboard():
@@ -4233,18 +4493,17 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(deep_link_msg)
 
     await update.message.reply_text(
-        "✈️ Привет! Я твой travel-помощник «Как местный» 🎒\n"
-        "Всё что нужно для путешествия — в одном месте:\n\n"
-        "🌍 Подберу идеальную страну под твои желания\n"
-        "🛂 Визы для 201 страны — без визы, электронная, нужна\n"
-        "🗺 Отмечай страны где побывал и смотри статистику\n"
-        "🌤 Когда лучше ехать в каждую страну\n"
-        "🔤 Переводчик и конвертер валют всегда под рукой\n"
-        "🛋 Как попасть в аэропортовый лаундж бесплатно\n"
-        "⛔ Куда не пустят со штампом другой страны\n"
-        "📖 Полная инструкция для первой самостоятельной поездки\n\n"
-        "🤝 Официальные партнёры:\n"
-        "Aviasales • Tripster • Cherehapa • Airalo и другие топовые сервисы\n\n"
+        "✈️ Привет! Я «Как местный» — твой помощник по путешествиям 🎒\n\n"
+        "Всё для путешествий в одном месте:\n"
+        "🌍 Визы · Подбор страны · Сезоны\n"
+        "🗺 Мои страны и статистика · Дневник путешественника\n"
+        "🌤 Погода · Переводчик · Конвертер валют\n"
+        "🛫 Лаунджи · Несовместимые страны · Чеклист\n"
+        "🎮 Игры · Викторина · Страна дня\n\n"
+        "🤝 Партнёры: Aviasales · Tripster · Cherehapa · Airalo и другие\n\n"
+        "🎁 7 дней — полный доступ бесплатно!\n"
+        "После этого большая часть функций останется бесплатной навсегда, "
+        "а самые продвинутые — по подписке 200₽/мес или 1490₽/год.\n\n"
         "Выбери раздел 👇",
         reply_markup=get_main_keyboard(),
     )
@@ -9877,6 +10136,11 @@ async def post_init(app: Application) -> None:
     renewal_task.add_done_callback(_scheduler_done_cb)
     logger.info("Задача автопродления ЮKassa создана и запущена")
 
+    # Онбординг-рассылка — каждый день в 12:00 МСК
+    onboarding_task = asyncio.create_task(onboarding_scheduler(app.bot))
+    onboarding_task.add_done_callback(_scheduler_done_cb)
+    logger.info("Задача онбординг-рассылки создана и запущена")
+
 
 def main():
     global _telegram_bot_ref
@@ -9894,6 +10158,9 @@ def main():
             CommandHandler("start", start),
             CommandHandler("menu", menu_command),
             CommandHandler("help", help_command),
+            CallbackQueryHandler(onb_mytrips_cb,  pattern=r"^onb_mytrips$"),
+            CallbackQueryHandler(onb_feedback_cb, pattern=r"^onb_feedback$"),
+            CallbackQueryHandler(onb_premium_cb,  pattern=r"^onb_premium$"),
         ],
         states={
             MAIN_MENU: [
@@ -10075,12 +10342,19 @@ def main():
                 home,
                 MessageHandler(filters.TEXT & ~filters.COMMAND, waters_ref_list_handler),
             ],
+            FEEDBACK_TYPING: [
+                home,
+                MessageHandler(filters.TEXT & ~filters.COMMAND, feedback_typing_handler),
+            ],
         },
         fallbacks=[
             home,
             CommandHandler("start", start),
             CommandHandler("menu", menu_command),
             CommandHandler("cancel", cancel),
+            CallbackQueryHandler(onb_mytrips_cb,  pattern=r"^onb_mytrips$"),
+            CallbackQueryHandler(onb_feedback_cb, pattern=r"^onb_feedback$"),
+            CallbackQueryHandler(onb_premium_cb,  pattern=r"^onb_premium$"),
         ],
     )
     app.add_handler(MessageHandler(filters.ALL, _track_activity), group=-1)
