@@ -1439,8 +1439,7 @@ def get_folder_tools_kb():
             [KeyboardButton("🔤 Переводчик"),
              KeyboardButton("💱 Конвертер валют", web_app=WebAppInfo(url=CURRENCY_URL))],
             [KeyboardButton("🕐 Разница во времени", web_app=WebAppInfo(url=TIMEZONE_URL)),
-             KeyboardButton("💰 Общий счёт",         web_app=WebAppInfo(url=SPLITWISE_URL))],
-            [KeyboardButton("🗺 Карта мира",          web_app=WebAppInfo(url=MAP_URL))],
+             KeyboardButton("🗺 Карта мира",          web_app=WebAppInfo(url=MAP_URL))],
             [KeyboardButton("◀️ Назад"),              KeyboardButton(HOME_BTN)],
         ],
         resize_keyboard=True,
@@ -1459,14 +1458,15 @@ def get_folder_mytrips_kb(user_id: int | None = None):
 
     return ReplyKeyboardMarkup(
         [
-            [KeyboardButton("🗺 Мои страны",                  web_app=WebAppInfo(url=WEBAPP_URL)),
-             KeyboardButton("🏆 Рейтинг путешественников")],
-            [KeyboardButton("🇷🇺 Путешествия по России",      web_app=WebAppInfo(url=RUSSIA_URL)),
-             gated("🏛 Мои достопримечательности",            ATTRACTIONS_URL)],
-            [gated("📊 Моя статистика",                       STATS_URL),
-             KeyboardButton("📏 Калькулятор расстояний",      web_app=WebAppInfo(url=DISTANCE_URL))],
-            [gated("📖 Дневник путешественника",              DIARY_URL),
-             KeyboardButton("🌊 Океаны, моря и реки")],
+            [KeyboardButton("🗺 Мои страны",                  web_app=WebAppInfo(url=WEBAPP_URL))],
+            [KeyboardButton("🏆 Рейтинг путешественников"),
+             KeyboardButton("🇷🇺 Путешествия по России",      web_app=WebAppInfo(url=RUSSIA_URL))],
+            [gated("🏛 Мои достопримечательности",            ATTRACTIONS_URL),
+             gated("📊 Моя статистика",                       STATS_URL)],
+            [KeyboardButton("📏 Калькулятор расстояний",      web_app=WebAppInfo(url=DISTANCE_URL)),
+             gated("📖 Дневник путешественника",              DIARY_URL)],
+            [KeyboardButton("🌊 Океаны, моря и реки"),
+             gated("💰 Общий счёт",                           SPLITWISE_URL)],
             [KeyboardButton("◀️ Назад"),                      KeyboardButton(HOME_BTN)],
         ],
         resize_keyboard=True,
@@ -1477,12 +1477,12 @@ def get_folder_mytrips_kb(user_id: int | None = None):
 PREMIUM_LOCK_TEXT = (
     "🔒 Это премиум-функция\n\n"
     "Доступно по подписке Как местный Премиум:\n"
-    "📔 Дневник путешественника\n"
-    "📊 Моя статистика\n"
+    "🇷🇺 Путешествия по России\n"
     "🏛 Мои достопримечательности\n"
-    "🏆 Рейтинг путешественников\n"
-    "🌍 Угадай где я\n"
-    "🃏 Найди пару\n\n"
+    "📊 Моя статистика\n"
+    "📔 Дневник путешественника\n"
+    "🌊 Отметки в Океаны/моря/реки\n"
+    "💰 Общий счёт\n\n"
     "💳 Стоимость:\n"
     "- 200₽ / месяц\n"
     "- 1490₽ / год (экономия 910₽)"
@@ -1532,9 +1532,6 @@ def get_folder_services_kb():
 async def show_rating(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Показывает топ-30 путешественников по количеству стран."""
     user = update.effective_user
-    if not is_premium(user.id):
-        await _send_premium_lock(update)
-        return MAIN_MENU
     top30, my_pos, my_count = get_countries_rating(user.id)
 
     if not top30:
@@ -2558,9 +2555,6 @@ def _guess_finish_kb() -> ReplyKeyboardMarkup:
 
 
 async def guess_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not is_premium(update.effective_user.id):
-        await _send_premium_lock(update)
-        return GAMES_MENU
     riddles = _GUESS_RIDDLES.copy()
     _random_guess.shuffle(riddles)
     context.user_data["guess_riddles"]      = riddles
@@ -2834,9 +2828,6 @@ def _pair_finish_kb() -> ReplyKeyboardMarkup:
 
 
 async def pair_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not is_premium(update.effective_user.id):
-        await _send_premium_lock(update)
-        return GAMES_MENU
     questions = _pair_build_questions()
     context.user_data["pair_questions"]      = questions
     context.user_data["pair_index"]          = 0
@@ -4435,7 +4426,7 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return MAIN_MENU
     elif text == "🏆 Рейтинг путешественников":
         return await show_rating(update, context)
-    elif text in ("🏛 Мои достопримечательности", "📊 Моя статистика", "📖 Дневник путешественника"):
+    elif text in ("🏛 Мои достопримечательности", "📊 Моя статистика", "📖 Дневник путешественника", "💰 Общий счёт"):
         # Тапы по этим лейблам приходят сюда только когда WebApp-кнопка заменена
         # на обычную (не премиум). У премиум-пользователя кнопка открывает WebApp напрямую.
         if not is_premium(update.effective_user.id):
