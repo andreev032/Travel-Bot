@@ -8316,7 +8316,11 @@ def format_weather(data: dict, city: str, country: str) -> str:
 async def weather_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "🌍 Введи название страны на русском языке:\n\n"
-        "Например: Таиланд, Франция, Япония, Египет"
+        "Например: Таиланд, Франция, Япония, Египет",
+        reply_markup=ReplyKeyboardMarkup(
+            [["◀️ Назад", HOME_BTN]],
+            resize_keyboard=True,
+        ),
     )
     return WEATHER_INPUT
 
