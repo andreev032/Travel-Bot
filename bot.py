@@ -4851,6 +4851,14 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await _handle_premium_plan(update, "year")
     elif text == "📄 Условия оферты":
         await update.message.reply_text("https://andreev032.github.io/Travel-Bot/oferta.html")
+        await update.message.reply_text(
+            "👆 Условия оферты",
+            reply_markup=ReplyKeyboardMarkup(
+                [["◀️ Назад", HOME_BTN]],
+                resize_keyboard=True,
+                one_time_keyboard=True,
+            ),
+        )
         return MAIN_MENU
     elif text == "💳 Оформить подписку":
         await update.message.reply_text("Скоро!")
@@ -8321,18 +8329,19 @@ async def weather_show(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await show_folder_planning(update, context)
 
     query = text_in.lower()
+    reply_markup = ReplyKeyboardMarkup(
+        [["◀️ Назад", HOME_BTN]],
+        resize_keyboard=True,
+    )
     if query not in COUNTRY_COORDS:
         await update.message.reply_text(
             "❌ Страна не найдена. Попробуй написать иначе.\n"
-            "Например: Таиланд, Франция, Япония"
+            "Например: Таиланд, Франция, Япония",
+            reply_markup=reply_markup,
         )
         return WEATHER_INPUT
 
     lat, lon, city = COUNTRY_COORDS[query]
-    reply_markup = ReplyKeyboardMarkup(
-        [["◀️ Назад", "🏠 Главное меню"]],
-        resize_keyboard=True,
-    )
     try:
         data = await get_weather(lat, lon)
         text = format_weather(data, city, query.capitalize())
