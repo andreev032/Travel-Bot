@@ -425,26 +425,12 @@ function resetAll() {
 /* ═══════════════════════════════════════════
    ЗАКРЫТЬ
 ═══════════════════════════════════════════ */
-const SYNC_URL = 'https://travel-bot-production-9c46.up.railway.app/webapp/sync';
-
-function syncToBackend() {
-  const uid = tg.initDataUnsafe?.user?.id;
-  if (!uid || !tg.initData) return;
-  const payload = JSON.stringify({
-    user_id: uid,
-    type: 'attractions',
-    items: [...visited],
-    initData: tg.initData
-  });
-  navigator.sendBeacon(SYNC_URL, new Blob([payload], { type: 'application/json' }));
-}
-
 function closeApp() {
-  syncToBackend();
-  tg.close();
+  tg.sendData(JSON.stringify({
+    source: "attractions",
+    visited: [...visited].sort()
+  }));
 }
-
-window.addEventListener('beforeunload', syncToBackend);
 
 /* ═══════════════════════════════════════════
    INIT
