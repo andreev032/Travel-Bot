@@ -207,6 +207,14 @@ async def init_db(app) -> None:
                     created_at TIMESTAMP DEFAULT NOW()
                 )
             """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS user_attraction_marks (
+                    user_id   BIGINT NOT NULL,
+                    key       TEXT   NOT NULL,
+                    marked_at TIMESTAMP DEFAULT NOW(),
+                    PRIMARY KEY (user_id, key)
+                )
+            """)
         conn.commit()
         _populate_waters_if_empty(conn)
         with conn.cursor() as cur:
@@ -1330,6 +1338,106 @@ def api_waters():
         _flask_app.logger.error(
             "waters save error user_id=%s code=%s action=%s: %s: %s\n%s",
             user_id, code, action, type(e).__name__, e, traceback.format_exc(),
+        )
+        return (json.dumps({"error": "internal"}), 500,
+                {**_cors_headers(), "Content-Type": "application/json"})
+
+
+_ATTRACTION_KEY_RE = re.compile(r"^[a-z0-9_]+:\d+$")
+
+
+@_flask_app.route("/webapp/sync", methods=["POST", "OPTIONS"])
+def webapp_sync():
+    if flask_request.method == "OPTIONS":
+        return ("", 204, _cors_headers())
+
+    body = flask_request.get_json(silent=True) or {}
+
+    # Accept initData from header (fetch) or body field (sendBeacon)
+    init_data = (
+        flask_request.headers.get("X-Telegram-Init-Data")
+        or body.get("initData", "")
+    )
+    user = _validate_init_data(init_data)
+    if not user:
+        _flask_app.logger.warning(
+            "webapp_sync auth failed: has_init_data=%s len=%s",
+            bool(init_data), len(init_data) if init_data else 0,
+        )
+        return (json.dumps({"error": "unauthorized"}), 401,
+                {**_cors_headers(), "Content-Type": "application/json"})
+
+    user_id = int(user.get("id", 0))
+    if not user_id:
+        return (json.dumps({"error": "no user id"}), 401,
+                {**_cors_headers(), "Content-Type": "application/json"})
+
+    sync_type = body.get("type")
+    items = body.get("items", [])
+
+    if sync_type not in ("countries", "attractions", "waters"):
+        return (json.dumps({"error": "bad type"}), 400,
+                {**_cors_headers(), "Content-Type": "application/json"})
+
+    if not isinstance(items, list):
+        return (json.dumps({"error": "bad items"}), 400,
+                {**_cors_headers(), "Content-Type": "application/json"})
+
+    try:
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                if sync_type == "countries":
+                    first_name = user.get("first_name", "")
+                    username = user.get("username")
+                    cur.execute("""
+                        INSERT INTO user_countries
+                            (user_id, username, first_name, countries_count, updated_at)
+                        VALUES (%s, %s, %s, %s, NOW())
+                        ON CONFLICT (user_id) DO UPDATE SET
+                            username        = EXCLUDED.username,
+                            first_name      = EXCLUDED.first_name,
+                            countries_count = EXCLUDED.countries_count,
+                            updated_at      = NOW()
+                    """, (user_id, username, first_name, len(items)))
+
+                elif sync_type == "waters":
+                    cur.execute(
+                        "DELETE FROM user_water_marks WHERE user_id=%s", (user_id,)
+                    )
+                    for code in items:
+                        if isinstance(code, str) and _WATER_CODE_RE.match(code):
+                            cur.execute(
+                                "INSERT INTO user_water_marks (user_id, code) "
+                                "VALUES (%s, %s) ON CONFLICT DO NOTHING",
+                                (user_id, code),
+                            )
+
+                elif sync_type == "attractions":
+                    cur.execute(
+                        "DELETE FROM user_attraction_marks WHERE user_id=%s", (user_id,)
+                    )
+                    for key in items:
+                        if isinstance(key, str) and _ATTRACTION_KEY_RE.match(key):
+                            cur.execute(
+                                "INSERT INTO user_attraction_marks (user_id, key) "
+                                "VALUES (%s, %s) ON CONFLICT DO NOTHING",
+                                (user_id, key),
+                            )
+
+            conn.commit()
+        finally:
+            conn.close()
+
+        _flask_app.logger.info(
+            "webapp_sync: user_id=%s type=%s items=%d", user_id, sync_type, len(items)
+        )
+        return (json.dumps({"ok": True}), 200,
+                {**_cors_headers(), "Content-Type": "application/json"})
+    except Exception as e:
+        _flask_app.logger.error(
+            "webapp_sync error user_id=%s type=%s: %s: %s\n%s",
+            user_id, sync_type, type(e).__name__, e, traceback.format_exc(),
         )
         return (json.dumps({"error": "internal"}), 500,
                 {**_cors_headers(), "Content-Type": "application/json"})
