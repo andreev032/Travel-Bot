@@ -193,56 +193,19 @@ function updateCounter() {
   badge.className = n ? 'has' : '';
 }
 
-function syncToBackend() {
-  const uid = tg?.initDataUnsafe?.user?.id;
-  // показываем статус синхронизации
-  const statusEl = document.getElementById('sync-status') || (() => {
-    const el = document.createElement('div');
-    el.id = 'sync-status';
-    el.style.cssText = 'position:fixed;top:10px;right:10px;padding:6px 12px;border-radius:8px;font-size:12px;z-index:9999;';
-    document.body.appendChild(el);
-    return el;
-  })();
-
-  if (!uid) {
-    statusEl.style.background = '#ff4444';
-    statusEl.textContent = 'uid:нет tg=' + (typeof tg) + ' init=' + (tg?.initData ? 'yes' : 'no');
-    return;
-  }
-  statusEl.style.background = '#ff9900';
-  statusEl.textContent = 'sync...';
-
-  fetch('https://travel-bot-production-9c46.up.railway.app/webapp/sync', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({
-      user_id: uid,
-      type: 'countries',
-      items: [...visited],
-      initData: tg.initData || ''
-    }),
-    keepalive: true
-  })
-  .then(r => {
-    statusEl.style.background = r.ok ? '#00cc44' : '#ff4444';
-    statusEl.textContent = r.ok ? 'sync ✓' : 'sync err ' + r.status;
-  })
-  .catch(e => {
-    statusEl.style.background = '#ff4444';
-    statusEl.textContent = 'err: ' + e.message.substring(0,20);
-  });
-}
-
 function toggle(name) {
   visited.has(name) ? visited.delete(name) : visited.add(name);
   save(); render(); updateCounter();
-  syncToBackend();
 }
 
 function filter(v) { query = v; render(); }
 
 function closeApp() {
-  tg.close();
+  tg.sendData(JSON.stringify({
+    source: "countries",
+    count: visited.size,
+    visited: [...visited].sort()
+  }));
 }
 
 render(); updateCounter();
