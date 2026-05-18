@@ -359,7 +359,26 @@ function toggle(id, rowEl) {
 
 function filter(v) { query = v; render(); updateCounter(); }
 
-function closeApp() { tg.close(); }
+const SYNC_URL = 'https://travel-bot-production-9c46.up.railway.app/webapp/sync';
+
+function syncToBackend() {
+  const uid = tg.initDataUnsafe?.user?.id;
+  if (!uid || !tg.initData) return;
+  const payload = JSON.stringify({
+    user_id: uid,
+    type: 'waters',
+    items: [...visited],
+    initData: tg.initData
+  });
+  navigator.sendBeacon(SYNC_URL, new Blob([payload], { type: 'application/json' }));
+}
+
+function closeApp() {
+  syncToBackend();
+  tg.close();
+}
+
+window.addEventListener('beforeunload', syncToBackend);
 
 render(); updateCounter();
 </script>
