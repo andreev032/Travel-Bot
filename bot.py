@@ -4636,10 +4636,11 @@ async def show_premium_screen(update: Update, context: ContextTypes.DEFAULT_TYPE
             "🔗 Твоя реферальная ссылка:\n"
             f"{ref_link}\n\n"
             f"👥 Приглашено друзей: *{info['ref_count']}*\n\n"
-            "Делись ссылкой — друзья получат 7 дней бесплатно!"
+            "Делись ссылкой — друзья получат 7 дней бесплатно, а ты — возможность пользоваться ботом бесплатно! 🎁"
         )
         rows = [
             ["💳 Продлить подписку"],
+            ["🎁 Как получить бесплатный доступ"],
             ["📄 Условия оферты"],
         ]
         if has_paid_subscription(user.id):
@@ -4953,6 +4954,22 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await premium_buy_callback_reply(update, context)
     elif text == "🗑 Отвязать карту":
         return await detach_card_handler(update, context)
+    elif text == "🎁 Как получить бесплатный доступ":
+        await update.message.reply_text(
+            "🎁 Бесплатный доступ за друзей\n\n"
+            "Приглашай друзей по своей ссылке и получай бесплатные месяцы:\n\n"
+            "👥 7 друзей → 1 месяц бесплатно\n"
+            "👥 15 друзей → 3 месяца бесплатно\n"
+            "👥 25 друзей → 6 месяцев бесплатно\n"
+            "👥 45 друзей → 1 год бесплатно\n"
+            "👥 90 друзей → вечный доступ 🏆",
+            reply_markup=ReplyKeyboardMarkup(
+                [["◀️ Назад", HOME_BTN]],
+                resize_keyboard=True,
+                one_time_keyboard=True,
+            ),
+        )
+        return MAIN_MENU
     elif text == "💳 200₽ / месяц":
         return await _handle_premium_plan(update, "month")
     elif text == "💳 1490₽ / год":
