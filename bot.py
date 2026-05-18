@@ -3448,8 +3448,10 @@ _COUNTRIES_OF_DAY = [
 
 def _get_country_of_day() -> dict:
     """Возвращает страну дня — одинакова для всех пользователей в течение суток."""
-    day_of_year = datetime.now(MOSCOW_TZ).timetuple().tm_yday
-    return _COUNTRIES_OF_DAY[day_of_year % len(_COUNTRIES_OF_DAY)]
+    today = datetime.now(MOSCOW_TZ).date()
+    seed = int(today.strftime("%Y%m%d"))
+    rng = _random.Random(seed)
+    return rng.choice(_COUNTRIES_OF_DAY)
 
 
 def _add_flag_to_collection(user_id: int, country_code: str) -> bool:
