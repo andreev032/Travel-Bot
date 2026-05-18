@@ -1349,7 +1349,7 @@ _ATTRACTION_KEY_RE = re.compile(r"^[a-z0-9_]+:\d+$")
 @_flask_app.route("/webapp/sync", methods=["POST", "OPTIONS"])
 def webapp_sync():
     if flask_request.method == "OPTIONS":
-        return ("", 204, _cors_headers())
+        return ("", 200, _cors_headers())
 
     body = flask_request.get_json(silent=True) or {}
 
