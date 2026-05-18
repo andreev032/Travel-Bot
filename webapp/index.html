@@ -206,7 +206,7 @@ function syncToBackend() {
 
   if (!uid) {
     statusEl.style.background = '#ff4444';
-    statusEl.textContent = 'uid: нет';
+    statusEl.textContent = 'uid:нет tg=' + (typeof tg) + ' init=' + (tg?.initData ? 'yes' : 'no');
     return;
   }
   statusEl.style.background = '#ff9900';
