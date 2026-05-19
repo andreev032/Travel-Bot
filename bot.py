@@ -4641,6 +4641,7 @@ async def show_premium_screen(update: Update, context: ContextTypes.DEFAULT_TYPE
             "Делись ссылкой — друзья получат 7 дней бесплатно, а ты — возможность пользоваться ботом бесплатно! 🎁"
         )
         rows = [
+            ["📲 Поделиться с другом"],
             ["💳 Продлить подписку"],
             ["🎁 Как получить бесплатный доступ"],
             ["📄 Условия оферты"],
@@ -4989,14 +4990,6 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     switch_inline_query=f"Присоединяйся к боту «Как местный» 🌍\nt.me/like_a_local_bot?start={ref_code}"
                 )
             ]])
-        )
-        await update.message.reply_text(
-            "👇",
-            reply_markup=ReplyKeyboardMarkup(
-                [["◀️ Назад", HOME_BTN]],
-                resize_keyboard=True,
-                one_time_keyboard=True,
-            ),
         )
         return MAIN_MENU
     elif text == "💳 200₽ / месяц":
