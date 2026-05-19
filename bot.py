@@ -10634,7 +10634,7 @@ async def post_init(app: Application) -> None:
     ]
     await app.bot.set_my_commands(
         admin_commands,
-        scope=BotCommandScopeChat(chat_id=int(os.environ['ADMIN_ID']))
+        scope=BotCommandScopeChat(chat_id=int(os.getenv('ADMIN_ID', '462171750')))
     )
     await app.bot.set_my_commands(
         [BotCommand("start", "Главное меню")],
