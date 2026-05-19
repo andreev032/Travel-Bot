@@ -1870,7 +1870,7 @@ def get_folder_knowledge_kb():
             [KeyboardButton("📖 Инструкция для новичка"), KeyboardButton("🚁 Дроны")],
             [KeyboardButton("🛋 Лаунджи аэропортов"),     KeyboardButton("🚢 Круизы")],
             [KeyboardButton("🎬 Фильмы о путешествиях"),  KeyboardButton("🏛 Чудеса и наследие")],
-            [KeyboardButton("🏫 Языковые школы")],
+            [KeyboardButton("🏫 Языковые школы"),          KeyboardButton("🧳 Без турагента")],
             [KeyboardButton("◀️ Назад"),                   KeyboardButton(HOME_BTN)],
         ],
         resize_keyboard=True,
@@ -4585,6 +4585,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 activate_trial(user.id, promo_source=arg)
                 increment_promo_uses(arg)
                 deep_link_msg = "🎁 Тебе активирован бесплатный доступ на 7 дней!"
+        elif arg == 'guide':
+            await update.message.reply_text(
+                "🧳 *Гайд: как путешествовать без турагента*\n\nНажми кнопку ниже 👇",
+                parse_mode='Markdown',
+                reply_markup=InlineKeyboardMarkup([[
+                    InlineKeyboardButton("Открыть гайд", web_app=WebAppInfo(url="https://andreev032.github.io/Travel-Bot/webapp/guides/how-to-travel-cheap/"))
+                ]])
+            )
+            return MAIN_MENU
         else:
             promo = get_promo_code(arg)
             if promo and promo["type"] == "trial":
@@ -4890,6 +4899,15 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await cruise_menu_handler(update, context)
     elif text == "🏛 Чудеса и наследие":
         return await show_wonders_menu(update, context)
+    elif text == "🧳 Без турагента":
+        await update.message.reply_text(
+            "🧳 *Гайд: как путешествовать без турагента*\n\nНажми кнопку ниже 👇",
+            parse_mode='Markdown',
+            reply_markup=InlineKeyboardMarkup([[
+                InlineKeyboardButton("Открыть гайд", web_app=WebAppInfo(url="https://andreev032.github.io/Travel-Bot/webapp/guides/how-to-travel-cheap/"))
+            ]])
+        )
+        return MAIN_MENU
     elif text == "🏫 Языковые школы":
         context.user_data["back_to_knowledge"] = True
         await update.message.reply_text(
