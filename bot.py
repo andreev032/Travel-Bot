@@ -729,6 +729,35 @@ def get_or_create_ref_code(user_id: int) -> str:
     return generate_ref_code(user_id)
 
 
+def get_or_create_referral_code(user_id: int) -> str:
+    """Возвращает referral_code пользователя; создаёт при первом обращении."""
+    try:
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT referral_code FROM users WHERE user_id = %s", (user_id,))
+                row = cur.fetchone()
+                if row and row[0]:
+                    return row[0]
+                for _ in range(8):
+                    code = generate_ref_code(user_id)
+                    try:
+                        cur.execute(
+                            "UPDATE users SET referral_code = %s WHERE user_id = %s",
+                            (code, user_id),
+                        )
+                        conn.commit()
+                        return code
+                    except psycopg2.IntegrityError:
+                        conn.rollback()
+                        continue
+        finally:
+            conn.close()
+    except Exception as e:
+        logger.error("get_or_create_referral_code: user_id=%s %s: %s", user_id, type(e).__name__, e)
+    return generate_ref_code(user_id)
+
+
 def get_premium_info(user_id: int) -> dict:
     """Возвращает {'until': datetime|None, 'is_lifetime': bool, 'ref_count': int}."""
     info = {"until": None, "is_lifetime": False, "ref_count": 0}
@@ -4561,10 +4590,14 @@ async def show_premium_screen(update: Update, context: ContextTypes.DEFAULT_TYPE
         await update.message.reply_text(msg, parse_mode="Markdown", reply_markup=kb)
         return MAIN_MENU
 
+    referral_code = get_or_create_referral_code(user.id)
+    ref_link = f"t.me/{BOT_USERNAME}?start={referral_code}"
+    ref_count = info["ref_count"]
     msg = (
         "⭐ Как местный Премиум\n\n"
-        "Всё для серьёзного путешественника:\n\n"
-        "📔 Дневник путешественника\n"
+        "🔒 Премиум не активен\n\n"
+        "Всё для серьёзного путешественника:\n"
+        "📖 Дневник путешественника\n"
         "📊 Моя статистика\n"
         "🏛 Мои достопримечательности\n"
         "🏆 Рейтинг путешественников\n"
@@ -4574,6 +4607,10 @@ async def show_premium_screen(update: Update, context: ContextTypes.DEFAULT_TYPE
         "- 200₽ / месяц\n"
         "- 1490₽ / год (экономия 910₽)\n\n"
         "🎁 Первые 7 дней — бесплатно\n\n"
+        "🔗 Твоя реферальная ссылка:\n"
+        f"{ref_link}\n\n"
+        f"👥 Приглашено друзей: {ref_count}\n\n"
+        "Делись ссылкой — друзья получат 7 дней бесплатно, а ты — возможность пользоваться ботом бесплатно! 🎁\n\n"
         "Нажимая «Подключить», вы принимаете условия оферты"
     )
     await update.message.reply_text(
@@ -4582,8 +4619,9 @@ async def show_premium_screen(update: Update, context: ContextTypes.DEFAULT_TYPE
         reply_markup=ReplyKeyboardMarkup(
             [
                 ["💳 Подключить Премиум"],
+                ["🎁 Как получить бесплатный доступ"],
                 ["📄 Условия оферты"],
-                ["◀️ Назад", "🏠 Главное меню"],
+                ["◀️ Назад", HOME_BTN],
             ],
             resize_keyboard=True,
         ),
