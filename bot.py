@@ -4637,13 +4637,11 @@ async def show_premium_screen(update: Update, context: ContextTypes.DEFAULT_TYPE
         msg = (
             "⭐ *Как местный Премиум*\n\n"
             f"✅ Премиум активен до: *{until_str}*\n\n"
-            "🔗 Твоя реферальная ссылка:\n"
-            f"{ref_link}\n\n"
             f"👥 Приглашено друзей: *{info['ref_count']}*\n\n"
             "Делись ссылкой — друзья получат 7 дней бесплатно, а ты — возможность пользоваться ботом бесплатно! 🎁"
         )
         rows = [
-            ["🔗 Поделиться ссылкой"],
+            ["📲 Поделиться с другом"],
             ["💳 Продлить подписку"],
             ["🎁 Как получить бесплатный доступ"],
             ["📄 Условия оферты"],
@@ -4676,8 +4674,6 @@ async def show_premium_screen(update: Update, context: ContextTypes.DEFAULT_TYPE
         "- 200₽ / месяц\n"
         "- 1490₽ / год (экономия 910₽)\n\n"
         "🎁 Первые 7 дней — бесплатно\n\n"
-        "🔗 Твоя реферальная ссылка:\n"
-        f"{ref_link}\n\n"
         f"👥 Приглашено друзей: {ref_count}\n\n"
         "Делись ссылкой — друзья получат 7 дней бесплатно, а ты — возможность пользоваться ботом бесплатно! 🎁\n\n"
         "Нажимая «Подключить», вы принимаете условия оферты"
@@ -4686,7 +4682,7 @@ async def show_premium_screen(update: Update, context: ContextTypes.DEFAULT_TYPE
         msg,
         reply_markup=ReplyKeyboardMarkup(
             [
-                ["🔗 Поделиться ссылкой"],
+                ["📲 Поделиться с другом"],
                 ["💳 Подключить Премиум"],
                 ["🎁 Как получить бесплатный доступ"],
                 ["📄 Условия оферты"],
@@ -4995,7 +4991,7 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ),
         )
         return MAIN_MENU
-    elif text == "🔗 Поделиться ссылкой":
+    elif text == "📲 Поделиться с другом":
         ref_code = get_or_create_referral_code(update.message.from_user.id)
         await update.message.reply_text(
             "Отправь другу — он получит 7 дней бесплатно 🎁",
