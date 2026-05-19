@@ -4985,7 +4985,7 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "👥 40 друзей → 1 год бесплатно\n"
             "👥 80 друзей → вечный доступ 🏆",
             reply_markup=ReplyKeyboardMarkup(
-                [["🔗 Поделиться ссылкой"], ["◀️ Назад", HOME_BTN]],
+                [["📲 Поделиться с другом"], ["◀️ Назад", HOME_BTN]],
                 resize_keyboard=True,
                 one_time_keyboard=True,
             ),
