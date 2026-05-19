@@ -1786,7 +1786,7 @@ def get_folder_planning_kb():
             [KeyboardButton("🌤 Сезоны путешествий"),     KeyboardButton("🌤 Погода")],
             [KeyboardButton("🛂 Визы"),                    KeyboardButton("⛔ Несовместимые страны")],
             [KeyboardButton("📅 Куда слетать"),            KeyboardButton("✅ Чеклист", web_app=WebAppInfo(url=CHECKLIST_URL))],
-            [KeyboardButton("🗓 Куда лететь")],
+            [KeyboardButton("🌤 Лучший сезон")],
             [KeyboardButton("◀️ Назад"),                   KeyboardButton(HOME_BTN)],
         ],
         resize_keyboard=True,
@@ -4856,7 +4856,7 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await show_incompatible_menu(update, context)
     elif text == "📅 Куда слетать":
         return await show_events_menu(update, context)
-    elif text == "🗓 Куда лететь":
+    elif text == "🌤 Лучший сезон":
         return await where_to_fly_menu(update, context)
     elif text == "🚁 Дроны":
         return await drone_menu_handler(update, context)
@@ -8598,8 +8598,8 @@ _WHERE_TO_FLY_MONTHS_KB = ReplyKeyboardMarkup(
 
 async def where_to_fly_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "🗓 Куда лететь?\n\n"
-        "Выбери месяц — покажу 10 лучших направлений где сейчас сухой сезон и хорошая погода",
+        "🌤 Лучший сезон\n\n"
+        "Выбери месяц — покажу 15 лучших направлений по каждому месяцу где сейчас сухой сезон и хорошая погода",
         reply_markup=_WHERE_TO_FLY_MONTHS_KB,
     )
     return WHERE_TO_FLY
