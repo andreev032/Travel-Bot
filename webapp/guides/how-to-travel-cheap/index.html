@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Как путешествовать без турагента</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --accent: #e8943a;
+      --accent-dim: rgba(232, 148, 58, 0.15);
+      --bg: #0f1117;
+      --bg2: #191c26;
+      --bg3: #222635;
+      --text: #e8eaf0;
+      --muted: #8b90a0;
+      --border: rgba(255,255,255,0.08);
+      --radius: 16px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Manrope', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, #1a1f30 0%, #0f1117 60%);
+      padding: 48px 20px 36px;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(232,148,58,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-emoji { font-size: 52px; display: block; margin-bottom: 16px; }
+
+    .hero h1 {
+      font-size: clamp(22px, 5vw, 32px);
+      font-weight: 800;
+      line-height: 1.25;
+      color: #fff;
+      max-width: 560px;
+      margin: 0 auto 12px;
+    }
+
+    .hero-sub {
+      color: var(--muted);
+      font-size: 15px;
+      max-width: 440px;
+      margin: 0 auto;
+    }
+
+    .container {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 0 16px 60px;
+    }
+
+    /* ── Step cards ── */
+    .step {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px 20px;
+      margin: 20px 0;
+      position: relative;
+      transition: border-color 0.2s;
+    }
+
+    .step:hover { border-color: rgba(232,148,58,0.3); }
+
+    .step-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 800;
+      font-size: 14px;
+      border-radius: 50%;
+      margin-bottom: 14px;
+    }
+
+    .step h2 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 10px;
+    }
+
+    .step p {
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 14px;
+      line-height: 1.65;
+    }
+
+    .tips {
+      list-style: none;
+      margin-bottom: 16px;
+    }
+
+    .tips li {
+      font-size: 14px;
+      color: var(--text);
+      padding: 5px 0 5px 22px;
+      position: relative;
+    }
+
+    .tips li::before {
+      content: '✓';
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .cta-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--accent-dim);
+      color: var(--accent);
+      border: 1px solid rgba(232,148,58,0.3);
+      border-radius: 10px;
+      padding: 10px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .cta-link:hover {
+      background: rgba(232,148,58,0.25);
+      border-color: var(--accent);
+    }
+
+    .cta-link .arrow { font-size: 16px; }
+
+    /* ── Lifehacks block ── */
+    .lifehacks {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px 20px;
+      margin: 20px 0;
+    }
+
+    .lifehacks h2 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 16px;
+    }
+
+    .lh-item {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .lh-item:last-child { border-bottom: none; padding-bottom: 0; }
+
+    .lh-icon { font-size: 22px; flex-shrink: 0; margin-top: 1px; }
+
+    .lh-text { font-size: 14px; color: var(--text); line-height: 1.6; }
+
+    .lh-text strong { color: #fff; display: block; margin-bottom: 2px; font-weight: 600; }
+
+    /* ── Bottom CTA ── */
+    .bottom-cta {
+      text-align: center;
+      padding: 36px 20px;
+      background: linear-gradient(180deg, transparent, rgba(232,148,58,0.06));
+      border-top: 1px solid var(--border);
+      margin-top: 16px;
+    }
+
+    .bottom-cta p {
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 20px;
+    }
+
+    .bot-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 14px;
+      padding: 14px 28px;
+      font-size: 16px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: opacity 0.2s, transform 0.15s;
+      box-shadow: 0 4px 20px rgba(232,148,58,0.35);
+    }
+
+    .bot-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+    .bot-btn:active { transform: translateY(0); }
+
+    /* ── Section label ── */
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin: 32px 0 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <header class="hero">
+    <span class="hero-emoji">🧳</span>
+    <h1>Как путешествовать без турагента</h1>
+    <p class="hero-sub">Пошаговый гайд: билеты, отели, экскурсии и страховка — сам, дешевле и лучше</p>
+  </header>
+
+  <div class="container">
+
+    <p class="section-label">Пошаговый план</p>
+
+    <!-- Шаг 1 -->
+    <div class="step">
+      <div class="step-num">1</div>
+      <h2>✈️ Авиабилеты — Aviasales</h2>
+      <p>Лучший агрегатор для поиска дешёвых билетов. Сравнивает сотни авиакомпаний и ОТА одновременно.</p>
+      <ul class="tips">
+        <li>Покупай за 6–8 недель до вылета — оптимальное окно цен</li>
+        <li>Включи «гибкие даты» — разброс ±3 дня часто даёт −20–40%</li>
+        <li>Вторник, среда, четверг — самые дешёвые дни для вылета</li>
+        <li>Настрой уведомления о снижении цены на нужный маршрут</li>
+      </ul>
+      <a class="cta-link" href="https://www.aviasales.ru?marker=725703" target="_blank" rel="noopener">
+        Найти дешёвые билеты <span class="arrow">→</span>
+      </a>
+    </div>
+
+    <!-- Шаг 2 -->
+    <div class="step">
+      <div class="step-num">2</div>
+      <h2>🏨 Отели — Островок</h2>
+      <p>Российский агрегатор отелей без санкций и с оплатой в рублях. Удобнее зарубежных аналогов для россиян.</p>
+      <ul class="tips">
+        <li>Фильтруй по соотношению цена/рейтинг — не гонись за звёздами</li>
+        <li>Бронируй напрямую, а не через турагента — уберёшь наценку 15–25%</li>
+        <li>Смотри на отзывы за последние 6 месяцев, не общий рейтинг</li>
+      </ul>
+      <a class="cta-link" href="https://ostrovok.ru?partner=travelpayouts&marker=725703" target="_blank" rel="noopener">
+        Найти отель <span class="arrow">→</span>
+      </a>
+    </div>
+
+    <!-- Шаг 3 -->
+    <div class="step">
+      <div class="step-num">3</div>
+      <h2>🏠 Апартаменты — Суточно</h2>
+      <p>Альтернатива отелю: своя кухня, больше пространства, часто дешевле при проживании от 3 ночей.</p>
+      <ul class="tips">
+        <li>Выгодно для семей и длительных поездок от 5+ дней</li>
+        <li>Можно готовить — экономия на питании до 30–40% бюджета</li>
+        <li>Читай правила отмены перед бронированием</li>
+      </ul>
+      <a class="cta-link" href="https://sutochno.ru?marker=725703" target="_blank" rel="noopener">
+        Найти апартаменты <span class="arrow">→</span>
+      </a>
+    </div>
+
+    <!-- Шаг 4 -->
+    <div class="step">
+      <div class="step-num">4</div>
+      <h2>🗺 Экскурсии — Tripster</h2>
+      <p>Экскурсии от местных гидов. Без автобусных групп на 50 человек — только небольшие приватные туры.</p>
+      <ul class="tips">
+        <li>Местные гиды дешевле пакетных экскурсий от турагента в 2–3 раза</li>
+        <li>Можно выбрать нужный язык и формат: пешком, на машине, на лодке</li>
+        <li>Читай профиль гида — там его история и отзывы туристов</li>
+      </ul>
+      <a class="cta-link" href="https://tripster.ru?partner=725703" target="_blank" rel="noopener">
+        Найти экскурсию <span class="arrow">→</span>
+      </a>
+    </div>
+
+    <!-- Шаг 5 -->
+    <div class="step">
+      <div class="step-num">5</div>
+      <h2>🛡 Страховка — Cherehapa</h2>
+      <p>Агрегатор страховок для путешествий. Сравнивает все страховые компании — выбираешь по цене и покрытию.</p>
+      <ul class="tips">
+        <li>Не бери страховку от турагента — она дороже на 30–50%</li>
+        <li>Проверь покрытие COVID и активного отдыха если нужно</li>
+        <li>Сравни несколько вариантов — разброс цен бывает двукратным</li>
+      </ul>
+      <a class="cta-link" href="https://cherehapa.ru?marker=725703" target="_blank" rel="noopener">
+        Сравнить страховки <span class="arrow">→</span>
+      </a>
+    </div>
+
+    <!-- Шаг 6 -->
+    <div class="step">
+      <div class="step-num">6</div>
+      <h2>📱 eSIM — Airalo</h2>
+      <p>Вместо дорогого роуминга — виртуальная SIM-карта. Активируется до поездки, работает сразу по прилёту.</p>
+      <ul class="tips">
+        <li>Дешевле роуминга оператора в 5–10 раз</li>
+        <li>Не нужно искать местную симку в аэропорту</li>
+        <li>Покрывает 200+ стран, есть региональные пакеты</li>
+      </ul>
+      <a class="cta-link" href="https://www.airalo.com?referralcode=KIRILL" target="_blank" rel="noopener">
+        Купить eSIM <span class="arrow">→</span>
+      </a>
+    </div>
+
+    <!-- Лайфхаки -->
+    <p class="section-label">Лайфхаки</p>
+
+    <div class="lifehacks">
+      <h2>💡 Экономим на очевидном</h2>
+
+      <div class="lh-item">
+        <span class="lh-icon">✈️</span>
+        <div class="lh-text">
+          <strong>Low-cost vs чартер</strong>
+          Лоукостеры (Wizz Air, Flydubai, IndiGo) часто дешевле пакетных чартеров, особенно если лететь налегке. Сравнивай оба варианта перед покупкой.
+        </div>
+      </div>
+
+      <div class="lh-item">
+        <span class="lh-icon">🚫</span>
+        <div class="lh-text">
+          <strong>Не покупай тур у агента в популярных направлениях</strong>
+          Турция, Египет, ОАЭ, Тайланд — в этих странах самостоятельно всегда дешевле. Агент добавляет 20–40% наценки за «удобство».
+        </div>
+      </div>
+
+      <div class="lh-item">
+        <span class="lh-icon">📅</span>
+        <div class="lh-text">
+          <strong>Избегай пиковых дат</strong>
+          Новый год, майские, конец августа — цены на всё х2–х3. Сдвинь поездку на неделю — сэкономишь треть бюджета.
+        </div>
+      </div>
+
+      <div class="lh-item">
+        <span class="lh-icon">🔔</span>
+        <div class="lh-text">
+          <strong>Подпишись на уведомления о снижении цен</strong>
+          Aviasales, Google Flights и Skyscanner умеют уведомлять о падении цен на нужный маршрут. Настрой один раз — и жди момента.
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="bottom-cta">
+    <p>Ещё больше инструментов для путешественника — в боте</p>
+    <a class="bot-btn" href="https://t.me/like_a_local_bot" target="_blank" rel="noopener">
+      Открыть бота 🤖
+    </a>
+  </div>
+
+</body>
+</html>
