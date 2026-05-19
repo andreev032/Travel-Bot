@@ -4974,6 +4974,19 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await premium_buy_callback_reply(update, context)
     elif text == "🗑 Отвязать карту":
         return await detach_card_handler(update, context)
+    elif text == "📲 Поделиться с другом":
+        user_id = update.effective_user.id
+        ref_code = get_or_create_referral_code(user_id)
+        await update.message.reply_text(
+            "Отправь другу — он получит 7 дней бесплатно 🎁",
+            reply_markup=InlineKeyboardMarkup([[
+                InlineKeyboardButton(
+                    "📲 Поделиться с другом",
+                    switch_inline_query=f"Присоединяйся к боту «Как местный» 🌍\nt.me/like_a_local_bot?start={ref_code}"
+                )
+            ]])
+        )
+        return MAIN_MENU
     elif text == "🎁 Как получить бесплатный доступ":
         ref_code = get_or_create_referral_code(update.message.from_user.id)
         await update.message.reply_text(
