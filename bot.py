@@ -4641,7 +4641,6 @@ async def show_premium_screen(update: Update, context: ContextTypes.DEFAULT_TYPE
             "Делись ссылкой — друзья получат 7 дней бесплатно, а ты — возможность пользоваться ботом бесплатно! 🎁"
         )
         rows = [
-            ["📲 Поделиться с другом"],
             ["💳 Продлить подписку"],
             ["🎁 Как получить бесплатный доступ"],
             ["📄 Условия оферты"],
@@ -4682,7 +4681,6 @@ async def show_premium_screen(update: Update, context: ContextTypes.DEFAULT_TYPE
         msg,
         reply_markup=ReplyKeyboardMarkup(
             [
-                ["📲 Поделиться с другом"],
                 ["💳 Подключить Премиум"],
                 ["🎁 Как получить бесплатный доступ"],
                 ["📄 Условия оферты"],
@@ -4976,6 +4974,7 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == "🗑 Отвязать карту":
         return await detach_card_handler(update, context)
     elif text == "🎁 Как получить бесплатный доступ":
+        ref_code = get_or_create_referral_code(update.message.from_user.id)
         await update.message.reply_text(
             "🎁 Бесплатный доступ за друзей\n\n"
             "Приглашай друзей по своей ссылке и получай бесплатные месяцы:\n\n"
@@ -4984,17 +4983,6 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "👥 25 друзей → 6 месяцев бесплатно\n"
             "👥 40 друзей → 1 год бесплатно\n"
             "👥 80 друзей → вечный доступ 🏆",
-            reply_markup=ReplyKeyboardMarkup(
-                [["📲 Поделиться с другом"], ["◀️ Назад", HOME_BTN]],
-                resize_keyboard=True,
-                one_time_keyboard=True,
-            ),
-        )
-        return MAIN_MENU
-    elif text == "📲 Поделиться с другом":
-        ref_code = get_or_create_referral_code(update.message.from_user.id)
-        await update.message.reply_text(
-            "Отправь другу — он получит 7 дней бесплатно 🎁",
             reply_markup=InlineKeyboardMarkup([[
                 InlineKeyboardButton(
                     "📲 Поделиться с другом",
@@ -5005,9 +4993,10 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(
             "👇",
             reply_markup=ReplyKeyboardMarkup(
-                [["◀️ Назад", "🏠 Главное меню"]],
-                resize_keyboard=True
-            )
+                [["◀️ Назад", HOME_BTN]],
+                resize_keyboard=True,
+                one_time_keyboard=True,
+            ),
         )
         return MAIN_MENU
     elif text == "💳 200₽ / месяц":
