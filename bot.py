@@ -19,7 +19,7 @@ import psycopg2
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from flask import Flask, request as flask_request
-from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton, WebAppInfo, InlineKeyboardMarkup, InlineKeyboardButton, BotCommand
+from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton, WebAppInfo, InlineKeyboardMarkup, InlineKeyboardButton, BotCommand, BotCommandScopeChat
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler, CallbackQueryHandler
 from posts import CHANNEL_POSTS
 import yookassa
@@ -10305,6 +10305,30 @@ async def userstats_command(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     await update.message.reply_text(text, parse_mode="Markdown")
 
 
+async def broadcast_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if update.effective_user.id != int(os.environ['ADMIN_ID']):
+        return
+    if not context.args:
+        await update.message.reply_text("Использование: /broadcast текст сообщения")
+        return
+    text = ' '.join(context.args)
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT user_id FROM users")
+    users = cur.fetchall()
+    cur.close()
+    conn.close()
+    sent = 0
+    failed = 0
+    for (user_id,) in users:
+        try:
+            await context.bot.send_message(chat_id=user_id, text=text)
+            sent += 1
+        except Exception:
+            failed += 1
+    await update.message.reply_text(f"✅ Отправлено: {sent}\n❌ Ошибок: {failed}")
+
+
 # ── WATERS: DB helpers ───────────────────────────────────────────────────────
 
 def waters_get_all(water_type: str) -> list[dict]:
@@ -10621,9 +10645,21 @@ async def post_init(app: Application) -> None:
     await app.bot.delete_webhook(drop_pending_updates=True)
 
     # Register menu commands (visible via the '/' button next to the clip icon)
-    await app.bot.set_my_commands([
+    admin_commands = [
         BotCommand("start", "Главное меню"),
-    ])
+        BotCommand("stats", "Статистика бота"),
+        BotCommand("substats", "Статистика подписок"),
+        BotCommand("queue", "Очередь постов"),
+        BotCommand("giveaccess", "Выдать доступ блогеру"),
+        BotCommand("broadcast", "Рассылка всем пользователям"),
+    ]
+    await app.bot.set_my_commands(
+        admin_commands,
+        scope=BotCommandScopeChat(chat_id=int(os.environ['ADMIN_ID']))
+    )
+    await app.bot.set_my_commands(
+        [BotCommand("start", "Главное меню")],
+    )
     logger.info("Команды бота зарегистрированы ✓")
 
     # Init PostgreSQL
@@ -10892,6 +10928,7 @@ def main():
     app.add_handler(CommandHandler("addpromo",   addpromo_command))
     app.add_handler(CommandHandler("promostats", promostats_command))
     app.add_handler(CommandHandler("userstats",  userstats_command))
+    app.add_handler(CommandHandler("broadcast",  broadcast_command))
     app.add_handler(CallbackQueryHandler(premium_buy_callback, pattern=r"^premium_buy$"))
     app.add_handler(CallbackQueryHandler(queue_callback_handler, pattern=r"^pq:"))
     app.add_handler(MessageHandler(
