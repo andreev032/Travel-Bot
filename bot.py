@@ -9566,6 +9566,10 @@ async def _autopost_check_low_queue(bot) -> None:
 
 async def autopost_scheduler(bot) -> None:
     """Infinite loop: publishes one approved post at 09:00 and 19:00 МСК."""
+    from datetime import datetime
+    if datetime.now().day % 2 != 0:
+        return
+
     sent_keys: set[str] = set()
     logger.info(
         f"Автопостинг очереди запущен ({', '.join(QUEUE_POST_TIMES)} МСК) | CHANNEL_ID={CHANNEL_ID}"
