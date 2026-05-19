@@ -4590,7 +4590,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "🧳 *Гайд: как путешествовать без турагента*\n\nНажми кнопку ниже 👇",
                 parse_mode='Markdown',
                 reply_markup=InlineKeyboardMarkup([[
-                    InlineKeyboardButton("Открыть гайд", web_app=WebAppInfo(url="https://andreev032.github.io/Travel-Bot/webapp/guides/how-to-travel-cheap/"))
+                    InlineKeyboardButton("Открыть гайд", web_app=WebAppInfo(url="https://andreev032.github.io/Travel-Bot/guides/how-to-travel-cheap/"))
                 ]])
             )
             return MAIN_MENU
@@ -4904,7 +4904,7 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "🧳 *Гайд: как путешествовать без турагента*\n\nНажми кнопку ниже 👇",
             parse_mode='Markdown',
             reply_markup=InlineKeyboardMarkup([[
-                InlineKeyboardButton("Открыть гайд", web_app=WebAppInfo(url="https://andreev032.github.io/Travel-Bot/webapp/guides/how-to-travel-cheap/"))
+                InlineKeyboardButton("Открыть гайд", web_app=WebAppInfo(url="https://andreev032.github.io/Travel-Bot/guides/how-to-travel-cheap/"))
             ]])
         )
         return MAIN_MENU
