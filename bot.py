@@ -790,7 +790,10 @@ def find_user_by_ref_code(ref_code: str) -> int | None:
         conn = get_db_connection()
         try:
             with conn.cursor() as cur:
-                cur.execute("SELECT user_id FROM users WHERE ref_code = %s", (ref_code,))
+                cur.execute(
+                    "SELECT user_id FROM users WHERE referral_code = %s OR ref_code = %s",
+                    (ref_code, ref_code),
+                )
                 row = cur.fetchone()
         finally:
             conn.close()
@@ -801,6 +804,7 @@ def find_user_by_ref_code(ref_code: str) -> int | None:
 
 
 def increment_ref_count(owner_id: int) -> None:
+    new_count = 0
     try:
         conn = get_db_connection()
         try:
@@ -809,11 +813,66 @@ def increment_ref_count(owner_id: int) -> None:
                     "UPDATE users SET ref_count = COALESCE(ref_count, 0) + 1 WHERE user_id = %s",
                     (owner_id,),
                 )
+                cur.execute("SELECT ref_count FROM users WHERE user_id = %s", (owner_id,))
+                row = cur.fetchone()
+                new_count = row[0] if row else 0
             conn.commit()
         finally:
             conn.close()
     except Exception as e:
         logger.error("increment_ref_count: %s: %s", type(e).__name__, e)
+        return
+
+    THRESHOLDS = {7: 30, 15: 90, 25: 180, 40: 365, 80: 36500}
+    if new_count not in THRESHOLDS:
+        return
+
+    days = THRESHOLDS[new_count]
+    try:
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                if days >= 36500:
+                    cur.execute(
+                        "UPDATE users SET is_premium = TRUE, premium_expires_at = NULL,"
+                        " subscription_type = 'lifetime' WHERE user_id = %s",
+                        (owner_id,),
+                    )
+                else:
+                    cur.execute(
+                        "UPDATE users SET is_premium = TRUE,"
+                        " premium_expires_at = GREATEST(NOW(), COALESCE(premium_expires_at, NOW()))"
+                        " + (INTERVAL '1 day' * %s),"
+                        " subscription_type = 'referral' WHERE user_id = %s",
+                        (days, owner_id),
+                    )
+            conn.commit()
+        finally:
+            conn.close()
+    except Exception as e:
+        logger.error("increment_ref_count bonus: owner_id=%s %s: %s", owner_id, type(e).__name__, e)
+        return
+
+    label = {7: "1 месяц", 15: "3 месяца", 25: "6 месяцев", 40: "1 год", 80: "вечный доступ 🏆"}[new_count]
+    bonus_msg = (
+        f"🎉 Ты пригласил {new_count} друзей!\n\n"
+        f"🎁 Тебе начислено: {label} бесплатно!\n\n"
+        "Спасибо что рекомендуешь «Как местный» 🙌"
+    )
+
+    async def _send_bonus_notification():
+        try:
+            await _telegram_bot_ref.bot.send_message(chat_id=owner_id, text=bonus_msg)
+        except Exception as exc:
+            logger.warning("increment_ref_count notify owner_id=%s: %s", owner_id, exc)
+
+    if _telegram_bot_ref is not None:
+        try:
+            loop = asyncio.get_running_loop()
+            loop.create_task(_send_bonus_notification())
+        except RuntimeError:
+            if _main_event_loop is not None:
+                asyncio.run_coroutine_threadsafe(_send_bonus_notification(), _main_event_loop)
 
 
 def set_referred_by(user_id: int, ref_code: str) -> None:
@@ -834,7 +893,7 @@ def set_referred_by(user_id: int, ref_code: str) -> None:
                     return
                 referrer_id = row[0]
                 cur.execute(
-                    "UPDATE users SET referred_by = %s WHERE user_id = %s",
+                    "UPDATE users SET referred_by = %s WHERE user_id = %s AND referred_by IS NULL",
                     (referrer_id, user_id),
                 )
             conn.commit()
@@ -4558,7 +4617,7 @@ async def show_premium_screen(update: Update, context: ContextTypes.DEFAULT_TYPE
     """Экран ⭐ Премиум: статус, реф.ссылка, оформить."""
     user = update.effective_user
     info = get_premium_info(user.id)
-    ref_code = get_or_create_ref_code(user.id)
+    ref_code = get_or_create_referral_code(user.id)
     ref_link = f"t.me/{BOT_USERNAME}?start={ref_code}"
 
     if is_premium(user.id):
