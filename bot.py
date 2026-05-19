@@ -4996,15 +4996,15 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return MAIN_MENU
     elif text == "🔗 Поделиться ссылкой":
-        _ref = get_or_create_referral_code(update.message.from_user.id)
-        _ref_link = f"t.me/{BOT_USERNAME}?start={_ref}"
+        ref_code = get_or_create_referral_code(update.message.from_user.id)
         await update.message.reply_text(
-            f"{_ref_link}\n\nСкопируй и отправь друзьям 👆",
-            reply_markup=ReplyKeyboardMarkup(
-                [["◀️ Назад", HOME_BTN]],
-                resize_keyboard=True,
-                one_time_keyboard=True,
-            ),
+            "Отправь другу — он получит 7 дней бесплатно 🎁",
+            reply_markup=InlineKeyboardMarkup([[
+                InlineKeyboardButton(
+                    "📲 Поделиться с другом",
+                    switch_inline_query=f"Присоединяйся к боту «Как местный» 🌍\nt.me/like_a_local_bot?start={ref_code}"
+                )
+            ]])
         )
         return MAIN_MENU
     elif text == "💳 200₽ / месяц":
