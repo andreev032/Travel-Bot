@@ -538,7 +538,7 @@ def get_countries_rating(user_id: int) -> tuple[list[dict], int, int]:
 
 
 def _get_stats() -> dict:
-    """Возвращает dict(total, new_7, new_30, active_today, since, sub_*)."""
+    """Возвращает dict(total, new_7, new_30, active_today, since)."""
     conn = get_db_connection()
     try:
         with conn.cursor() as cur:
@@ -553,24 +553,10 @@ def _get_stats() -> dict:
             cur.execute("SELECT MIN(first_seen) FROM users")
             row = cur.fetchone()[0]
             since = row.strftime("%d.%m.%Y") if row else "нет данных"
-            cur.execute("SELECT COUNT(*) FROM users WHERE subscription_type = 'trial' AND premium_expires_at > NOW()")
-            sub_trial = cur.fetchone()[0]
-            cur.execute("SELECT COUNT(*) FROM users WHERE subscription_type = 'month' AND premium_expires_at > NOW()")
-            sub_month = cur.fetchone()[0]
-            cur.execute("SELECT COUNT(*) FROM users WHERE subscription_type = 'year' AND premium_expires_at > NOW()")
-            sub_year = cur.fetchone()[0]
-            cur.execute("SELECT COUNT(*) FROM users WHERE subscription_type = 'lifetime'")
-            sub_lifetime = cur.fetchone()[0]
-            cur.execute("SELECT COUNT(*) FROM users WHERE is_premium = TRUE AND premium_expires_at > NOW()")
-            sub_active = cur.fetchone()[0]
-            cur.execute("SELECT COUNT(*) FROM users WHERE premium_expires_at < NOW() AND premium_expires_at IS NOT NULL")
-            sub_expired = cur.fetchone()[0]
     finally:
         conn.close()
     return {"total": total, "new_7": new_7, "new_30": new_30, "active_today": active_today,
-            "since": since, "sub_trial": sub_trial, "sub_month": sub_month,
-            "sub_year": sub_year, "sub_lifetime": sub_lifetime,
-            "sub_active": sub_active, "sub_expired": sub_expired}
+            "since": since}
 
 
 # ── Premium-доступ ──────────────────────────────────────────────────
@@ -10118,14 +10104,7 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         f"✅ Активных сегодня: *{s['active_today']}*\n"
         f"🆕 За 7 дней: *{s['new_7']}*\n"
         f"📆 За 30 дней: *{s['new_30']}*\n\n"
-        f"📌 Статистика ведётся с {s['since']}\n\n"
-        f"👑 Подписки:\n"
-        f"├ Активных премиум: {s['sub_active']}\n"
-        f"├ Триал: {s['sub_trial']}\n"
-        f"├ Месячных: {s['sub_month']}\n"
-        f"├ Годовых: {s['sub_year']}\n"
-        f"├ Вечных: {s['sub_lifetime']}\n"
-        f"└ Истёкших: {s['sub_expired']}"
+        f"📌 Статистика ведётся с {s['since']}"
     )
     await update.message.reply_text(text, parse_mode="Markdown")
 
