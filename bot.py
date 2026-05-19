@@ -4566,6 +4566,10 @@ async def show_premium_screen(update: Update, context: ContextTypes.DEFAULT_TYPE
             until_str = "вечно"
         else:
             until_str = info["until"].strftime("%d.%m.%Y") if info["until"] else "—"
+        _share_url = (
+            f"https://t.me/share/url?url=t.me/{BOT_USERNAME}%3Fstart%3D{ref_code}"
+            f"&text=Попробуй%20бота%20«Как%20местный»%20—%207%20дней%20бесплатно!"
+        )
         msg = (
             "⭐ *Как местный Премиум*\n\n"
             f"✅ Премиум активен до: *{until_str}*\n\n"
@@ -4587,12 +4591,23 @@ async def show_premium_screen(update: Update, context: ContextTypes.DEFAULT_TYPE
             resize_keyboard=True,
             one_time_keyboard=True,
         )
-        await update.message.reply_text(msg, parse_mode="Markdown", reply_markup=kb)
+        await update.message.reply_text(
+            msg,
+            parse_mode="Markdown",
+            reply_markup=InlineKeyboardMarkup([[
+                InlineKeyboardButton("🔗 Поделиться ссылкой", url=_share_url)
+            ]]),
+        )
+        await update.message.reply_text("👇", reply_markup=kb)
         return MAIN_MENU
 
     referral_code = get_or_create_referral_code(user.id)
     ref_link = f"t.me/{BOT_USERNAME}?start={referral_code}"
     ref_count = info["ref_count"]
+    _share_url = (
+        f"https://t.me/share/url?url=t.me/{BOT_USERNAME}%3Fstart%3D{referral_code}"
+        f"&text=Попробуй%20бота%20«Как%20местный»%20—%207%20дней%20бесплатно!"
+    )
     msg = (
         "⭐ Как местный Премиум\n\n"
         "🔒 Премиум не активен\n\n"
@@ -4616,6 +4631,12 @@ async def show_premium_screen(update: Update, context: ContextTypes.DEFAULT_TYPE
     await update.message.reply_text(
         msg,
         parse_mode="Markdown",
+        reply_markup=InlineKeyboardMarkup([[
+            InlineKeyboardButton("🔗 Поделиться ссылкой", url=_share_url)
+        ]]),
+    )
+    await update.message.reply_text(
+        "👇",
         reply_markup=ReplyKeyboardMarkup(
             [
                 ["💳 Подключить Премиум"],
@@ -4902,14 +4923,25 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == "🗑 Отвязать карту":
         return await detach_card_handler(update, context)
     elif text == "🎁 Как получить бесплатный доступ":
+        _ref = get_or_create_referral_code(update.message.from_user.id)
+        _share_url = (
+            f"https://t.me/share/url?url=t.me/{BOT_USERNAME}%3Fstart%3D{_ref}"
+            f"&text=Попробуй%20бота%20«Как%20местный»%20—%207%20дней%20бесплатно!"
+        )
         await update.message.reply_text(
             "🎁 Бесплатный доступ за друзей\n\n"
             "Приглашай друзей по своей ссылке и получай бесплатные месяцы:\n\n"
             "👥 7 друзей → 1 месяц бесплатно\n"
             "👥 15 друзей → 3 месяца бесплатно\n"
             "👥 25 друзей → 6 месяцев бесплатно\n"
-            "👥 45 друзей → 1 год бесплатно\n"
-            "👥 90 друзей → вечный доступ 🏆",
+            "👥 40 друзей → 1 год бесплатно\n"
+            "👥 80 друзей → вечный доступ 🏆",
+            reply_markup=InlineKeyboardMarkup([[
+                InlineKeyboardButton("🔗 Поделиться ссылкой", url=_share_url)
+            ]]),
+        )
+        await update.message.reply_text(
+            "👇",
             reply_markup=ReplyKeyboardMarkup(
                 [["◀️ Назад", HOME_BTN]],
                 resize_keyboard=True,
