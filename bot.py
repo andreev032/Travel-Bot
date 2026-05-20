@@ -4640,8 +4640,13 @@ async def show_premium_screen(update: Update, context: ContextTypes.DEFAULT_TYPE
             f"👥 Приглашено друзей: *{info['ref_count']}*\n\n"
             "Делись ссылкой — друзья получат 7 дней бесплатно, а ты — возможность пользоваться ботом бесплатно! 🎁"
         )
+        share_kb = InlineKeyboardMarkup([[
+            InlineKeyboardButton(
+                "📲 Поделиться с другом",
+                switch_inline_query=f"Присоединяйся к боту «Как местный» 🌍\nt.me/like_a_local_bot?start={ref_code}"
+            )
+        ]])
         rows = [
-            ["📲 Поделиться с другом"],
             ["💳 Продлить подписку"],
             ["🎁 Как получить бесплатный доступ"],
             ["📄 Условия оферты"],
@@ -4654,7 +4659,8 @@ async def show_premium_screen(update: Update, context: ContextTypes.DEFAULT_TYPE
             resize_keyboard=True,
             one_time_keyboard=True,
         )
-        await update.message.reply_text(msg, parse_mode="Markdown", reply_markup=kb)
+        await update.message.reply_text(msg, parse_mode="Markdown", reply_markup=share_kb)
+        await update.message.reply_text(" ", reply_markup=kb)
         return MAIN_MENU
 
     referral_code = get_or_create_referral_code(user.id)
