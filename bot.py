@@ -4773,10 +4773,12 @@ async def _handle_premium_plan(update: Update, plan: str) -> int:
 async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
 
-    # ◀️ Назад из подменю папок → главное меню (или обратно в папку Знания)
+    # ◀️ Назад из подменю папок → главное меню (или обратно в папку Знания/Премиум)
     if text == "◀️ Назад":
         if context.user_data.pop("back_to_knowledge", False):
             return await show_folder_knowledge(update, context)
+        if context.user_data.pop("back_to_premium", False):
+            return await show_premium_screen(update, context)
         return await go_home(update, context)
 
     # ── Folder buttons ──────────────────────────────────────────────────────
@@ -4986,6 +4988,11 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 )
             ]])
         )
+        context.user_data["back_to_premium"] = True
+        await update.message.reply_text(
+            "​",
+            reply_markup=ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True),
+        )
         return MAIN_MENU
     elif text == "🎁 Как получить бесплатный доступ":
         ref_code = get_or_create_referral_code(update.message.from_user.id)
@@ -5003,6 +5010,11 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     switch_inline_query=f"Присоединяйся к боту «Как местный» 🌍\nt.me/like_a_local_bot?start={ref_code}"
                 )
             ]])
+        )
+        context.user_data["back_to_premium"] = True
+        await update.message.reply_text(
+            "​",
+            reply_markup=ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True),
         )
         return MAIN_MENU
     elif text == "💳 200₽ / месяц":
