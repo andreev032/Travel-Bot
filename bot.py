@@ -4989,7 +4989,13 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ]])
         )
         context.user_data["back_to_premium"] = True
-        await update.message.reply_text(" ", reply_markup=_PARTNERS_NAV_KB)
+        await update.message.reply_text(
+            " ",
+            reply_markup=ReplyKeyboardMarkup(
+                [["◀️ Назад", "🏠 Главное меню"]],
+                resize_keyboard=True,
+            ),
+        )
         return MAIN_MENU
     elif text == "🎁 Как получить бесплатный доступ":
         ref_code = get_or_create_referral_code(update.message.from_user.id)
@@ -5009,7 +5015,13 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ]])
         )
         context.user_data["back_to_premium"] = True
-        await update.message.reply_text(" ", reply_markup=_PARTNERS_NAV_KB)
+        await update.message.reply_text(
+            " ",
+            reply_markup=ReplyKeyboardMarkup(
+                [["◀️ Назад", "🏠 Главное меню"]],
+                resize_keyboard=True,
+            ),
+        )
         return MAIN_MENU
     elif text == "💳 200₽ / месяц":
         return await _handle_premium_plan(update, "month")
