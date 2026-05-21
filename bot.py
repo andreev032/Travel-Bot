@@ -5023,10 +5023,6 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         await update.message.reply_text("Выбери раздел 👇", reply_markup=ReplyKeyboardMarkup([["◀️ Назад", "🏠 Главное меню"]], resize_keyboard=True))
         context.user_data["back_to_premium"] = True
-        await update.message.reply_text(
-            "Выбери раздел 👇",
-            reply_markup=get_main_keyboard(),
-        )
         return MAIN_MENU
     elif text == "💳 200₽ / месяц":
         return await _handle_premium_plan(update, "month")
