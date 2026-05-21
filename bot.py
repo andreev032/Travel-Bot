@@ -5010,6 +5010,7 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         context.user_data["back_to_premium"] = True
         await update.message.reply_text(" ", reply_markup=_PARTNERS_NAV_KB)
+        await update.message.reply_text("Выбери раздел 👇", reply_markup=get_main_keyboard())
         return MAIN_MENU
     elif text == "💳 200₽ / месяц":
         return await _handle_premium_plan(update, "month")
