@@ -4910,6 +4910,7 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 InlineKeyboardButton("Открыть гайд", web_app=WebAppInfo(url="https://andreev032.github.io/Travel-Bot/guides/how-to-travel-cheap/"))
             ]])
         )
+        await update.message.reply_text("Выбери раздел 👇", reply_markup=get_main_keyboard())
         return MAIN_MENU
     elif text == "🏫 Языковые школы":
         context.user_data["back_to_knowledge"] = True
