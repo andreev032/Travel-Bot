@@ -150,6 +150,20 @@ return MAIN_MENU
 ```
 
 * Исключений нет. Любой новый экран = этот шаблон.
+
+## Inline-кнопки + reply keyboard — шаблон
+Когда экран имеет inline-кнопку (ссылка, switch_inline_query) — Telegram не позволяет совместить её с reply keyboard в одном сообщении. Обязательный шаблон:
+
+```python
+# 1. Сообщение с контентом + inline-кнопка
+await update.message.reply_text("текст", reply_markup=InlineKeyboardMarkup([[...]]))
+# 2. Отдельное сообщение с reply keyboard — ОБЯЗАТЕЛЬНО
+await update.message.reply_text("Выбери раздел 👇", reply_markup=ReplyKeyboardMarkup([["◀️ Назад", "🏠 Главное меню"]], resize_keyboard=True))
+return MAIN_MENU
+```
+
+НЕЛЬЗЯ отправлять только inline без reply keyboard после него — меню пропадёт. НЕЛЬЗЯ использовать пустой текст " " — Telegram вернёт 400 Bad Request.
+
 ## WebApp — правила
 - Все WebApp хранят данные ТОЛЬКО в localStorage — никакого fetch/API
 - Новый WebApp = копировать `webapp/countries/index.html` как базу, менять только данные
