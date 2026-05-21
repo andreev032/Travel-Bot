@@ -9383,6 +9383,19 @@ def _queue_mark_published(post_id: int) -> None:
         conn.close()
 
 
+def _queue_mark_pending(post_id: int) -> None:
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE post_queue SET status = 'pending' WHERE id = %s",
+                (post_id,),
+            )
+        conn.commit()
+    finally:
+        conn.close()
+
+
 def _queue_counts() -> tuple[int, int]:
     """Returns (approved_count, pending_count)."""
     conn = get_db_connection()
@@ -9556,6 +9569,10 @@ def clean_post_text(text: str) -> str:
 async def _publish_queue_post(bot, post: dict) -> bool:
     """Publish a queued post to the test channel with QUEUE_SIGNATURE (ВРЕМЕННО: TEST_CHANNEL_ID)."""
     text = clean_post_text((post.get("text") or "").strip())
+    if not text.strip():
+        logger.warning("autopost: пост #%s — текст пустой после очистки, возвращаем в pending", post.get("id"))
+        _queue_mark_pending(post["id"])
+        return False
     caption = (text + QUEUE_SIGNATURE) if text else QUEUE_SIGNATURE.lstrip("\n")
     media_type = post.get("media_type")
     media_id = post.get("media_id")
@@ -9601,10 +9618,6 @@ async def _autopost_check_low_queue(bot) -> None:
 
 async def autopost_scheduler(bot) -> None:
     """Infinite loop: publishes one approved post at 09:00 and 19:00 МСК."""
-    from datetime import datetime
-    if datetime.now().day % 2 != 0:
-        return
-
     sent_keys: set[str] = set()
     logger.info(
         f"Автопостинг очереди запущен ({', '.join(QUEUE_POST_TIMES)} МСК) | CHANNEL_ID={CHANNEL_ID}"
@@ -9616,7 +9629,7 @@ async def autopost_scheduler(bot) -> None:
             day = now.strftime("%Y-%m-%d")
             key = f"{day}-{hhmm}"
 
-            if hhmm in QUEUE_POST_TIMES and key not in sent_keys:
+            if hhmm in QUEUE_POST_TIMES and key not in sent_keys and now.day % 2 == 0:
                 sent_keys.add(key)
                 post = _queue_pop_next_approved()
                 if post is None:
