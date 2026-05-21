@@ -4660,7 +4660,7 @@ async def show_premium_screen(update: Update, context: ContextTypes.DEFAULT_TYPE
             one_time_keyboard=True,
         )
         await update.message.reply_text(msg, parse_mode="Markdown", reply_markup=share_kb)
-        await update.message.reply_text(" ", reply_markup=kb)
+        await update.message.reply_text("Выбери раздел 👇", reply_markup=kb)
         return MAIN_MENU
 
     referral_code = get_or_create_referral_code(user.id)
