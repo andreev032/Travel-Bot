@@ -136,10 +136,20 @@ GAMES_MENU, GUESS_ACTIVE, PAIR_ACTIVE,
 COUNTRY_OF_DAY,
 SHOP_MENU, SHOP_TYPING = range(38)
 ```
-## Навигация — стандарт
-- Каждый раздел заканчивается: `[◀️ Назад]` + `[🏠 Главное меню]`
-- `HOME_BTN` → `go_home()` + сброс `context.user_data`
-- Fallbacks: `/start`, `/menu`, `/cancel`, `HOME_BTN`
+## Навигация — стандарт — ОБЯЗАТЕЛЬНО ДЛЯ КАЖДОГО ЭКРАНА
+- КАЖДЫЙ обработчик который показывает контент (текст + кнопка) ОБЯЗАН заканчиваться reply keyboard
+- НЕЛЬЗЯ отправлять сообщение только с InlineKeyboardMarkup без reply keyboard после него
+- Шаблон обязателен:
+
+```python
+# Сначала сообщение с контентом и inline-кнопкой
+await update.message.reply_text("текст", reply_markup=InlineKeyboardMarkup([...]))
+# Затем ОБЯЗАТЕЛЬНО reply keyboard
+await update.message.reply_text("Выбери раздел 👇", reply_markup=get_main_keyboard())
+return MAIN_MENU
+```
+
+* Исключений нет. Любой новый экран = этот шаблон.
 ## WebApp — правила
 - Все WebApp хранят данные ТОЛЬКО в localStorage — никакого fetch/API
 - Новый WebApp = копировать `webapp/countries/index.html` как базу, менять только данные
