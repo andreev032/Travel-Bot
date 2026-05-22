@@ -1,9 +1,9 @@
 const PHOTO_MAP = {
   // places.html — места
-  'sulak,canyon,dagestan,river,turquoise':     'https://source.unsplash.com/1200x800/?sulak,canyon,dagestan',
+  'sulak,canyon,dagestan,river,turquoise':     'https://blog.ostrovok.ru/wp-content/uploads/2023/11/1%D0%BA%D0%BE%D0%BF%D0%B8%D1%8F-10.jpg',
   'abandoned,village,mountain,caucasus':        'https://source.unsplash.com/1200x800/?abandoned,village,caucasus,mountains',
   'derbent,citadel,ancient,city':              'https://source.unsplash.com/1200x800/?derbent,fortress,ancient',
-  'sand,dune,desert,russia':                   'https://source.unsplash.com/1200x800/?sand,dune,desert,russia',
+  'sand,dune,desert,russia':                   'https://blog.ostrovok.ru/wp-content/uploads/2023/11/11%D0%BA%D0%BE%D0%BF%D0%B8%D1%8F-1-2.jpg',
   'caspian,sea,beach,dagestan':                'https://source.unsplash.com/1200x800/?caspian,sea,beach',
   'mountain,village,artisan,caucasus':         'https://source.unsplash.com/1200x800/?silver,jewelry,handmade',
 
@@ -21,7 +21,7 @@ const PHOTO_MAP = {
   'flatbread,stuffed,caucasus,baked':          'https://source.unsplash.com/1200x800/?flatbread,pan,homemade',
   'nut,butter,paste,healthy':                  'https://source.unsplash.com/1200x800/?nut,butter,paste,healthy',
   'shashlik,lamb,bbq,grill,caucasus':          'https://source.unsplash.com/1200x800/?lamb,shashlik,bbq,grill',
-  'grilled,trout,river,fish':                  'https://source.unsplash.com/1200x800/?trout,grilled,river',
+  'grilled,trout,river,fish':                  'https://blog.ostrovok.ru/wp-content/uploads/2023/11/10%D0%BA%D0%BE%D0%BF%D0%B8%D1%8F-6.jpg',
 
   // food.html — рестораны
   'restaurant,interior,caucasus,cozy':         'https://source.unsplash.com/1200x800/?restaurant,interior,cozy',
@@ -47,7 +47,7 @@ const PHOTO_MAP = {
   'glamping,tent,lake,mountains':              'https://source.unsplash.com/1200x800/?glamping,tent,mountains',
 
   // hero фоны (1600px)
-  'dagestan,sulak,canyon,mountains':           'https://source.unsplash.com/1600x900/?dagestan,canyon,turquoise,river',
+  'dagestan,sulak,canyon,mountains':           'https://blog.ostrovok.ru/wp-content/uploads/2023/11/%D0%9E%D0%B1%D0%BB%D0%BE%D0%B6%D0%BA%D0%B0-4.png',
 };
 
 const PhotoLoader = {
@@ -67,7 +67,11 @@ const PhotoLoader = {
     document.querySelectorAll('[data-photo-bg]').forEach(el => {
       const key = el.dataset.photoBg;
       const url = PHOTO_MAP[key];
-      if (url) el.style.backgroundImage = `url('${url}')`;
+      if (url) {
+        el.style.backgroundImage = `url('${url}')`;
+        el.style.backgroundSize = 'cover';
+        el.style.backgroundPosition = 'center';
+      }
     });
   }
 };
