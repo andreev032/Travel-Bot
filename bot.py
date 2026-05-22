@@ -559,6 +559,33 @@ def _get_stats() -> dict:
             "since": since}
 
 
+def _get_subscription_stats() -> dict:
+    """Статистика по типам подписок из таблицы users."""
+    out = {"trial": 0, "month": 0, "year": 0, "lifetime": 0, "expired_30": 0}
+    try:
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT COUNT(*) FROM users WHERE subscription_type='trial' AND premium_expires_at > NOW()")
+                out["trial"] = cur.fetchone()[0]
+                cur.execute("SELECT COUNT(*) FROM users WHERE subscription_type='month' AND premium_expires_at > NOW()")
+                out["month"] = cur.fetchone()[0]
+                cur.execute("SELECT COUNT(*) FROM users WHERE subscription_type='year' AND premium_expires_at > NOW()")
+                out["year"] = cur.fetchone()[0]
+                cur.execute("SELECT COUNT(*) FROM users WHERE subscription_type='lifetime'")
+                out["lifetime"] = cur.fetchone()[0]
+                cur.execute(
+                    "SELECT COUNT(*) FROM users "
+                    "WHERE is_premium=FALSE AND premium_expires_at > NOW() - INTERVAL '30 days'"
+                )
+                out["expired_30"] = cur.fetchone()[0]
+        finally:
+            conn.close()
+    except Exception as e:
+        logger.error("_get_subscription_stats: %s: %s", type(e).__name__, e)
+    return out
+
+
 # ── Premium-доступ ──────────────────────────────────────────────────
 BOT_USERNAME = os.getenv("BOT_USERNAME", "like_a_local_bot")
 
@@ -10123,6 +10150,7 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
     try:
         s = _get_stats()
+        sub = _get_subscription_stats()
     except Exception as e:
         logger.error("stats_command: %s: %s", type(e).__name__, e)
         await update.message.reply_text("⛔ Ошибка при получении статистики.")
@@ -10134,7 +10162,13 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         f"✅ Активных сегодня: *{s['active_today']}*\n"
         f"🆕 За 7 дней: *{s['new_7']}*\n"
         f"📆 За 30 дней: *{s['new_30']}*\n\n"
-        f"📌 Статистика ведётся с {s['since']}"
+        f"📌 Статистика ведётся с {s['since']}\n\n"
+        "💳 *Подписки*\n"
+        f"Триал активных: *{sub['trial']}*\n"
+        f"Месячных: *{sub['month']}*\n"
+        f"Годовых: *{sub['year']}*\n"
+        f"Вечных: *{sub['lifetime']}*\n"
+        f"Истёкших (за 30 дней): *{sub['expired_30']}*"
     )
     await update.message.reply_text(text, parse_mode="Markdown")
 
@@ -10657,7 +10691,6 @@ async def post_init(app: Application) -> None:
     admin_commands = [
         BotCommand("start", "Главное меню"),
         BotCommand("stats", "Статистика бота"),
-        BotCommand("substats", "Статистика подписок"),
         BotCommand("queue", "Очередь постов"),
         BotCommand("giveaccess", "Выдать доступ блогеру"),
         BotCommand("broadcast", "Рассылка всем пользователям"),
