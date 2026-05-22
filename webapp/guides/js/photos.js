@@ -1,53 +1,53 @@
 const PHOTO_MAP = {
   // places.html — места
-  'sulak,canyon,dagestan,river,turquoise':     'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=800&q=80',
-  'abandoned,village,mountain,caucasus':        'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=800&q=80',
-  'derbent,citadel,ancient,city':              'https://images.unsplash.com/photo-1549989476-b8a6c0a37a34?auto=format&fit=crop&w=800&q=80',
-  'sand,dune,desert,russia':                   'https://images.unsplash.com/photo-1509233725247-4a113e562f68?auto=format&fit=crop&w=800&q=80',
-  'caspian,sea,beach,dagestan':                'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?auto=format&fit=crop&w=800&q=80',
-  'mountain,village,artisan,caucasus':         'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=800&q=80',
+  'sulak,canyon,dagestan,river,turquoise':     'https://source.unsplash.com/1200x800/?sulak,canyon,dagestan',
+  'abandoned,village,mountain,caucasus':        'https://source.unsplash.com/1200x800/?abandoned,village,caucasus,mountains',
+  'derbent,citadel,ancient,city':              'https://source.unsplash.com/1200x800/?derbent,fortress,ancient',
+  'sand,dune,desert,russia':                   'https://source.unsplash.com/1200x800/?sand,dune,desert,russia',
+  'caspian,sea,beach,dagestan':                'https://source.unsplash.com/1200x800/?caspian,sea,beach',
+  'mountain,village,artisan,caucasus':         'https://source.unsplash.com/1200x800/?silver,jewelry,handmade',
 
   // places.html — активности
-  'zipline,canyon,adventure,extreme':          'https://images.unsplash.com/photo-1551698618-1dfc2189e823?auto=format&fit=crop&w=800&q=80',
-  'rafting,river,mountain,whitewater':         'https://images.unsplash.com/photo-1530866495561-507c9faab2ed?auto=format&fit=crop&w=800&q=80',
-  'boat,canyon,river,turquoise':               'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=800&q=80',
-  'jeep,offroad,mountain,trail':               'https://images.unsplash.com/photo-1519583272095-6433daf26b6e?auto=format&fit=crop&w=800&q=80',
-  'horse,mountain,trail,caucasus':             'https://images.unsplash.com/photo-1534567110353-a3b90e16e9e6?auto=format&fit=crop&w=800&q=80',
-  'jump,sea,water,summer':                     'https://images.unsplash.com/photo-1530053969600-caed2596d242?auto=format&fit=crop&w=800&q=80',
-  'sup,paddleboard,lake,mountain':             'https://images.unsplash.com/photo-1526080652727-5b77f74eacd2?auto=format&fit=crop&w=800&q=80',
+  'zipline,canyon,adventure,extreme':          'https://source.unsplash.com/1200x800/?zipline,canyon,adventure',
+  'rafting,river,mountain,whitewater':         'https://source.unsplash.com/1200x800/?rafting,river,mountain',
+  'boat,canyon,river,turquoise':               'https://source.unsplash.com/1200x800/?boat,canyon,river,turquoise',
+  'jeep,offroad,mountain,trail':               'https://source.unsplash.com/1200x800/?jeep,offroad,mountain',
+  'horse,mountain,trail,caucasus':             'https://source.unsplash.com/1200x800/?horse,mountain,trail',
+  'jump,sea,water,summer':                     'https://source.unsplash.com/1200x800/?jump,sea,water,summer',
+  'sup,paddleboard,lake,mountain':             'https://source.unsplash.com/1200x800/?paddleboard,lake,mountain',
 
   // food.html — блюда
-  'dumplings,meat,caucasus,food':              'https://images.unsplash.com/photo-1563245372-f21724e3856d?auto=format&fit=crop&w=800&q=80',
-  'flatbread,stuffed,caucasus,baked':          'https://images.unsplash.com/photo-1574484284002-952d92456975?auto=format&fit=crop&w=800&q=80',
-  'nut,butter,paste,healthy':                  'https://images.unsplash.com/photo-1599599761297-a24579d3e32c?auto=format&fit=crop&w=800&q=80',
-  'shashlik,lamb,bbq,grill,caucasus':          'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80',
-  'grilled,trout,river,fish':                  'https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=800&q=80',
+  'dumplings,meat,caucasus,food':              'https://source.unsplash.com/1200x800/?caucasus,meat,dumplings,soup',
+  'flatbread,stuffed,caucasus,baked':          'https://source.unsplash.com/1200x800/?flatbread,pan,homemade',
+  'nut,butter,paste,healthy':                  'https://source.unsplash.com/1200x800/?nut,butter,paste,healthy',
+  'shashlik,lamb,bbq,grill,caucasus':          'https://source.unsplash.com/1200x800/?lamb,shashlik,bbq,grill',
+  'grilled,trout,river,fish':                  'https://source.unsplash.com/1200x800/?trout,grilled,river',
 
   // food.html — рестораны
-  'restaurant,interior,caucasus,cozy':         'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=800&q=80',
-  'restaurant,loft,bar,modern':               'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80',
-  'restaurant,sea,view,terrace':              'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=800&q=80',
-  'restaurant,local,cozy,traditional':        'https://images.unsplash.com/photo-1537047902294-62a40c20a6ae?auto=format&fit=crop&w=800&q=80',
-  'restaurant,terrace,garden,modern':         'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80',
-  'restaurant,cozy,european,interior':        'https://images.unsplash.com/photo-1559339352-11d035aa65de?auto=format&fit=crop&w=800&q=80',
-  'restaurant,view,terrace,historic':         'https://images.unsplash.com/photo-1424847651672-bf20a4b0982b?auto=format&fit=crop&w=800&q=80',
-  'cafe,narrow,street,historic':              'https://images.unsplash.com/photo-1521017432531-fbd92d768814?auto=format&fit=crop&w=800&q=80',
+  'restaurant,interior,caucasus,cozy':         'https://source.unsplash.com/1200x800/?restaurant,interior,cozy',
+  'restaurant,loft,bar,modern':                'https://source.unsplash.com/1200x800/?restaurant,loft,bar,modern',
+  'restaurant,sea,view,terrace':               'https://source.unsplash.com/1200x800/?restaurant,sea,view,terrace',
+  'restaurant,local,cozy,traditional':         'https://source.unsplash.com/1200x800/?restaurant,local,traditional',
+  'restaurant,terrace,garden,modern':          'https://source.unsplash.com/1200x800/?restaurant,terrace,garden',
+  'restaurant,cozy,european,interior':         'https://source.unsplash.com/1200x800/?restaurant,cozy,european',
+  'restaurant,view,terrace,historic':          'https://source.unsplash.com/1200x800/?restaurant,view,terrace,historic',
+  'cafe,narrow,street,historic':               'https://source.unsplash.com/1200x800/?cafe,narrow,street,historic',
 
   // hotels.html — отели
-  'hotel,lobby,modern,russia':                'https://images.unsplash.com/photo-1564501049412-61c2a3083791?auto=format&fit=crop&w=800&q=80',
-  'hotel,apartments,caspian':                 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80',
-  'hotel,room,modern,russia':                 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=800&q=80',
-  'hotel,luxury,spa,pool':                    'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=800&q=80',
-  'guesthouse,cozy,villa,garden':             'https://images.unsplash.com/photo-1445019980597-93fa8acb246c?auto=format&fit=crop&w=800&q=80',
+  'hotel,lobby,modern,russia':                 'https://source.unsplash.com/1200x800/?hotel,lobby,modern',
+  'hotel,apartments,caspian':                  'https://source.unsplash.com/1200x800/?hotel,apartments',
+  'hotel,room,modern,russia':                  'https://source.unsplash.com/1200x800/?hotel,room,modern',
+  'hotel,luxury,spa,pool':                     'https://source.unsplash.com/1200x800/?hotel,luxury,spa,pool',
+  'guesthouse,cozy,villa,garden':              'https://source.unsplash.com/1200x800/?guesthouse,cozy,villa',
 
   // hotels.html — глэмпинги
-  'canyon,river,turquoise,nature':            'https://images.unsplash.com/photo-1504701621678-9e71e39cdacf?auto=format&fit=crop&w=800&q=80',
-  'mountain,village,caucasus,house':          'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=800&q=80',
-  'resort,beach,caspian,sea':                 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',
-  'glamping,tent,lake,mountains':             'https://images.unsplash.com/photo-1478131143081-80f7f84ca84d?auto=format&fit=crop&w=800&q=80',
+  'canyon,river,turquoise,nature':             'https://source.unsplash.com/1200x800/?glamping,mountains,russia',
+  'mountain,village,caucasus,house':           'https://source.unsplash.com/1200x800/?glamping,mountains,russia',
+  'resort,beach,caspian,sea':                  'https://source.unsplash.com/1200x800/?beach,resort,sea',
+  'glamping,tent,lake,mountains':              'https://source.unsplash.com/1200x800/?glamping,tent,mountains',
 
   // hero фоны (1600px)
-  'dagestan,sulak,canyon,mountains':          'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1600&q=80',
+  'dagestan,sulak,canyon,mountains':           'https://source.unsplash.com/1600x900/?dagestan,canyon,turquoise,river',
 };
 
 const PhotoLoader = {
