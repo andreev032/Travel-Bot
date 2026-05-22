@@ -1,20 +1,20 @@
 const PHOTO_MAP = {
   // places.html — места
   'sulak,canyon,dagestan,river,turquoise':     'https://blog.ostrovok.ru/wp-content/uploads/2023/11/1%D0%BA%D0%BE%D0%BF%D0%B8%D1%8F-10.jpg',
-  'abandoned,village,mountain,caucasus':        'https://source.unsplash.com/1200x800/?abandoned,village,caucasus,mountains',
-  'derbent,citadel,ancient,city':              'https://source.unsplash.com/1200x800/?derbent,fortress,ancient',
+  'abandoned,village,mountain,caucasus':        'https://images.unsplash.com/photo-1673446319197-35ba29be3d22?auto=format&fit=crop&w=1200&q=80',
+  'derbent,citadel,ancient,city':              'https://images.unsplash.com/photo-1667910548146-c1f350f87ed9?auto=format&fit=crop&w=1200&q=80',
   'sand,dune,desert,russia':                   'https://blog.ostrovok.ru/wp-content/uploads/2023/11/11%D0%BA%D0%BE%D0%BF%D0%B8%D1%8F-1-2.jpg',
-  'caspian,sea,beach,dagestan':                'https://source.unsplash.com/1200x800/?caspian,sea,beach',
-  'mountain,village,artisan,caucasus':         'https://source.unsplash.com/1200x800/?silver,jewelry,handmade',
+  'caspian,sea,beach,dagestan':                'https://images.unsplash.com/photo-1665660763290-2e5c5949e06f?auto=format&fit=crop&w=1200&q=80',
+  'mountain,village,artisan,caucasus':         'https://images.unsplash.com/photo-1609619742069-f5e18afeef17?auto=format&fit=crop&w=1200&q=80',
 
   // places.html — активности
-  'zipline,canyon,adventure,extreme':          'https://source.unsplash.com/1200x800/?zipline,canyon,adventure',
-  'rafting,river,mountain,whitewater':         'https://source.unsplash.com/1200x800/?rafting,river,mountain',
-  'boat,canyon,river,turquoise':               'https://source.unsplash.com/1200x800/?boat,canyon,river,turquoise',
-  'jeep,offroad,mountain,trail':               'https://source.unsplash.com/1200x800/?jeep,offroad,mountain',
-  'horse,mountain,trail,caucasus':             'https://source.unsplash.com/1200x800/?horse,mountain,trail',
+  'zipline,canyon,adventure,extreme':          'https://images.unsplash.com/photo-1771583102717-b0bd89c34979?auto=format&fit=crop&w=1200&q=80',
+  'rafting,river,mountain,whitewater':         'https://images.unsplash.com/photo-1732792184423-b33f1e78ff18?auto=format&fit=crop&w=1200&q=80',
+  'boat,canyon,river,turquoise':               'https://images.unsplash.com/photo-1776520037771-54bf7c3b5d16?auto=format&fit=crop&w=1200&q=80',
+  'jeep,offroad,mountain,trail':               'https://images.unsplash.com/photo-1626114918166-cd3ec13bd4f0?auto=format&fit=crop&w=1200&q=80',
+  'horse,mountain,trail,caucasus':             'https://images.unsplash.com/photo-1761760554757-3e9f4f427447?auto=format&fit=crop&w=1200&q=80',
   'jump,sea,water,summer':                     'https://source.unsplash.com/1200x800/?jump,sea,water,summer',
-  'sup,paddleboard,lake,mountain':             'https://source.unsplash.com/1200x800/?paddleboard,lake,mountain',
+  'sup,paddleboard,lake,mountain':             'https://images.unsplash.com/photo-1595207581431-40fbad5ec0d7?auto=format&fit=crop&w=1200&q=80',
 
   // food.html — блюда
   'dumplings,meat,caucasus,food':              'https://source.unsplash.com/1200x800/?caucasus,meat,dumplings,soup',
