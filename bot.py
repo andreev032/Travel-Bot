@@ -5128,9 +5128,9 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Если тебе откликается то, чем я занимаюсь — я буду очень благодарен, если ты подпишешься на бот и расскажешь о нём друзьям. Для меня важна любая обратная связь — она заставляет делать этот продукт лучше. 🙌",
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton("📸 Instagram", url="https://instagram.com/andreev032")],
-                [InlineKeyboardButton("✈️ Наш канал", url="https://t.me/like_a_local")],
-                [InlineKeyboardButton("💬 Личный Telegram", url="https://t.me/andreev032")],
+                [InlineKeyboardButton("💬 Telegram", url="https://t.me/andreev032")],
                 [InlineKeyboardButton("🌐 Наш сайт", url="https://andreev032.github.io/Travel-Bot/landing.html")],
+                [InlineKeyboardButton("📣 Наш канал «Как местный»", url="https://t.me/like_a_local")],
             ]),
         )
         await update.message.reply_text(
