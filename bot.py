@@ -5161,7 +5161,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def help_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
     if text == "◀️ Назад":
-        return await show_folder_knowledge(update, context)
+        return await show_folder_planning(update, context)
     if text in HELP_TOPICS:
         # Baggage topic — show submenu instead of plain text
         if text == "🧳 Багаж и ручная кладь":
