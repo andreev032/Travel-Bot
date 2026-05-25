@@ -10218,6 +10218,8 @@ async def partners_menu_handler(update: Update, context: ContextTypes.DEFAULT_TY
         ]])
         await _send_partner(update, _AIRHELP_TEXT, inline_kb)
         return PARTNERS_MENU
+    if text == SHOP_BTN:
+        return await show_shop_menu(update, context)
     # Неизвестная кнопка — вернуть меню
     return await show_partners_menu(update, context)
 
