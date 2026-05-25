@@ -1811,7 +1811,7 @@ def get_folder_planning_kb():
             [KeyboardButton("🌍 Подобрать страну"),       KeyboardButton("🔮 Страна по судьбе")],
             [KeyboardButton("🌤 Сезоны путешествий"),     KeyboardButton("🌤 Погода")],
             [KeyboardButton("🛂 Визы"),                    KeyboardButton("⛔ Несовместимые страны")],
-            [KeyboardButton("📅 Куда слетать"),            KeyboardButton("✅ Чеклист", web_app=WebAppInfo(url=CHECKLIST_URL))],
+            [KeyboardButton("📅 Куда слетать"),            KeyboardButton("📖 Инструкция для новичка")],
             [KeyboardButton("🌤 Лучший сезон"),               KeyboardButton("📚 Знания")],
             [KeyboardButton("◀️ Назад"),                   KeyboardButton(HOME_BTN)],
         ],
@@ -1827,6 +1827,7 @@ def get_folder_tools_kb():
              KeyboardButton("💱 Конвертер валют", web_app=WebAppInfo(url=CURRENCY_URL))],
             [KeyboardButton("🕐 Разница во времени", web_app=WebAppInfo(url=TIMEZONE_URL)),
              KeyboardButton("🗺 Карта мира",          web_app=WebAppInfo(url=MAP_URL))],
+            [KeyboardButton("✅ Чеклист",             web_app=WebAppInfo(url=CHECKLIST_URL))],
             [KeyboardButton("◀️ Назад"),              KeyboardButton(HOME_BTN)],
         ],
         resize_keyboard=True,
@@ -1895,10 +1896,10 @@ async def _send_premium_lock(update: Update) -> None:
 def get_folder_knowledge_kb():
     return ReplyKeyboardMarkup(
         [
-            [KeyboardButton("📖 Инструкция для новичка"), KeyboardButton("🚁 Дроны")],
-            [KeyboardButton("🛋 Лаунджи аэропортов"),     KeyboardButton("🚢 Круизы")],
-            [KeyboardButton("🎬 Фильмы о путешествиях"),  KeyboardButton("🏛 Чудеса и наследие")],
-            [KeyboardButton("🏫 Языковые школы"),          KeyboardButton("🧳 Без турагента")],
+            [KeyboardButton("🚁 Дроны"),                  KeyboardButton("🛋 Лаунджи аэропортов")],
+            [KeyboardButton("🚢 Круизы"),                 KeyboardButton("🎬 Фильмы о путешествиях")],
+            [KeyboardButton("🏛 Чудеса и наследие"),      KeyboardButton("🏫 Языковые школы")],
+            [KeyboardButton("🧳 Без турагента")],
             [KeyboardButton("◀️ Назад"),                   KeyboardButton(HOME_BTN)],
         ],
         resize_keyboard=True,
@@ -4809,10 +4810,14 @@ async def _handle_premium_plan(update: Update, plan: str) -> int:
 async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
 
-    # ◀️ Назад из подменю папок → главное меню (или обратно в папку Знания/Премиум)
+    # ◀️ Назад из подменю папок → главное меню (или обратно в папку Знания/Планирование/Мои путешествия/Премиум)
     if text == "◀️ Назад":
         if context.user_data.pop("back_to_knowledge", False):
             return await show_folder_knowledge(update, context)
+        if context.user_data.pop("back_to_planning", False):
+            return await show_folder_planning(update, context)
+        if context.user_data.pop("back_to_mytrips", False):
+            return await show_folder_mytrips(update, context)
         if context.user_data.pop("back_to_premium", False):
             return await show_premium_screen(update, context)
         return await go_home(update, context)
@@ -4857,6 +4862,7 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == "🌊 Океаны, моря и реки":
         return await show_waters_menu(update, context)
     elif text == "📚 Знания":
+        context.user_data["back_to_planning"] = True
         await update.message.reply_text(
             "📚 *Знания*\n\nВыбери раздел:",
             parse_mode="Markdown",
@@ -4909,6 +4915,7 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == "🛋 Лаунджи аэропортов":
         return await lounge_menu_handler(update, context)
     elif text == "📚 Путеводители":
+        context.user_data["back_to_mytrips"] = True
         await update.message.reply_text(
             "📚 *Путеводители*\n\n"
             "Авторские путеводители для самостоятельных путешественников — всё что нужно знать до и во время поездки.\n\n"
@@ -6409,7 +6416,7 @@ async def tours_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE)
     if text == HOME_BTN:
         return await go_home(update, context)
     if text == "◀️ Назад":
-        return await go_home(update, context)
+        return await show_folder_mytrips(update, context)
     if text in _TOURS_TYPES:
         context.user_data["tours_type"] = _TOURS_TYPES[text]
         await update.message.reply_text(
