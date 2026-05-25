@@ -1808,11 +1808,9 @@ def get_main_keyboard():
 def get_folder_planning_kb():
     return ReplyKeyboardMarkup(
         [
-            [KeyboardButton("🌍 Подобрать страну"),       KeyboardButton("🔮 Страна по судьбе")],
-            [KeyboardButton("🌤 Сезоны путешествий"),     KeyboardButton("🌤 Погода")],
-            [KeyboardButton("🛂 Визы"),                    KeyboardButton("⛔ Несовместимые страны")],
-            [KeyboardButton("📅 Куда слетать"),            KeyboardButton("📖 Инструкция для новичка")],
-            [KeyboardButton("🌤 Лучший сезон"),               KeyboardButton("📚 Знания")],
+            [KeyboardButton("🌍 Подобрать страну"),        KeyboardButton("🔮 Страна по судьбе")],
+            [KeyboardButton("🌤 Сезоны и погода"),         KeyboardButton("📅 Куда слетать")],
+            [KeyboardButton("📖 Инструкция для новичка"), KeyboardButton("📚 Знания")],
             [KeyboardButton("◀️ Назад"),                   KeyboardButton(HOME_BTN)],
         ],
         resize_keyboard=True,
@@ -1899,6 +1897,7 @@ def get_folder_knowledge_kb():
             [KeyboardButton("🚁 Дроны"),                  KeyboardButton("🛋 Лаунджи аэропортов")],
             [KeyboardButton("🚢 Круизы"),                 KeyboardButton("🎬 Фильмы о путешествиях")],
             [KeyboardButton("🏛 Чудеса и наследие"),      KeyboardButton("🏫 Языковые школы")],
+            [KeyboardButton("🛂 Визы"),                    KeyboardButton("⛔ Несовместимые страны")],
             [KeyboardButton("🧳 Без турагента")],
             [KeyboardButton("◀️ Назад"),                   KeyboardButton(HOME_BTN)],
         ],
@@ -4908,6 +4907,8 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await where_to_fly_menu(update, context)
     elif text == "🚁 Дроны":
         return await drone_menu_handler(update, context)
+    elif text == "🌤 Сезоны и погода":
+        return await show_seasons_weather_menu(update, context)
     elif text == "🌤 Сезоны путешествий":
         return await season_menu_handler(update, context)
     elif text == "🌤 Погода":
@@ -5473,7 +5474,7 @@ async def show_visa_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def visa_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
     if text == "◀️ Назад":
-        return await show_folder_planning(update, context)
+        return await show_folder_knowledge(update, context)
     if text == "🚧 Оформить визу":
         await update.message.reply_text(
             "🛃 *Оформить визу*\n\n"
@@ -7285,7 +7286,7 @@ async def incompatible_menu_handler(update: Update, context: ContextTypes.DEFAUL
     if text == HOME_BTN:
         return await go_home(update, context)
     if text == "◀️ Назад":
-        return await show_folder_planning(update, context)
+        return await show_folder_knowledge(update, context)
     if text in INCOMPATIBLE_CATEGORIES:
         content = INCOMPATIBLE_CATEGORIES[text]
         keyboard = [["◀️ Назад к категориям"], [HOME_BTN]]
@@ -8461,6 +8462,25 @@ SEASON_DATA: dict[str, str] = {
 }
 
 
+async def show_seasons_weather_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Подменю 🌤 Сезоны и погода."""
+    context.user_data["back_to_planning"] = True
+    await update.message.reply_text(
+        "🌤 *Сезоны и погода*\n\nВыбери раздел:",
+        parse_mode="Markdown",
+        reply_markup=ReplyKeyboardMarkup(
+            [
+                [KeyboardButton("🌤 Сезоны путешествий"), KeyboardButton("🌤 Погода")],
+                [KeyboardButton("🌤 Лучший сезон")],
+                [KeyboardButton("◀️ Назад"),              KeyboardButton(HOME_BTN)],
+            ],
+            resize_keyboard=True,
+            one_time_keyboard=True,
+        ),
+    )
+    return MAIN_MENU
+
+
 async def season_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Главное меню раздела сезонов — выбор региона."""
     context.user_data["season_depth"] = "menu"
@@ -8483,7 +8503,7 @@ async def season_region_handler(update: Update, context: ContextTypes.DEFAULT_TY
         return await go_home(update, context)
     if text == "◀️ Назад":
         if context.user_data.get("season_depth") == "menu":
-            return await show_folder_planning(update, context)
+            return await show_seasons_weather_menu(update, context)
         return await season_menu_handler(update, context)
     content = SEASON_DATA.get(text)
     if not content:
@@ -8731,7 +8751,7 @@ async def where_to_fly_handler(update: Update, context: ContextTypes.DEFAULT_TYP
     if text == HOME_BTN:
         return await go_home(update, context)
     if text == "◀️ Назад":
-        return await show_folder_planning(update, context)
+        return await show_seasons_weather_menu(update, context)
     countries = WHERE_TO_FLY_DATA.get(text)
     if not countries:
         return await where_to_fly_menu(update, context)
@@ -8911,7 +8931,7 @@ async def weather_show(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if text_in == HOME_BTN:
         return await go_home(update, context)
     if text_in == "◀️ Назад":
-        return await show_folder_planning(update, context)
+        return await show_seasons_weather_menu(update, context)
 
     query = text_in.lower()
     reply_markup = ReplyKeyboardMarkup(
