@@ -6506,7 +6506,7 @@ async def shop_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if text == HOME_BTN:
         return await go_home(update, context)
     if text == "◀️ Назад":
-        return await go_home(update, context)
+        return await show_partners_menu(update, context)
     if text == "🤝 Сотрудничество":
         context.user_data["shop_type"] = "Сотрудничество: Магазин"
         await update.message.reply_text(
