@@ -17,8 +17,8 @@ const PHOTO_MAP = {
   'sup,paddleboard,lake,mountain':             'https://images.unsplash.com/photo-1595207581431-40fbad5ec0d7?auto=format&fit=crop&w=1200&q=80',
 
   // food.html — блюда
-  'dumplings,meat,caucasus,food':              'https://images.unsplash.com/photo-1653045582850-c5b74d34c395?auto=format&fit=crop&w=1200&q=80',
-  'flatbread,stuffed,caucasus,baked':          'https://images.unsplash.com/photo-1593143305438-6177cb9155f2?auto=format&fit=crop&w=1200&q=80',
+  'dumplings,meat,caucasus,food':              'https://images.unsplash.com/photo-1708782340699-599c20fa5eec?auto=format&fit=crop&w=1200&q=80',
+  'flatbread,stuffed,caucasus,baked':          'https://images.unsplash.com/photo-1568509651840-e2c75ad69097?auto=format&fit=crop&w=1200&q=80',
   'nut,butter,paste,healthy':                  'https://images.unsplash.com/photo-1647482770231-0efa17132429?auto=format&fit=crop&w=1200&q=80',
   'shashlik,lamb,bbq,grill,caucasus':          'https://images.unsplash.com/photo-1597354060917-2c56d7467f73?auto=format&fit=crop&w=1200&q=80',
   'grilled,trout,river,fish':                  'https://blog.ostrovok.ru/wp-content/uploads/2023/11/10%D0%BA%D0%BE%D0%BF%D0%B8%D1%8F-6.jpg',
