@@ -13,14 +13,14 @@ const PHOTO_MAP = {
   'boat,canyon,river,turquoise':               'https://images.unsplash.com/photo-1776520037771-54bf7c3b5d16?auto=format&fit=crop&w=1200&q=80',
   'jeep,offroad,mountain,trail':               'https://images.unsplash.com/photo-1626114918166-cd3ec13bd4f0?auto=format&fit=crop&w=1200&q=80',
   'horse,mountain,trail,caucasus':             'https://images.unsplash.com/photo-1761760554757-3e9f4f427447?auto=format&fit=crop&w=1200&q=80',
-  'jump,sea,water,summer':                     'https://source.unsplash.com/1200x800/?jump,sea,water,summer',
+  'jump,sea,water,summer':                     'https://images.unsplash.com/photo-1765746290370-d89b1317ec75?auto=format&fit=crop&w=1200&q=80',
   'sup,paddleboard,lake,mountain':             'https://images.unsplash.com/photo-1595207581431-40fbad5ec0d7?auto=format&fit=crop&w=1200&q=80',
 
   // food.html — блюда
-  'dumplings,meat,caucasus,food':              'https://source.unsplash.com/1200x800/?caucasus,meat,dumplings,soup',
-  'flatbread,stuffed,caucasus,baked':          'https://source.unsplash.com/1200x800/?flatbread,pan,homemade',
-  'nut,butter,paste,healthy':                  'https://source.unsplash.com/1200x800/?nut,butter,paste,healthy',
-  'shashlik,lamb,bbq,grill,caucasus':          'https://source.unsplash.com/1200x800/?lamb,shashlik,bbq,grill',
+  'dumplings,meat,caucasus,food':              'https://images.unsplash.com/photo-1541696432-82c6da8ce7bf?auto=format&fit=crop&w=1200&q=80',
+  'flatbread,stuffed,caucasus,baked':          'https://images.unsplash.com/photo-1760259860895-c7dde9aac828?auto=format&fit=crop&w=1200&q=80',
+  'nut,butter,paste,healthy':                  'https://images.unsplash.com/photo-1654515722385-c684c5331c04?auto=format&fit=crop&w=1200&q=80',
+  'shashlik,lamb,bbq,grill,caucasus':          'https://images.unsplash.com/photo-1632158929962-a929c9e87570?auto=format&fit=crop&w=1200&q=80',
   'grilled,trout,river,fish':                  'https://blog.ostrovok.ru/wp-content/uploads/2023/11/10%D0%BA%D0%BE%D0%BF%D0%B8%D1%8F-6.jpg',
 
   // food.html — рестораны
