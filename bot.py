@@ -5116,6 +5116,20 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "«Как местный» — это экосистема для путешественников. Бот, путеводители, авторские туры, и в будущем — социальная сеть где путешественники находят друг друга по всему миру.\n\n"
             "Если откликается — подпишись и расскажи другу. Каждый новый человек делает сервис лучше. 🙌",
             parse_mode="Markdown",
+            reply_markup=ReplyKeyboardMarkup([["📲 Связь и соцсети"], ["◀️ Назад", HOME_BTN]], resize_keyboard=True),
+        )
+        return MAIN_MENU
+    elif text == "📲 Связь и соцсети":
+        await update.message.reply_text(
+            "📲 Связь и соцсети",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("📸 Instagram", url="https://instagram.com/andreev032")],
+                [InlineKeyboardButton("✈️ Наш канал", url="https://t.me/like_a_local")],
+                [InlineKeyboardButton("💬 Личный Telegram", url="https://t.me/andreev032")],
+            ]),
+        )
+        await update.message.reply_text(
+            "Выбери раздел 👇",
             reply_markup=ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True),
         )
         return MAIN_MENU
