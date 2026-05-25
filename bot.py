@@ -10817,6 +10817,12 @@ async def post_init(app: Application) -> None:
     logger.info("Задача онбординг-рассылки создана и запущена")
 
 
+async def admin_photo_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Временный хендлер: ADMIN_ID отправляет фото → бот возвращает file_id."""
+    file_id = update.message.photo[-1].file_id
+    await update.message.reply_text(f"file_id: `{file_id}`", parse_mode="Markdown")
+
+
 def main():
     global _telegram_bot_ref
     app = Application.builder().token(TOKEN).post_init(post_init).build()
@@ -11058,6 +11064,7 @@ def main():
         filters.UpdateType.CHANNEL_POST & filters.Chat(TEST_CHANNEL_ID),
         queue_channel_post_handler,
     ))
+    app.add_handler(MessageHandler(filters.PHOTO & filters.User(ADMIN_ID), admin_photo_handler))
 
     logger.info("Бот запущен!")
     app.run_polling(allowed_updates=Update.ALL_TYPES, drop_pending_updates=True)
