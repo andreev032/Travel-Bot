@@ -5106,7 +5106,7 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == SHOP_BTN:
         return await show_shop_menu(update, context)
     elif text == "👤 О проекте":
-        with open('webapp/kirill.jpg', 'rb') as photo:
+        with open('webapp/photo_2026-05-25_18-47-23.jpg', 'rb') as photo:
             await update.message.reply_photo(
                 photo=photo,
                 caption=(
