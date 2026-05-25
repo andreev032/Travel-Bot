@@ -4621,6 +4621,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 ]])
             )
             return MAIN_MENU
+        elif arg == 'tour':
+            return await show_tours_menu(update, context)
         else:
             promo = get_promo_code(arg)
             if promo and promo["type"] == "trial":
@@ -6344,8 +6346,10 @@ _TOURS_KB = ReplyKeyboardMarkup(
 async def show_tours_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "✈️ *Авторские туры*\n\n"
-        "🚧 В разработке — скоро появится!\n"
-        "Пока готовы к сотрудничеству и рады ответить на вопросы 👇",
+        "Я собираю небольшие группы для путешествий по самым интересным местам России и мира — без туристических толп, только настоящие впечатления.\n\n"
+        "🗓 *Ближайший тур: Дагестан*\n"
+        "Лето / осень 2026 · 5 дней · ~70 000 ₽ · всё включено\n\n"
+        "Напиши мне — расскажу подробнее о программе и датах.",
         parse_mode="Markdown",
         reply_markup=_TOURS_KB,
     )
