@@ -4909,8 +4909,19 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await lounge_menu_handler(update, context)
     elif text == "📚 Путеводители":
         await update.message.reply_text(
-            "🚧 В разработке — скоро появится!",
-            reply_markup=get_folder_services_kb(),
+            "📚 *Путеводители*\n\n"
+            "Авторские путеводители для самостоятельных путешественников — всё что нужно знать до и во время поездки.\n\n"
+            "🏔 *Дагестан — уже готов*\n"
+            "Места, кухня, отели, советы и авторский тур.\n\n"
+            "🌍 Скоро появятся путеводители по другим городам России и странам мира — следи за обновлениями!",
+            parse_mode="Markdown",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("🏔 Путеводитель по Дагестану", url="https://andreev032.github.io/Travel-Bot/guides/dagestan/index.html")],
+            ]),
+        )
+        await update.message.reply_text(
+            "Выбери раздел 👇",
+            reply_markup=ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True),
         )
         return MAIN_MENU
     elif text == "🛃 Оформить визу":
