@@ -4709,7 +4709,7 @@ async def show_premium_screen(update: Update, context: ContextTypes.DEFAULT_TYPE
         share_kb = InlineKeyboardMarkup([[
             InlineKeyboardButton(
                 "📲 Поделиться с другом",
-                switch_inline_query=f"Присоединяйся к боту «Как местный» 🌍\nt.me/like_a_local_bot?start={ref_code}"
+                switch_inline_query=f"🎒 {user.first_name} делится с тобой тревел-ботом «Как местный»\n\nТвой карманный помощник в путешествиях — визы, погода, билеты, страховки, путеводители, игры, рейтинг путешественников и многое другое. Всё в одном месте 🌍\nt.me/like_a_local_bot?start={ref_code}"
             )
         ]])
         rows = [
@@ -5076,7 +5076,7 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=InlineKeyboardMarkup([[
                 InlineKeyboardButton(
                     "📲 Поделиться с другом",
-                    switch_inline_query=f"Присоединяйся к боту «Как местный» 🌍\nt.me/like_a_local_bot?start={ref_code}"
+                    switch_inline_query=f"🎒 {update.effective_user.first_name} делится с тобой тревел-ботом «Как местный»\n\nТвой карманный помощник в путешествиях — визы, погода, билеты, страховки, путеводители, игры, рейтинг путешественников и многое другое. Всё в одном месте 🌍\nt.me/like_a_local_bot?start={ref_code}"
                 )
             ]])
         )
@@ -5102,7 +5102,7 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=InlineKeyboardMarkup([[
                 InlineKeyboardButton(
                     "📲 Поделиться с другом",
-                    switch_inline_query=f"Присоединяйся к боту «Как местный» 🌍\nt.me/like_a_local_bot?start={ref_code}"
+                    switch_inline_query=f"🎒 {update.effective_user.first_name} делится с тобой тревел-ботом «Как местный»\n\nТвой карманный помощник в путешествиях — визы, погода, билеты, страховки, путеводители, игры, рейтинг путешественников и многое другое. Всё в одном месте 🌍\nt.me/like_a_local_bot?start={ref_code}"
                 )
             ]])
         )
