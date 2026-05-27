@@ -908,8 +908,8 @@ def set_referred_by(user_id: int, ref_code: str) -> None:
         try:
             with conn.cursor() as cur:
                 cur.execute(
-                    "SELECT user_id FROM users WHERE ref_code = %s",
-                    (ref_code,),
+                    "SELECT user_id FROM users WHERE ref_code = %s OR referral_code = %s",
+                    (ref_code, ref_code),
                 )
                 row = cur.fetchone()
                 if not row:
@@ -1294,6 +1294,42 @@ def yookassa_webhook():
 
     new_expires_at = yookassa_activate_premium(user_id, plan, pm_id)
     logger.info("YooKassa: премиум активирован user_id=%s plan=%s pm_id=%s", user_id, plan, pm_id)
+
+    # ── Начисление токенов рефереру ──────────────────────────────────────
+    try:
+        conn_ref = get_db_connection()
+        try:
+            with conn_ref.cursor() as cur:
+                cur.execute("SELECT referred_by FROM users WHERE user_id = %s", (user_id,))
+                ref_row = cur.fetchone()
+            if ref_row and ref_row[0]:
+                referrer_id = ref_row[0]
+                n_tokens = 3 if plan == "year" else 1
+                with conn_ref.cursor() as cur:
+                    cur.execute(
+                        "UPDATE users SET tokens = tokens + %s WHERE user_id = %s",
+                        (n_tokens, referrer_id),
+                    )
+                conn_ref.commit()
+                logger.info(
+                    "YooKassa: начислено %s токен(ов) рефереру user_id=%s за оплату user_id=%s plan=%s",
+                    n_tokens, referrer_id, user_id, plan,
+                )
+                if _telegram_bot_ref is not None and _main_event_loop is not None:
+                    asyncio.run_coroutine_threadsafe(
+                        _telegram_bot_ref.bot.send_message(
+                            chat_id=referrer_id,
+                            text=f"💎 Ваш друг оплатил подписку! +{n_tokens} токен(ов) на вашем счету",
+                        ),
+                        _main_event_loop,
+                    )
+        finally:
+            conn_ref.close()
+    except Exception as e:
+        logger.error(
+            "YooKassa webhook: referrer token accrual user_id=%s: %s: %s",
+            user_id, type(e).__name__, e,
+        )
 
     if _telegram_bot_ref is not None and _main_event_loop is not None:
         plan_label = "Год" if plan == "year" else "Месяц"
