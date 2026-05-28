@@ -109,6 +109,7 @@ async def init_db(app) -> None:
                     published_at      TIMESTAMP
                 )
             """)
+            cur.execute("ALTER TABLE post_queue ADD COLUMN IF NOT EXISTS last_published_at TIMESTAMP")
             # ── Premium-доступ ──────────────────────────────────────────────
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS promo_source TEXT")
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS ref_code TEXT UNIQUE")
@@ -9553,7 +9554,7 @@ def _queue_mark_published(post_id: int) -> None:
     try:
         with conn.cursor() as cur:
             cur.execute(
-                "UPDATE post_queue SET status = 'published', published_at = NOW() WHERE id = %s",
+                "UPDATE post_queue SET status = 'published', published_at = NOW(), last_published_at = NOW() WHERE id = %s",
                 (post_id,),
             )
         conn.commit()
@@ -9794,6 +9795,25 @@ async def _autopost_check_low_queue(bot) -> None:
             logger.error("autopost: low-queue notify failed: %s: %s", type(e).__name__, e)
 
 
+def _get_last_published_at() -> datetime | None:
+    """Returns datetime of the last published post, or None if none."""
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT last_published_at FROM post_queue WHERE status = 'published' AND last_published_at IS NOT NULL ORDER BY last_published_at DESC LIMIT 1"
+            )
+            row = cur.fetchone()
+            if row and row[0]:
+                ts = row[0]
+                if ts.tzinfo is None:
+                    return ts.replace(tzinfo=MOSCOW_TZ)
+                return ts.astimezone(MOSCOW_TZ)
+            return None
+    finally:
+        conn.close()
+
+
 async def autopost_scheduler(bot) -> None:
     """Infinite loop: publishes one approved post at 09:00 and 19:00 МСК."""
     sent_keys: set[str] = set()
@@ -9807,7 +9827,8 @@ async def autopost_scheduler(bot) -> None:
             day = now.strftime("%Y-%m-%d")
             key = f"{day}-{hhmm}"
 
-            if hhmm in QUEUE_POST_TIMES and key not in sent_keys and now.day % 2 == 0:
+            last = _get_last_published_at()
+            if hhmm in QUEUE_POST_TIMES and key not in sent_keys and (last is None or (now - last).days >= 3):
                 sent_keys.add(key)
                 post = _queue_pop_next_approved()
                 if post is None:
