@@ -27,6 +27,7 @@ cat .claude/INSTRUCTIONS.md
 5. Не трогать логику и тексты если задача только про UI/навигацию
 6. Плейсхолдер PostgreSQL — `%s`, не `?`
 7. Название PR — на английском
+8. gh CLI авторизован (andreev032) — PR создаются автоматически
 ## Стек и хостинг
 - Python 3.13, python-telegram-bot 20.3, Flask (webhook)
 - PostgreSQL на Railway — `DATABASE_URL` через `${{Postgres.DATABASE_URL}}`
@@ -44,7 +45,6 @@ cat .claude/INSTRUCTIONS.md
 | DATABASE_URL | `${{Postgres.DATABASE_URL}}` |
 | YOOKASSA_SHOP_ID | 1350203 |
 | YOOKASSA_SECRET_KEY | в Railway |
-| YOOKASSA_WEBHOOK_SECRET | не выставлен — выставить после получения от ЮKassa |
 ## База данных (PostgreSQL)
 Одна основная таблица `users`:
 ```sql
@@ -68,7 +68,8 @@ last_active_at TIMESTAMP
 language_code TEXT
 promo_source TEXT
 ```
-Остальные таблицы: `user_countries`, `user_flags`, `post_queue`, `promo_codes`
+Остальные таблицы: `user_countries`, `user_flags`, `post_queue`, `promo_codes`, `onboarding_messages`, `feedback`, `user_attraction_marks`, `user_water_marks`, `waters`
+`post_queue` содержит колонку `last_published_at TIMESTAMP` (обновляется при публикации)
 ## Премиум логика
 - 7 дней триал при первом `/start` (в `record_user()`, только если `premium_trial_used=FALSE`)
 - `is_premium()` — читает БД, сбрасывает флаг если дата истекла
@@ -85,8 +86,7 @@ promo_source TEXT
 - Flask на PORT=8080 в daemon thread
 - Подпись webhook через `YOOKASSA_WEBHOOK_SECRET` (hmac.compare_digest)
 - IP-фильтр отключён (Railway proxy)
-- Рекуррент на одобрении — карты пока не сохраняются
-- СБП не подключён — ждём ЮKassa
+- Рекуррент работает — карты и СБП сохраняются (pm_id)
 - Цены: 200₽/мес, 1490₽/год
 ## Реферальная система
 - `REF_` префикс — обычные рефералы
@@ -95,28 +95,26 @@ promo_source TEXT
 - Токены: +1 за месяц друга, +3 за год друга
 - Пороги: 7→1мес, 15→3мес, 25→6мес, 45→1год, 90→вечный
 ## Структура меню
-| Папка | Разделы |
-|---|---|
-| 🧭 Планирование | Подобрать страну, Страна по судьбе, Сезоны, Погода, Визы, Несовместимые страны, Чеклист, Куда слетать |
-| 🛠 Инструменты | Переводчик, Конвертер валют, Разница во времени, Общий счёт, Карта мира |
-| 🗺 Мои путешествия | Мои страны, Рейтинг, Путешествия по России, Достопримечательности, Статистика, Дневник, Калькулятор расстояний |
-| 📚 Знания | Инструкция, Дроны, Лаунджи, Круизы, Фильмы, Чудеса и наследие |
-| 🎮 Игры | Викторина, Угадай где я, Найди пару, Страна дня |
-| ✈️ Услуги | Путеводители, Авторские туры, Оформить визу |
-| 🤝 Партнёры | Aviasales, Отели, Страховка, eSIM, Tripster, Круизы, Kiwitaxi, AirHelp |
-| ⭐ Премиум | Реальная оплата ЮKassa |
-| 🛒 Магазин | Заглушка |
-| 🆘 Поддержка | Написать нам, Ошибка, Идея |
-| 📢 Наш канал | @like_a_local |
+Планирование / Инструменты / Мои путешествия / Премиум / Игры / Партнёры / О проекте / Поддержка / Наш канал
 ## Страны
 - В боте: **201** (195 ООН + HK, Macau, Taiwan, Kosovo, Приднестровье, Зап.Сахара)
 - Викторина/ответы: **195** (стандарт ООН)
 ## Автопостинг
-- @likealocaltest → одобрение ADMIN_ID → @like_a_local в 9:00 и 19:00 МСК
+- @likealocaltest → одобрение ADMIN_ID → @like_a_local в 9:00 МСК
+- Публикация каждые 3 дня (через `last_published_at`)
 - Таблица `post_queue`, команда `/queue`
 - `clean_post_text` убирает рекламу и хештеги
 - Подпись: `🎒 Как местный | Подписаться`
-## ConversationHandler — 38 состояний
+## Онбординг
+- `hour1_scheduler` — ОДИН РАЗ через 1 час после регистрации (сообщение про /start)
+- `onboarding_scheduler` — каждый день 12:00 МСК
+- День 1 — Мои страны — всем
+- День 3 — Оставить отзыв — всем
+- День 5 — Подписка — не купившим
+- День 7 — Триал завершён — не купившим
+- День 14 — Давно не виделись — не купившим
+- Таблица `onboarding_messages` — защита от дублей (ON CONFLICT DO NOTHING)
+## ConversationHandler — 39 состояний
 ```python
 MAIN_MENU, ANSWERING, HELP_MENU, HELP_TOPIC, TRANSLATING,
 VISA_MENU, VISA_CATEGORY,
@@ -134,7 +132,8 @@ DESTINY_TYPING,
 QUIZ_ACTIVE,
 GAMES_MENU, GUESS_ACTIVE, PAIR_ACTIVE,
 COUNTRY_OF_DAY,
-SHOP_MENU, SHOP_TYPING = range(38)
+SHOP_MENU, SHOP_TYPING,
+FEEDBACK_TYPING = range(39)
 ```
 ## Навигация — стандарт — ОБЯЗАТЕЛЬНО ДЛЯ КАЖДОГО ЭКРАНА
 - КАЖДЫЙ обработчик который показывает контент (текст + кнопка) ОБЯЗАН заканчиваться reply keyboard
