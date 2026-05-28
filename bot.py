@@ -1622,37 +1622,48 @@ def _save_feedback(user_id: int, username: str | None, first_name: str | None, t
         logger.error("_save_feedback user=%s: %s", user_id, e)
 
 
-def _get_onboarding_users(day: int, buyers_only: bool = False) -> list[tuple]:
+def _get_onboarding_users(day: int, buyers_only: bool = False, interval: str | None = None, upper_interval: str | None = None) -> list[tuple]:
     """Возвращает список (user_id, username, first_name) для дня онбординга."""
-    interval = f"{day} days"
+    interval_str = interval if interval is not None else f"{day} days"
+    upper_clause = "AND first_seen >= NOW() - INTERVAL %s" if upper_interval else ""
     try:
         conn = get_db_connection()
         try:
             with conn.cursor() as cur:
                 if buyers_only:
+                    params = [interval_str]
+                    if upper_interval:
+                        params.append(upper_interval)
+                    params += [ADMIN_ID, day]
                     cur.execute(
-                        """
+                        f"""
                         SELECT user_id, username, first_name FROM users
                         WHERE first_seen <= NOW() - INTERVAL %s
+                          {upper_clause}
                           AND user_id != %s
                           AND (subscription_type IS NULL OR subscription_type = 'trial')
                           AND user_id NOT IN (
                               SELECT user_id FROM onboarding_messages WHERE day = %s
                           )
                         """,
-                        (interval, ADMIN_ID, day),
+                        params,
                     )
                 else:
+                    params = [interval_str]
+                    if upper_interval:
+                        params.append(upper_interval)
+                    params += [ADMIN_ID, day]
                     cur.execute(
-                        """
+                        f"""
                         SELECT user_id, username, first_name FROM users
                         WHERE first_seen <= NOW() - INTERVAL %s
+                          {upper_clause}
                           AND user_id != %s
                           AND user_id NOT IN (
                               SELECT user_id FROM onboarding_messages WHERE day = %s
                           )
                         """,
-                        (interval, ADMIN_ID, day),
+                        params,
                     )
                 return cur.fetchall()
         finally:
@@ -1709,14 +1720,15 @@ _ONB_PREMIUM_KB = InlineKeyboardMarkup([[
 async def send_onboarding_messages(bot) -> None:
     """Рассылает онбординг-сообщения всем подходящим пользователям."""
     _days_cfg = [
-        (1,  _ONB_DAY1_TEXT,  InlineKeyboardMarkup([[InlineKeyboardButton("🌍 Мои страны", callback_data="onb_mytrips")]]), False),
-        (3,  _ONB_DAY3_TEXT,  InlineKeyboardMarkup([[InlineKeyboardButton("📝 Оставить отзыв", callback_data="onb_feedback")]]), False),
-        (5,  _ONB_DAY5_TEXT,  _ONB_PREMIUM_KB, True),
-        (7,  _ONB_DAY7_TEXT,  _ONB_PREMIUM_KB, True),
-        (14, _ONB_DAY14_TEXT, _ONB_PREMIUM_KB, True),
+        (0,  "🔄 Если бот не реагирует — нажми /start для перезагрузки (Меню → /start)\n\nБот в активной разработке — постоянно добавляем новые функции 🎒 Спасибо что ты с нами 🙏", None, False, '1 hour', '2 hours'),
+        (1,  _ONB_DAY1_TEXT,  InlineKeyboardMarkup([[InlineKeyboardButton("🌍 Мои страны", callback_data="onb_mytrips")]]), False, None, None),
+        (3,  _ONB_DAY3_TEXT,  InlineKeyboardMarkup([[InlineKeyboardButton("📝 Оставить отзыв", callback_data="onb_feedback")]]), False, None, None),
+        (5,  _ONB_DAY5_TEXT,  _ONB_PREMIUM_KB, True, None, None),
+        (7,  _ONB_DAY7_TEXT,  _ONB_PREMIUM_KB, True, None, None),
+        (14, _ONB_DAY14_TEXT, _ONB_PREMIUM_KB, True, None, None),
     ]
-    for day, text, kb, non_buyers_only in _days_cfg:
-        users = _get_onboarding_users(day, buyers_only=non_buyers_only)
+    for day, text, kb, non_buyers_only, interval, upper_interval in _days_cfg:
+        users = _get_onboarding_users(day, buyers_only=non_buyers_only, interval=interval, upper_interval=upper_interval)
         for user_id, username, first_name in users:
             try:
                 await bot.send_message(chat_id=user_id, text=text, reply_markup=kb)
@@ -1724,6 +1736,26 @@ async def send_onboarding_messages(bot) -> None:
                 logger.info("onboarding day%s sent → user_id=%s", day, user_id)
             except Exception as e:
                 logger.warning("onboarding day%s user=%s: %s", day, user_id, e)
+
+
+async def hour1_scheduler(bot) -> None:
+    """Каждый час отправляет приветственное сообщение пользователям, зарегистрировавшимся 1–2 часа назад."""
+    while True:
+        await asyncio.sleep(3600)
+        try:
+            users = _get_onboarding_users(0, buyers_only=False, interval='1 hour', upper_interval='2 hours')
+            for user_id, username, first_name in users:
+                try:
+                    await bot.send_message(
+                        chat_id=user_id,
+                        text="🔄 Если бот не реагирует — нажми /start для перезагрузки (Меню → /start)\n\nБот в активной разработке — постоянно добавляем новые функции 🎒 Спасибо что ты с нами 🙏",
+                    )
+                    _mark_onboarding_sent(user_id, 0)
+                    logger.info("onboarding hour1 sent → user_id=%s", user_id)
+                except Exception as e:
+                    logger.warning("onboarding hour1 user=%s: %s", user_id, e)
+        except Exception as e:
+            logger.error("hour1_scheduler: %s: %s", type(e).__name__, e)
 
 
 async def onboarding_scheduler(bot) -> None:
@@ -10856,6 +10888,11 @@ async def post_init(app: Application) -> None:
     onboarding_task = asyncio.create_task(onboarding_scheduler(app.bot))
     onboarding_task.add_done_callback(_scheduler_done_cb)
     logger.info("Задача онбординг-рассылки создана и запущена")
+
+    # Онбординг час 1 — каждый час для новых пользователей
+    hour1_task = asyncio.create_task(hour1_scheduler(app.bot))
+    hour1_task.add_done_callback(_scheduler_done_cb)
+    logger.info("Задача онбординг hour1 создана и запущена")
 
 
 async def admin_photo_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
