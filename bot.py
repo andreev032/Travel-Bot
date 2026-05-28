@@ -10469,7 +10469,7 @@ async def userstats_command(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
 
 async def broadcast_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if update.effective_user.id != int(os.environ['ADMIN_ID']):
+    if update.effective_user.id != int(os.getenv('ADMIN_ID', '462171750')):
         return
     if not context.args:
         await update.message.reply_text("Использование: /broadcast текст сообщения")
