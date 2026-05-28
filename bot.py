@@ -53,6 +53,8 @@ class TokenFilter(logging.Filter):
 token_filter = TokenFilter(os.environ['BOT_TOKEN'])
 logging.getLogger('httpx').addFilter(token_filter)
 logging.getLogger('telegram').addFilter(token_filter)
+logging.root.addFilter(token_filter)
+logging.getLogger('werkzeug').addFilter(token_filter)
 
 # CHANNEL_ID     = -1002079377291   # основной канал — вернуть после проверки
 CHANNEL_ID       = int(os.getenv("CHANNEL_ID", "-1002079377291"))   # ВРЕМЕННО: тестовый канал для проверки расписания
