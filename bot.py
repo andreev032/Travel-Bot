@@ -11080,6 +11080,7 @@ def main():
             CommandHandler("start", start),
             CommandHandler("menu", menu_command),
             CommandHandler("cancel", cancel),
+            CommandHandler("broadcast", broadcast_command),
             CallbackQueryHandler(onb_mytrips_cb,  pattern=r"^onb_mytrips$"),
             CallbackQueryHandler(onb_feedback_cb, pattern=r"^onb_feedback$"),
             CallbackQueryHandler(onb_premium_cb,  pattern=r"^onb_premium$"),
