@@ -233,7 +233,6 @@ function updateCounter() {
 function toggle(name) {
   visited.has(name) ? visited.delete(name) : visited.add(name);
   save(); render(); updateCounter();
-  scheduleSync();   // синхронизация в базу через debounce ~1.5 сек
 }
 
 function filter(v) { query = v; render(); }
