@@ -166,6 +166,43 @@ let query = '';
 
 function save() { localStorage.setItem(KEY, JSON.stringify([...visited])); }
 
+/* ── Гидратация из базы ────────────────────────────────────────────────
+   Если локально пусто, а в URL есть ?d=<base64> — восстанавливаем список
+   стран, переданный ботом (заход с нового устройства / после очистки
+   браузера). Свежее локальное состояние приоритетнее: если localStorage
+   уже не пуст, параметр d игнорируется. */
+(function hydrateFromDB() {
+  try {
+    if (visited.size > 0) return;                 // локальное состояние приоритетнее
+    const d = new URLSearchParams(location.search).get('d');
+    if (!d) return;
+    const b64 = d.replace(/-/g, '+').replace(/_/g, '/');
+    const list = JSON.parse(decodeURIComponent(escape(atob(b64))));
+    if (Array.isArray(list) && list.length) {
+      visited = new Set(list);
+      save();
+    }
+  } catch (e) { /* повреждённый параметр — просто игнорируем */ }
+})();
+
+/* Синхронизация с базой с debounce ~1.5 сек: собираем изменения и шлём
+   один раз после последнего клика. tg.sendData в некоторых версиях
+   Telegram закрывает Mini App, поэтому не вызываем его на каждый тап. */
+let syncTimer = null;
+function sendVisited() {
+  try {
+    tg.sendData(JSON.stringify({
+      source: "countries",
+      count: visited.size,
+      visited: [...visited].sort()
+    }));
+  } catch (e) { /* нет tg — игнорируем */ }
+}
+function scheduleSync() {
+  if (syncTimer) clearTimeout(syncTimer);
+  syncTimer = setTimeout(sendVisited, 1500);
+}
+
 function render() {
   const q = query.toLowerCase();
   const items = q ? ALL.filter(([n]) => n.toLowerCase().includes(q)) : ALL;
@@ -196,6 +233,7 @@ function updateCounter() {
 function toggle(name) {
   visited.has(name) ? visited.delete(name) : visited.add(name);
   save(); render(); updateCounter();
+  scheduleSync();   // синхронизация в базу через debounce ~1.5 сек
 }
 
 function filter(v) { query = v; render(); }
