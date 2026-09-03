@@ -1,6 +1,7 @@
 import os
 import re
 import json
+import base64
 import random as _random
 import logging
 import asyncio
@@ -190,6 +191,14 @@ async def init_db(app) -> None:
                     code      TEXT   NOT NULL,
                     marked_at TIMESTAMP DEFAULT NOW(),
                     PRIMARY KEY (user_id, code)
+                )
+            """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS user_country_marks (
+                    user_id      BIGINT NOT NULL,
+                    country_name TEXT   NOT NULL,
+                    marked_at    TIMESTAMP DEFAULT NOW(),
+                    PRIMARY KEY (user_id, country_name)
                 )
             """)
             cur.execute("""
@@ -538,6 +547,25 @@ def get_countries_rating(user_id: int) -> tuple[list[dict], int, int]:
     except Exception as e:
         logger.error("get_countries_rating: %s: %s", type(e).__name__, e)
     return [], 0, 0
+
+
+def get_user_countries(user_id: int) -> list[str]:
+    """Возвращает список названий отмеченных стран пользователя из user_country_marks."""
+    try:
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT country_name FROM user_country_marks WHERE user_id=%s",
+                    (user_id,),
+                )
+                rows = cur.fetchall()
+        finally:
+            conn.close()
+        return [r[0] for r in rows]
+    except Exception as e:
+        logger.error("get_user_countries: user_id=%s: %s: %s", user_id, type(e).__name__, e)
+        return []
 
 
 def _get_stats() -> dict:
@@ -1908,6 +1936,22 @@ def get_folder_mytrips_kb(user_id: int | None = None):
     # Платные пункты этой папки (открываются по premium)
     premium = is_premium(user_id) if user_id is not None else True
 
+    # URL для «🗺 Мои страны»: подставляем сохранённый в базе список стран,
+    # чтобы WebApp восстановил отметки при заходе с нового устройства / после
+    # очистки браузера. Затрагивает только эту кнопку.
+    countries_url = WEBAPP_URL
+    if user_id is not None:
+        try:
+            saved = get_user_countries(user_id)
+            if saved:
+                payload = base64.urlsafe_b64encode(
+                    json.dumps(sorted(saved), ensure_ascii=False).encode("utf-8")
+                ).decode("ascii")
+                countries_url = f"{WEBAPP_URL}?d={payload}"
+        except Exception as e:
+            logger.error("get_folder_mytrips_kb countries url user_id=%s: %s: %s",
+                         user_id, type(e).__name__, e)
+
     def gated(label: str, url: str) -> KeyboardButton:
         if premium:
             return KeyboardButton(label, web_app=WebAppInfo(url=url))
@@ -1915,7 +1959,7 @@ def get_folder_mytrips_kb(user_id: int | None = None):
 
     return ReplyKeyboardMarkup(
         [
-            [KeyboardButton("🗺 Мои страны",                  web_app=WebAppInfo(url=WEBAPP_URL)),
+            [KeyboardButton("🗺 Мои страны",                  web_app=WebAppInfo(url=countries_url)),
              KeyboardButton("🏆 Рейтинг путешественников")],
             [KeyboardButton("🇷🇺 Путешествия по России",      web_app=WebAppInfo(url=RUSSIA_URL)),
              gated("🏛 Мои достопримечательности",            ATTRACTIONS_URL)],
@@ -5381,10 +5425,43 @@ async def handle_webapp_data(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
     # ── 🗺 Мои страны (index.html) ──────────────────────────────────────────
     if source == "countries":
-        count = data.get("count", len(data.get("visited", [])))
-        total = data.get("total", 201)
         user = update.effective_user
+        visited = data.get("visited")
+        total = data.get("total", 201)
+
+        # count: длина списка, если visited передан; иначе как раньше
+        if isinstance(visited, list):
+            count = len(visited)
+        else:
+            count = data.get("count", 0)
+
+        # Рейтинг (не трогаем существующую логику)
         upsert_countries_count(user.id, user.username, user.first_name, count)
+
+        # ── Надёжное хранение полного списка стран в user_country_marks ──
+        if not visited:
+            # ЗАЩИТА ОТ ЗАТИРАНИЯ: пустой или отсутствующий список
+            # не должен стирать уже сохранённые страны.
+            logger.warning("skipped empty countries sync user_id=%s", user.id)
+        else:
+            try:
+                conn = get_db_connection()
+                try:
+                    with conn.cursor() as cur:
+                        cur.execute("DELETE FROM user_country_marks WHERE user_id=%s", (user.id,))
+                        for name in visited:
+                            if isinstance(name, str) and name.strip():
+                                cur.execute(
+                                    "INSERT INTO user_country_marks (user_id, country_name) "
+                                    "VALUES (%s, %s) ON CONFLICT DO NOTHING",
+                                    (user.id, name),
+                                )
+                    conn.commit()
+                finally:
+                    conn.close()
+            except Exception as e:
+                logger.error("handle_webapp_data countries user_id=%s: %s: %s", user.id, type(e).__name__, e)
+
         await update.message.reply_text(
             f"✅ Список стран сохранён! Посещено: *{count}* стран из {total}",
             parse_mode="Markdown",
