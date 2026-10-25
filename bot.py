@@ -8515,29 +8515,77 @@ def find_vaccine_country(text):
     return None, names[:3]
 
 
+def _vaccine_verdict(c):
+    """Главная строка: нужен сертификат или нет и есть ли малярия."""
+    level = c.get("yf", {}).get("req", {}).get("level")
+    if level == "all":
+        entry = "❗️ Нужен сертификат жёлтой лихорадки — без него не впустят"
+    elif level in ("from_risk", "from_some"):
+        entry = "✅ Из России ничего не требуют"
+    elif level == "unknown":
+        entry = "❓ Страна не объявила требований на въезде"
+    else:
+        entry = "✅ На въезде ничего не требуют"
+
+    mal = c.get("malaria", {})
+    if not mal.get("has"):
+        return entry + "\n✅ Малярии нет"
+    where = {
+        "all": "🦟 Малярия по всей стране — нужны таблетки",
+        "part": "🦟 Малярия есть, но не везде — смотри районы ниже",
+        "rare": "🦟 Малярия — единичные случаи, таблетки обычно не нужны",
+    }
+    return entry + "\n" + where.get(mal.get("level"), "🦟 Малярия есть")
+
+
 def vaccine_card(c):
     """Карточка страны на один экран: обязательное, рекомендованное, малярия."""
     out = ["💉 *{}* — прививки и малярия".format(c.get("name", "").upper()), ""]
+    out.append(_vaccine_verdict(c))
+    out.append("")
 
     yf = c.get("yf", {})
     req = yf.get("req", {})
     level = req.get("level")
-    out.append("🟥 *ТРЕБУЮТ НА ВЪЕЗДЕ*")
-    if level == "no":
-        out.append("Ничего. Прививочный сертификат на границе не спросят.")
+    # Где на границе ничего не спрашивают, вердикт выше уже всё сказал —
+    # второй раз то же самое не пишем
+    detail = ""
+    if level == "all":
+        age = (req.get("age") or "").strip()
+        age = "без исключений" if age in ("", "всем возрастам") else age.replace("от ", "с ")
+        detail = (
+            "Сертификат о прививке от жёлтой лихорадки — всем {}. Спрашивают, "
+            "откуда бы ты ни летел — прямой рейс из России не исключение. "
+            "Прививку делают минимум за 10 дней до въезда: раньше сертификат "
+            "ещё не действует.".format(age)
+        )
+    elif level == "from_some":
+        detail = (
+            "Смотрят, откуда именно ты летишь. Прямым рейсом из России сертификат "
+            "жёлтой лихорадки не нужен. Кого именно проверяют:"
+        )
+    elif level == "from_risk":
+        detail = (
+            "Сертификат жёлтой лихорадки спросят только у тех, кто летит из страны "
+            "зоны риска — это Африка и Амазония. Стыковка там дольше 12 часов тоже "
+            "считается. Прямым рейсом из России сертификат не нужен."
+        )
     elif level == "unknown":
-        out.append("Страна не объявила своих требований — уточнять в консульстве.")
-    else:
-        out.append("Жёлтая лихорадка. {}".format(req.get("text", "")))
-    if req.get("note"):
-        out.append(req["note"])
-    out.append("")
+        detail = "Страна не объявила своих требований — уточнять в консульстве."
+
+    if detail:
+        out.append("*ЧТО ТРЕБУЮТ НА ГРАНИЦЕ*")
+        out.append(detail)
+        if req.get("note"):
+            out.append(req["note"])
+        out.append("")
 
     out.append("🩺 *СОВЕТУЕТ ВРАЧ*")
     rec = yf.get("rec", {})
     if rec.get("level") in ("yes", "part", "low"):
         out.append("• *Жёлтая лихорадка* — {}".format(rec.get("text", "")))
-    vaccines = c.get("vaccines", [])
+    order = {"rec": 0, "maybe": 1, "low": 2}
+    vaccines = sorted(c.get("vaccines", []), key=lambda v: order.get(v.get("level"), 3))
     if not vaccines and rec.get("level") not in ("yes", "part", "low"):
         out.append("• Хватает плановых прививок")
     for v in vaccines:
@@ -8547,11 +8595,10 @@ def vaccine_card(c):
             out.append("• *{}* — {}".format(v.get("name", ""), v.get("text", "")))
     out.append("")
 
+    # Про «малярии нет» тоже уже сказано в вердикте
     mal = c.get("malaria", {})
-    out.append("🦟 *МАЛЯРИЯ*")
-    if not mal.get("has"):
-        out.append("Малярии нет.")
-    else:
+    if mal.get("has"):
+        out.append("🦟 *МАЛЯРИЯ*")
         head = {"all": "Вся страна", "part": "Часть страны", "rare": "Единичные случаи"}
         title = head.get(mal.get("level"), "Есть")
         area = (mal.get("area") or "").strip()
@@ -8564,7 +8611,7 @@ def vaccine_card(c):
         if mal.get("pills_text"):
             out.append(mal["pills_text"])
         out.append("Прививки от малярии нет — только таблетки по рецепту и защита от комаров.")
-    out.append("")
+        out.append("")
 
     out.append(VACCINE_DISCLAIMER)
     if c.get("cdc"):
