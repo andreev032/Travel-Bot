@@ -1120,7 +1120,8 @@ MAIN_MENU, ANSWERING, HELP_MENU, HELP_TOPIC, TRANSLATING, VISA_MENU, VISA_CATEGO
     WEATHER_INPUT, \
     WATERS_MENU, WATERS_REF_TYPE, WATERS_REF_LIST, \
     FEEDBACK_TYPING, \
-    WHERE_TO_FLY, WHERE_TO_FLY_MONTH = range(47)
+    WHERE_TO_FLY, WHERE_TO_FLY_MONTH, \
+    VACCINE_MENU, VACCINE_LIST = range(49)
 
 # Замени на реальный HTTPS-URL после деплоя webapp/index.html
 WEBAPP_URL      = "https://andreev032.github.io/Travel-Bot/"
@@ -2009,6 +2010,7 @@ async def _send_premium_lock(update: Update) -> None:
 def get_folder_knowledge_kb():
     return ReplyKeyboardMarkup(
         [
+            [KeyboardButton("💉 Прививки и малярия")],
             [KeyboardButton("🚁 Дроны"),                  KeyboardButton("🛋 Лаунджи аэропортов")],
             [KeyboardButton("🚢 Круизы"),                 KeyboardButton("🎬 Фильмы о путешествиях")],
             [KeyboardButton("🏛 Чудеса и наследие"),      KeyboardButton("🏫 Языковые школы")],
@@ -5023,6 +5025,8 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await where_to_fly_menu(update, context)
     elif text == "🚁 Дроны":
         return await drone_menu_handler(update, context)
+    elif text == "💉 Прививки и малярия":
+        return await vaccine_menu(update, context)
     elif text == "🌤 Сезоны и погода":
         return await show_seasons_weather_menu(update, context)
     elif text == "🌤 Сезоны путешествий":
@@ -8366,6 +8370,417 @@ async def drone_region_handler(update: Update, context: ContextTypes.DEFAULT_TYP
     return DRONE_SECTION
 
 
+## ── 💉 ПРИВИВКИ И МАЛЯРИЯ ────────────────────────────────────────────────────
+# Данные: выгрузка CDC (жёлтая лихорадка и малярия) + требования ВОЗ по ММСП,
+# 244 страны и территории. Обновлять раз в год — инструкция в репозитории
+# travel-assistant, data/vaccines/README.md
+
+VACCINES_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "vaccines_world.json")
+
+
+def _load_vaccines():
+    try:
+        with open(VACCINES_FILE, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as e:
+        logger.warning("Не удалось загрузить vaccines_world.json: %s", e)
+        return {"countries": [], "global": [], "special": [], "updated": ""}
+
+
+VACCINES = _load_vaccines()
+VACCINE_COUNTRIES = VACCINES.get("countries", [])
+
+VACCINE_YF_BTN = "🟥 Жёлтая лихорадка"
+VACCINE_MALARIA_BTN = "🦟 Малярия"
+VACCINE_CONTINENTS_BTN = "🌍 По континентам"
+VACCINE_GLOBAL_BTN = "⚠️ Важно всем"
+
+VACCINE_CONTINENT_BTNS = [
+    "🌍 Африка",
+    "🌏 Азия",
+    "🌎 Южная Америка",
+    "🌎 Северная Америка",
+    "🌍 Европа",
+    "🌊 Океания",
+]
+
+VACCINE_DISCLAIMER = (
+    "ℹ️ Это справка, а не назначение врача. Прививки делают в центре вакцинации "
+    "за 4–6 недель до поездки: часть вакцин вводится в несколько доз.\n"
+    "Сертификат жёлтой лихорадки действует пожизненно, но вступает в силу "
+    "через 10 дней после прививки."
+)
+
+
+def _vac_key(s):
+    """Нормализует название страны для поиска: регистр, ё/е, й/и, только буквы."""
+    s = (s or "").lower().replace("ё", "е").replace("й", "и")
+    return re.sub(r"[^a-zа-я]", "", s)
+
+
+# Страна в скобках — это владелец территории, а не второе название
+_VACCINE_OWNERS = {
+    _vac_key(x) for x in (
+        "Великобритания", "США", "Франция", "Нидерланды", "Дания", "Норвегия",
+        "Новая Зеландия", "Австралия", "Китай", "Испания", "Португалия", "Чили",
+    )
+}
+
+VACCINE_ALIASES = {
+    "эмираты": "ОАЭ",
+    "объединённые арабские эмираты": "ОАЭ",
+    "киргизия": "Кыргызстан",
+    "белоруссия": "Беларусь",
+    "молдавия": "Молдова",
+    "америка": "США",
+    "соединённые штаты": "США",
+    "корея": "Южная Корея",
+    "свазиленд": "Эсватини (Свазиленд)",
+    "голландия": "Нидерланды",
+    "тимор": "Восточный Тимор",
+    "острова зелёного мыса": "Кабо-Верде",
+    "македония": "Северная Македония",
+    "конго": "Республика Конго",
+    "бурма": "Мьянма (Бирма)",
+    # Люди пишут не страну, а курорт
+    "бали": "Индонезия",
+    "пхукет": "Таиланд",
+    "самуи": "Таиланд",
+    "бангкок": "Таиланд",
+    "паттайя": "Таиланд",
+    "нячанг": "Вьетнам",
+    "фукуок": "Вьетнам",
+    "дананг": "Вьетнам",
+    "гоа": "Индия",
+    "занзибар": "Танзания",
+    "хургада": "Египет",
+    "шарм-эль-шейх": "Египет",
+    "дубай": "ОАЭ",
+    "стамбул": "Турция",
+    "анталия": "Турция",
+    "мачу-пикчу": "Перу",
+    "килиманджаро": "Танзания",
+}
+
+
+def _build_vaccine_index():
+    idx = {}
+    for c in VACCINE_COUNTRIES:
+        name = c.get("name", "")
+        keys = [name, c.get("name_en", ""), c.get("slug", "")]
+        m = re.match(r"^(.*?)\s*\((.*?)\)\s*$", name)
+        if m:
+            keys.append(m.group(1))
+            if _vac_key(m.group(2)) not in _VACCINE_OWNERS:
+                keys.append(m.group(2))
+        for k in keys:
+            k = _vac_key(k)
+            if k and k not in idx:
+                idx[k] = c
+    by_name = {c.get("name"): c for c in VACCINE_COUNTRIES}
+    for alias, target in VACCINE_ALIASES.items():
+        c = by_name.get(target)
+        if c:
+            idx[_vac_key(alias)] = c
+    return idx
+
+
+VACCINE_INDEX = _build_vaccine_index()
+
+
+def find_vaccine_country(text):
+    """Ищет страну по названию. Возвращает (страна, список подсказок)."""
+    key = _vac_key(text)
+    if not key:
+        return None, []
+    if key in VACCINE_INDEX:
+        return VACCINE_INDEX[key], []
+    # частичное совпадение: «виргинские», «южная корея»
+    hits = []
+    if len(key) >= 4:
+        for k, c in VACCINE_INDEX.items():
+            if key in k and c not in hits:
+                hits.append(c)
+    if len(hits) == 1:
+        return hits[0], []
+    import difflib
+    close = difflib.get_close_matches(key, list(VACCINE_INDEX.keys()), n=3, cutoff=0.7)
+    names = []
+    for k in close:
+        n = VACCINE_INDEX[k].get("name")
+        if n and n not in names:
+            names.append(n)
+    for c in hits[:3]:
+        if c.get("name") not in names:
+            names.append(c.get("name"))
+    return None, names[:3]
+
+
+def vaccine_card(c):
+    """Карточка страны на один экран: обязательное, рекомендованное, малярия."""
+    out = ["💉 *{}* — прививки и малярия".format(c.get("name", "").upper()), ""]
+
+    yf = c.get("yf", {})
+    req = yf.get("req", {})
+    level = req.get("level")
+    out.append("🟥 *ТРЕБУЮТ НА ВЪЕЗДЕ*")
+    if level == "no":
+        out.append("Ничего. Прививочный сертификат на границе не спросят.")
+    elif level == "unknown":
+        out.append("Страна не объявила своих требований — уточнять в консульстве.")
+    else:
+        out.append("Жёлтая лихорадка. {}".format(req.get("text", "")))
+    if req.get("note"):
+        out.append(req["note"])
+    out.append("")
+
+    out.append("🩺 *СОВЕТУЕТ ВРАЧ*")
+    rec = yf.get("rec", {})
+    if rec.get("level") in ("yes", "part", "low"):
+        out.append("• *Жёлтая лихорадка* — {}".format(rec.get("text", "")))
+    vaccines = c.get("vaccines", [])
+    if not vaccines and rec.get("level") not in ("yes", "part", "low"):
+        out.append("• Хватает плановых прививок")
+    for v in vaccines:
+        if v.get("code") == "none":
+            out.append("• {}".format(v.get("text", "")))
+        else:
+            out.append("• *{}* — {}".format(v.get("name", ""), v.get("text", "")))
+    out.append("")
+
+    mal = c.get("malaria", {})
+    out.append("🦟 *МАЛЯРИЯ*")
+    if not mal.get("has"):
+        out.append("Малярии нет.")
+    else:
+        head = {"all": "Вся страна", "part": "Часть страны", "rare": "Единичные случаи"}
+        title = head.get(mal.get("level"), "Есть")
+        area = (mal.get("area") or "").strip()
+        if not area:
+            out.append(title)
+        elif area.lower().startswith(title.lower()):
+            out.append(area)
+        else:
+            out.append("{}. {}".format(title, area))
+        if mal.get("pills_text"):
+            out.append(mal["pills_text"])
+        out.append("Прививки от малярии нет — только таблетки по рецепту и защита от комаров.")
+    out.append("")
+
+    out.append(VACCINE_DISCLAIMER)
+    if c.get("cdc"):
+        out.append("Источник: [CDC]({})".format(c["cdc"]))
+    return "\n".join(out)
+
+
+def _vaccine_names(predicate, continent=None):
+    names = [
+        c.get("name", "") for c in VACCINE_COUNTRIES
+        if predicate(c) and (continent is None or c.get("continent") == continent)
+    ]
+    return ", ".join(sorted(names))
+
+
+def _vaccine_count(predicate):
+    return sum(1 for c in VACCINE_COUNTRIES if predicate(c))
+
+
+def _plural_countries(n):
+    """22 страны, 97 стран, 1 страна."""
+    if n % 100 in (11, 12, 13, 14):
+        return f"{n} стран"
+    last = n % 10
+    if last == 1:
+        return f"{n} страна"
+    if last in (2, 3, 4):
+        return f"{n} страны"
+    return f"{n} стран"
+
+
+def _vaccine_menu_kb():
+    return ReplyKeyboardMarkup([
+        [VACCINE_YF_BTN, VACCINE_MALARIA_BTN],
+        [VACCINE_CONTINENTS_BTN, VACCINE_GLOBAL_BTN],
+        ["◀️ Назад", HOME_BTN],
+    ], resize_keyboard=True)
+
+
+def _vaccine_continents_kb():
+    return ReplyKeyboardMarkup(
+        [VACCINE_CONTINENT_BTNS[i:i + 2] for i in range(0, len(VACCINE_CONTINENT_BTNS), 2)]
+        + [["◀️ Назад", HOME_BTN]],
+        resize_keyboard=True,
+    )
+
+
+async def vaccine_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Вход в раздел прививок."""
+    await update.message.reply_text(
+        "💉 *Прививки и малярия*\n\n"
+        "Единственная прививка, из-за которой реально не впустят в страну — "
+        "жёлтая лихорадка. Всё остальное советует врач, а не требует граница.\n\n"
+        "*Напиши название страны* — пришлю карточку: что требуют на въезде, "
+        "что советует врач, есть ли малярия.\n\n"
+        "Или выбери раздел ниже.",
+        parse_mode="Markdown",
+        reply_markup=_vaccine_menu_kb(),
+    )
+    return VACCINE_MENU
+
+
+def _vaccine_yf_text():
+    must = _vaccine_names(lambda c: c.get("yf", {}).get("req", {}).get("level") == "all")
+    some = _vaccine_names(lambda c: c.get("yf", {}).get("req", {}).get("level") == "from_some")
+    n_must = _vaccine_count(lambda c: c.get("yf", {}).get("req", {}).get("level") == "all")
+    n_risk = _vaccine_count(lambda c: c.get("yf", {}).get("req", {}).get("level") == "from_risk")
+    return (
+        "🟥 *ЖЁЛТАЯ ЛИХОРАДКА*\n\n"
+        "Это не совет врача, а условие въезда: без сертификата не пустят в страну.\n\n"
+        "*Обязательна всем — {}:*\n{}\n\n"
+        "*Спросят, если летишь из зоны жёлтой лихорадки — {}.*\n"
+        "Прямым рейсом из России сертификат не нужен. Но стыковка в стране зоны "
+        "риска дольше 12 часов уже считается — а это почти все рейсы через "
+        "Африку и Латинскую Америку.\n\n"
+        "*Смотрят, откуда именно летишь:*\n{}\n\n"
+        "Сертификат действует пожизненно, но вступает в силу через 10 дней после "
+        "прививки — позже этого срока ехать уже поздно.\n\n"
+        "Напиши название страны — пришлю карточку."
+    ).format(_plural_countries(n_must), must, _plural_countries(n_risk), some)
+
+
+def _vaccine_malaria_text():
+    lvl = lambda x: (lambda c: c.get("malaria", {}).get("level") == x)
+    n_all = _vaccine_count(lvl("all"))
+    n_part = _vaccine_count(lvl("part"))
+    n_rare = _vaccine_count(lvl("rare"))
+    return (
+        "🦟 *МАЛЯРИЯ*\n\n"
+        "Прививки от малярии нет — только таблетки по рецепту врача. Их начинают "
+        "пить ДО поездки и продолжают ПОСЛЕ возвращения.\n\n"
+        "Малярия есть в {} странах мира. Главное: риск почти никогда не по всей стране. "
+        "На курортах и в больших городах его обычно нет — смотри карточку страны, "
+        "там написано, где именно.\n\n"
+        "*Вся страна — {}:*\n{}\n\n"
+        "*Часть страны — {}:*\n{}\n\n"
+        "*Единичные случаи — {}:*\n{}\n\n"
+        "Те же комары, но вакцин от них нет совсем: денге, чикунгунья, зика. "
+        "Защита одна — репеллент, одежда, сетка.\n\n"
+        "Напиши название страны — пришлю карточку."
+    ).format(
+        n_all + n_part + n_rare,
+        n_all, _vaccine_names(lvl("all")),
+        n_part, _vaccine_names(lvl("part")),
+        n_rare, _vaccine_names(lvl("rare")),
+    )
+
+
+def _vaccine_global_text():
+    out = ["⚠️ *ВАЖНО ВСЕМ, КУДА БЫ НИ ЕХАЛ*", ""]
+    for line in VACCINES.get("global", []):
+        out.append("• {}".format(line))
+    out.append("")
+    for block in VACCINES.get("special", []):
+        out.append("*{}*".format(block.get("title", "")))
+        out.append(block.get("text", ""))
+        out.append("")
+    out.append("Данные обновлены: {}. Источник — CDC и ВОЗ.".format(VACCINES.get("updated", "")))
+    return "\n".join(out)
+
+
+def _vaccine_continent_text(continent, emoji="🌍"):
+    must = _vaccine_names(lambda c: c.get("yf", {}).get("req", {}).get("level") == "all", continent)
+    rec = _vaccine_names(
+        lambda c: c.get("yf", {}).get("rec", {}).get("level") in ("yes", "part")
+        and c.get("yf", {}).get("req", {}).get("level") != "all",
+        continent,
+    )
+    mal_all = _vaccine_names(lambda c: c.get("malaria", {}).get("level") == "all", continent)
+    mal_part = _vaccine_names(lambda c: c.get("malaria", {}).get("level") == "part", continent)
+
+    out = ["{} *{}*".format(emoji, continent.upper()), ""]
+    if must:
+        out += ["🟥 *Сертификат жёлтой лихорадки обязателен всем:*", must, ""]
+    if rec:
+        out += ["🟨 *Прививка от жёлтой лихорадки нужна по риску, но на границе не требуют:*", rec, ""]
+    if mal_all:
+        out += ["🦟 *Малярия по всей стране:*", mal_all, ""]
+    if mal_part:
+        out += ["🦟 *Малярия в части страны:*", mal_part, ""]
+    if not (must or rec or mal_all or mal_part):
+        out += [
+            "Ничего особенного не нужно — хватает плановых прививок: корь, "
+            "дифтерия-тетанус, полиомиелит, гепатит В, грипп.",
+            "",
+            "Единственное, о чём стоит знать: клещевой энцефалит в лесах "
+            "Центральной и Восточной Европы и регулярные вспышки кори.",
+            "",
+        ]
+    out.append("Напиши название страны — пришлю карточку.")
+    return "\n".join(out)
+
+
+async def vaccine_show_country(update, context, text, kb, state):
+    """Карточка страны или подсказки, если не нашли."""
+    country, hints = find_vaccine_country(text)
+    if country:
+        await update.message.reply_text(vaccine_card(country), parse_mode="Markdown", reply_markup=kb)
+        return state
+
+    msg = ("❌ Такой страны не нашёл. Напиши название на русском — "
+           "например: Танзания, Индия, Бразилия.")
+    if hints:
+        msg = "❌ Такой страны не нашёл. Может, это:\n" + "\n".join("• " + h for h in hints)
+    await update.message.reply_text(msg, reply_markup=kb)
+    return state
+
+
+async def vaccine_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Меню прививок: разделы или поиск страны текстом."""
+    text = (update.message.text or "").strip()
+    if text == HOME_BTN:
+        return await go_home(update, context)
+    if text == "◀️ Назад":
+        return await show_folder_knowledge(update, context)
+
+    kb = _vaccine_menu_kb()
+    if text == VACCINE_YF_BTN:
+        await update.message.reply_text(_vaccine_yf_text(), parse_mode="Markdown", reply_markup=kb)
+        return VACCINE_MENU
+    if text == VACCINE_MALARIA_BTN:
+        await update.message.reply_text(_vaccine_malaria_text(), parse_mode="Markdown", reply_markup=kb)
+        return VACCINE_MENU
+    if text == VACCINE_GLOBAL_BTN:
+        await update.message.reply_text(_vaccine_global_text(), parse_mode="Markdown", reply_markup=kb)
+        return VACCINE_MENU
+    if text == VACCINE_CONTINENTS_BTN:
+        await update.message.reply_text(
+            "🌍 *По континентам*\n\nВыбери, куда едешь:",
+            parse_mode="Markdown", reply_markup=_vaccine_continents_kb(),
+        )
+        return VACCINE_LIST
+
+    return await vaccine_show_country(update, context, text, kb, VACCINE_MENU)
+
+
+async def vaccine_continent_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Список по континенту или поиск страны текстом."""
+    text = (update.message.text or "").strip()
+    if text == HOME_BTN:
+        return await go_home(update, context)
+    if text == "◀️ Назад":
+        return await vaccine_menu(update, context)
+
+    kb = _vaccine_continents_kb()
+    if text in VACCINE_CONTINENT_BTNS:
+        emoji, continent = text.split(" ", 1)
+        await update.message.reply_text(
+            _vaccine_continent_text(continent, emoji), parse_mode="Markdown", reply_markup=kb
+        )
+        return VACCINE_LIST
+
+    return await vaccine_show_country(update, context, text, kb, VACCINE_LIST)
+
+
 ## ── SEASONS ──────────────────────────────────────────────────────────────────
 
 SEASON_REGION_BTNS = [
@@ -11076,6 +11491,14 @@ def main():
             EVENTS_TOPIC: [
                 home,
                 MessageHandler(filters.TEXT & ~filters.COMMAND, events_topic_handler),
+            ],
+            VACCINE_MENU: [
+                home,
+                MessageHandler(filters.TEXT & ~filters.COMMAND, vaccine_menu_handler),
+            ],
+            VACCINE_LIST: [
+                home,
+                MessageHandler(filters.TEXT & ~filters.COMMAND, vaccine_continent_handler),
             ],
             DRONE_MENU: [
                 home,
