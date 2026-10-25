@@ -2010,12 +2010,11 @@ async def _send_premium_lock(update: Update) -> None:
 def get_folder_knowledge_kb():
     return ReplyKeyboardMarkup(
         [
-            [KeyboardButton("💉 Прививки и малярия")],
             [KeyboardButton("🚁 Дроны"),                  KeyboardButton("🛋 Лаунджи аэропортов")],
             [KeyboardButton("🚢 Круизы"),                 KeyboardButton("🎬 Фильмы о путешествиях")],
             [KeyboardButton("🏛 Чудеса и наследие"),      KeyboardButton("🏫 Языковые школы")],
             [KeyboardButton("🛂 Визы"),                    KeyboardButton("⛔ Несовместимые страны")],
-            [KeyboardButton("🧳 Без турагента")],
+            [KeyboardButton("🧳 Без турагента"),           KeyboardButton("💉 Прививки и малярия")],
             [KeyboardButton("◀️ Назад"),                   KeyboardButton(HOME_BTN)],
         ],
         resize_keyboard=True,
