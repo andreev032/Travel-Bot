@@ -8515,20 +8515,56 @@ def find_vaccine_country(text):
     return None, names[:3]
 
 
+def _vaccine_verdict(c):
+    """Главная строка: нужен сертификат или нет и есть ли малярия."""
+    level = c.get("yf", {}).get("req", {}).get("level")
+    if level == "all":
+        entry = "❗️ Нужен сертификат жёлтой лихорадки — без него не впустят"
+    elif level in ("from_risk", "from_some"):
+        entry = "✅ Из России ничего не требуют"
+    elif level == "unknown":
+        entry = "❓ Страна не объявила требований на въезде"
+    else:
+        entry = "✅ На въезде ничего не требуют"
+
+    mal = c.get("malaria", {})
+    if not mal.get("has"):
+        return entry + "\n✅ Малярии нет"
+    where = {
+        "all": "🦟 Малярия по всей стране — нужны таблетки",
+        "part": "🦟 Малярия есть, но не везде — смотри районы ниже",
+        "rare": "🦟 Малярия — единичные случаи, таблетки обычно не нужны",
+    }
+    return entry + "\n" + where.get(mal.get("level"), "🦟 Малярия есть")
+
+
 def vaccine_card(c):
     """Карточка страны на один экран: обязательное, рекомендованное, малярия."""
     out = ["💉 *{}* — прививки и малярия".format(c.get("name", "").upper()), ""]
+    out.append(_vaccine_verdict(c))
+    out.append("")
 
     yf = c.get("yf", {})
     req = yf.get("req", {})
     level = req.get("level")
-    out.append("🟥 *ТРЕБУЮТ НА ВЪЕЗДЕ*")
+    out.append("*ЧТО ТРЕБУЮТ НА ГРАНИЦЕ*")
     if level == "no":
-        out.append("Ничего. Прививочный сертификат на границе не спросят.")
+        out.append("Ничего. Прививочный сертификат не спросят.")
     elif level == "unknown":
         out.append("Страна не объявила своих требований — уточнять в консульстве.")
+    elif level == "all":
+        out.append("Жёлтая лихорадка — {}".format(req.get("text", "")))
+    elif level == "from_some":
+        out.append(
+            "Смотрят, откуда именно ты летишь. Прямым рейсом из России сертификат "
+            "жёлтой лихорадки не нужен. Кого именно проверяют:"
+        )
     else:
-        out.append("Жёлтая лихорадка. {}".format(req.get("text", "")))
+        out.append(
+            "Сертификат жёлтой лихорадки спросят только у тех, кто летит из страны "
+            "зоны риска — это Африка и Амазония. Стыковка там дольше 12 часов тоже "
+            "считается. Прямым рейсом из России сертификат не нужен."
+        )
     if req.get("note"):
         out.append(req["note"])
     out.append("")
@@ -8537,7 +8573,8 @@ def vaccine_card(c):
     rec = yf.get("rec", {})
     if rec.get("level") in ("yes", "part", "low"):
         out.append("• *Жёлтая лихорадка* — {}".format(rec.get("text", "")))
-    vaccines = c.get("vaccines", [])
+    order = {"rec": 0, "maybe": 1, "low": 2}
+    vaccines = sorted(c.get("vaccines", []), key=lambda v: order.get(v.get("level"), 3))
     if not vaccines and rec.get("level") not in ("yes", "part", "low"):
         out.append("• Хватает плановых прививок")
     for v in vaccines:
