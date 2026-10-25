@@ -439,8 +439,8 @@ def _populate_waters_if_empty(conn) -> None:
 
 
 async def record_user(user_id: int, username: str | None, first_name: str | None) -> None:
-    """Сохраняет/обновляет пользователя. При первом обращении автоматически
-    активирует 7-дневный премиум-триал (если ещё не был использован)."""
+    """Сохраняет/обновляет пользователя.
+    Триал больше не выдаём — бот бесплатный с 25.10.2026."""
     try:
         conn = get_db_connection()
         try:
@@ -453,14 +453,6 @@ async def record_user(user_id: int, username: str | None, first_name: str | None
                             username   = EXCLUDED.username,
                             first_name = EXCLUDED.first_name
                 """, (user_id, username, first_name))
-                cur.execute("""
-                    UPDATE users
-                    SET is_premium         = TRUE,
-                        premium_expires_at = NOW() + INTERVAL '7 days',
-                        premium_trial_used = TRUE,
-                        subscription_type  = 'trial'
-                    WHERE user_id = %s AND premium_trial_used = FALSE
-                """, (user_id,))
             conn.commit()
         finally:
             conn.close()
@@ -628,36 +620,11 @@ def generate_ref_code(user_id: int) -> str:
 
 
 def is_premium(user_id: int) -> bool:
-    """Читает is_premium и premium_expires_at из БД каждый раз.
-    Если premium_expires_at истёк — сбрасывает is_premium=FALSE и возвращает False.
-    Иначе возвращает значение is_premium из БД."""
-    if user_id == ADMIN_ID:
-        return True
-    try:
-        conn = get_db_connection()
-        try:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "SELECT is_premium, premium_expires_at FROM users WHERE user_id = %s",
-                    (user_id,),
-                )
-                row = cur.fetchone()
-                if not row:
-                    return False
-                db_is_premium, expires_at = row
-                if expires_at is not None and expires_at < datetime.now():
-                    cur.execute(
-                        "UPDATE users SET is_premium = FALSE WHERE user_id = %s",
-                        (user_id,),
-                    )
-                    conn.commit()
-                    return False
-                return bool(db_is_premium)
-        finally:
-            conn.close()
-    except Exception as e:
-        logger.error("is_premium: %s: %s", type(e).__name__, e)
-        return False
+    """С 25.10.2026 бот бесплатный — все функции открыты всем.
+    Функция оставлена, чтобы не трогать места вызова: если когда-нибудь
+    вернём платные разделы, достаточно убрать эту строку.
+    Прежняя логика чтения из БД — в истории git."""
+    return True
 
 
 def has_paid_subscription(user_id: int) -> bool:
@@ -881,41 +848,14 @@ def increment_ref_count(owner_id: int) -> None:
         logger.error("increment_ref_count: %s: %s", type(e).__name__, e)
         return
 
-    THRESHOLDS = {7: 30, 15: 90, 25: 180, 40: 365, 80: 36500}
-    if new_count not in THRESHOLDS:
+    MILESTONES = (7, 15, 25, 40, 80)
+    if new_count not in MILESTONES:
         return
 
-    days = THRESHOLDS[new_count]
-    try:
-        conn = get_db_connection()
-        try:
-            with conn.cursor() as cur:
-                if days >= 36500:
-                    cur.execute(
-                        "UPDATE users SET is_premium = TRUE, premium_expires_at = NULL,"
-                        " subscription_type = 'lifetime' WHERE user_id = %s",
-                        (owner_id,),
-                    )
-                else:
-                    cur.execute(
-                        "UPDATE users SET is_premium = TRUE,"
-                        " premium_expires_at = GREATEST(NOW(), COALESCE(premium_expires_at, NOW()))"
-                        " + (INTERVAL '1 day' * %s),"
-                        " subscription_type = 'referral' WHERE user_id = %s",
-                        (days, owner_id),
-                    )
-            conn.commit()
-        finally:
-            conn.close()
-    except Exception as e:
-        logger.error("increment_ref_count bonus: owner_id=%s %s: %s", owner_id, type(e).__name__, e)
-        return
-
-    label = {7: "1 месяц", 15: "3 месяца", 25: "6 месяцев", 40: "1 год", 80: "вечный доступ 🏆"}[new_count]
     bonus_msg = (
-        f"🎉 Ты пригласил {new_count} друзей!\n\n"
-        f"🎁 Тебе начислено: {label} бесплатно!\n\n"
-        "Спасибо что рекомендуешь «Как местный» 🙌"
+        f"🎉 Ты привёл в бота {new_count} друзей!\n\n"
+        "Бот бесплатный, поэтому начислить тебе нечего — но это правда помогает "
+        "проекту. Спасибо, что рекомендуешь «Как местный» 🙌"
     )
 
     async def _send_bonus_notification():
@@ -1121,7 +1061,8 @@ MAIN_MENU, ANSWERING, HELP_MENU, HELP_TOPIC, TRANSLATING, VISA_MENU, VISA_CATEGO
     WATERS_MENU, WATERS_REF_TYPE, WATERS_REF_LIST, \
     FEEDBACK_TYPING, \
     WHERE_TO_FLY, WHERE_TO_FLY_MONTH, \
-    VACCINE_MENU, VACCINE_LIST = range(49)
+    VACCINE_MENU, VACCINE_LIST, \
+    DONATE_TYPING = range(50)
 
 # Замени на реальный HTTPS-URL после деплоя webapp/index.html
 WEBAPP_URL      = "https://andreev032.github.io/Travel-Bot/"
@@ -1142,6 +1083,9 @@ CHANNEL_URL     = "https://t.me/like_a_local"
 HOME_BTN    = "🏠 Главное меню"
 CHANNEL_BTN = "📢 Наш канал"
 SHOP_BTN    = "🛒 Магазин"
+DONATE_BTN  = "💜 Поддержать"
+DONATE_AMOUNT_BTNS = ["💜 200 ₽", "💜 500 ₽", "💜 1000 ₽"]
+DONATE_CUSTOM_BTN  = "💜 Своя сумма"
 ADMIN_ID    = int(os.getenv("ADMIN_ID", "462171750"))       # доступ к /stats и служебным командам
 
 # ── ЮKassa ─────────────────────────────────────────────────────────────
@@ -1200,6 +1144,38 @@ def _get_payment_method_id(user_id: int) -> str | None:
     except Exception as e:
         logger.warning("_get_payment_method_id: user_id=%s: %s: %s", user_id, type(e).__name__, e)
         return None
+
+
+def yookassa_create_donation(user_id: int, rubles: int) -> str:
+    """Создаёт разовый платёж-донат и возвращает ссылку на оплату.
+    Без save_payment_method: карта не сохраняется, автосписаний нет."""
+    amount = "{}.00".format(int(rubles))
+    description = "Добровольная поддержка проекта «Как местный»"
+    email = _get_user_email(user_id)
+    payment = YKPayment.create({
+        "amount": {"value": amount, "currency": "RUB"},
+        "confirmation": {
+            "type": "redirect",
+            "return_url": "https://t.me/like_a_local_bot",
+        },
+        "capture": True,
+        "description": description,
+        "metadata": {"user_id": str(user_id), "plan": "donate"},
+        "receipt": {
+            "customer": {"email": email},
+            "items": [
+                {
+                    "description": description,
+                    "quantity": "1.00",
+                    "amount": {"value": amount, "currency": "RUB"},
+                    "vat_code": 1,
+                    "payment_mode": "full_payment",
+                    "payment_subject": "service",
+                },
+            ],
+        },
+    }, secrets.token_hex(16))
+    return payment.confirmation.confirmation_url
 
 
 def yookassa_create_payment(user_id: int, plan: str) -> str:
@@ -1719,21 +1695,18 @@ _ONB_DAY3_TEXT = (
 )
 
 _ONB_DAY5_TEXT = (
-    "⏳ Через 2 дня закончится твой бесплатный период\n\n"
-    "Останется бесплатным навсегда:\n"
-    "🌍 Мои страны · 🏆 Рейтинг · 🧭 Планирование · 🛠 Инструменты · 📚 Знания · 🎮 Все игры\n\n"
-    "Станет платным:\n"
-    "📖 Дневник · 📊 Статистика · 🏛 Достопримечательности · "
-    "🇷🇺 Путешествия по России · 🌊 Отметки водоёмов · 💰 Общий счёт\n\n"
-    "Подписка — 200₽/мес или 1490₽/год"
+    "🗺 Ты видел не всё, что умеет бот\n\n"
+    "📖 Дневник путешественника · 📊 Моя статистика\n"
+    "🏛 Мои достопримечательности · 🇷🇺 Путешествия по России\n"
+    "🌊 Отметки водоёмов · 💰 Общий счёт\n\n"
+    "Всё это открыто и бесплатно — загляни в «Мои путешествия»."
 )
 
 _ONB_DAY7_TEXT = (
-    "🎒 Твой бесплатный период завершился\n\n"
-    "Спасибо что был с нами эти 7 дней!\n\n"
-    "Большая часть функций остаётся бесплатной — пользуйся. "
-    "Если хочешь продолжить вести дневник, статистику и всё остальное — "
-    "подписка всего 200₽/мес или 1490₽/год 🙌"
+    "🎒 Ты с ботом неделю — спасибо!\n\n"
+    "Бот бесплатный целиком и таким останется: ни подписок, ни замков.\n\n"
+    "Если пригодился — поделись им с тем, кто собирается в дорогу. "
+    "А если хочешь поддержать деньгами — кнопка «💜 Поддержать» в главном меню 🙌"
 )
 
 _ONB_DAY14_TEXT = (
@@ -1743,7 +1716,7 @@ _ONB_DAY14_TEXT = (
 )
 
 _ONB_PREMIUM_KB = InlineKeyboardMarkup([[
-    InlineKeyboardButton("⭐ Оформить подписку", callback_data="onb_premium"),
+    InlineKeyboardButton("💜 Поддержать проект", callback_data="onb_premium"),
 ]])
 
 
@@ -1838,31 +1811,17 @@ async def onb_feedback_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def onb_premium_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Колбэк кнопки [⭐ Оформить подписку] из онбординг-сообщений дней 5/7/14."""
+    """Колбэк кнопки [💜 Поддержать проект] из онбординг-сообщений."""
     query = update.callback_query
     await query.answer()
     user_id = query.from_user.id
-    premium = is_premium(user_id)
-    if premium:
-        info = get_premium_info(user_id)
-        until_str = info["until"].strftime("%d.%m.%Y") if info.get("until") else "—"
-        msg = (
-            "⭐ *Как местный Премиум*\n\n"
-            f"✅ Премиум активен до: *{until_str}*\n\n"
-            "Нажми «⭐ Премиум» в главном меню для управления подпиской."
-        )
-    else:
-        msg = (
-            "⭐ *Как местный Премиум*\n\n"
-            "📔 Дневник путешественника\n"
-            "📊 Моя статистика\n"
-            "🏛 Мои достопримечательности\n"
-            "🇷🇺 Путешествия по России\n"
-            "🌊 Отметки водоёмов\n"
-            "💰 Общий счёт\n\n"
-            "💳 200₽/мес · 1490₽/год\n\n"
-            "Нажми «⭐ Премиум» в главном меню для оформления."
-        )
+    msg = (
+        "💜 *Поддержать проект*\n\n"
+        "Бот бесплатный целиком — все разделы открыты, подписок нет.\n\n"
+        "Если он тебе пригодился, можешь закинуть сколько не жалко: "
+        f"нажми «{DONATE_BTN}» в главном меню. Деньги идут на сервер "
+        "и на новые разделы."
+    )
     await context.bot.send_message(
         chat_id=user_id,
         text=msg,
@@ -1895,7 +1854,7 @@ def get_main_keyboard():
     return ReplyKeyboardMarkup(
         [
             [KeyboardButton("🧭 Планирование"),    KeyboardButton("🛠 Инструменты")],
-            [KeyboardButton("🗺 Мои путешествия"), KeyboardButton("⭐ Премиум")],
+            [KeyboardButton("🗺 Мои путешествия"), KeyboardButton(DONATE_BTN)],
             [KeyboardButton("🎮 Игры"),             KeyboardButton("🤝 Партнёры")],
             [KeyboardButton("👤 О проекте"),        KeyboardButton("🆘 Поддержка")],
             [KeyboardButton(CHANNEL_BTN)],
@@ -1975,35 +1934,6 @@ def get_folder_mytrips_kb(user_id: int | None = None):
         ],
         resize_keyboard=True,
         one_time_keyboard=True,
-    )
-
-
-PREMIUM_LOCK_TEXT = (
-    "🔒 Это премиум-функция\n\n"
-    "Доступно по подписке Как местный Премиум:\n"
-    "🇷🇺 Путешествия по России\n"
-    "🏛 Мои достопримечательности\n"
-    "📊 Моя статистика\n"
-    "📔 Дневник путешественника\n"
-    "🌊 Отметки в Океаны/моря/реки\n"
-    "💰 Общий счёт\n\n"
-    "💳 Стоимость:\n"
-    "- 200₽ / месяц\n"
-    "- 1490₽ / год (экономия 910₽)"
-)
-
-
-async def _send_premium_lock(update: Update) -> None:
-    await update.message.reply_text(
-        PREMIUM_LOCK_TEXT,
-        reply_markup=ReplyKeyboardMarkup(
-            [
-                ["💳 Подключить Премиум"],
-                ["◀️ Назад", HOME_BTN],
-            ],
-            resize_keyboard=True,
-            one_time_keyboard=True,
-        ),
     )
 
 
@@ -4721,14 +4651,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             if owner_id and owner_id != user.id:
                 set_referred_by(user.id, arg)
                 increment_ref_count(owner_id)
-                activate_trial(user.id, promo_source=arg)
-                deep_link_msg = "🎁 Тебе активирован бесплатный доступ на 7 дней по приглашению друга!"
+                deep_link_msg = "🎒 Ты пришёл по приглашению друга. Бот бесплатный — пользуйся всем!"
         elif arg.startswith("BLOG_"):
             promo = get_promo_code(arg)
             if promo and promo["type"] == "partner":
-                activate_trial(user.id, promo_source=arg)
                 increment_promo_uses(arg)
-                deep_link_msg = "🎁 Тебе активирован бесплатный доступ на 7 дней!"
+                deep_link_msg = "🎒 Добро пожаловать! Бот бесплатный целиком."
         elif arg == 'guide':
             await update.message.reply_text(
                 "🧳 *Гайд: как путешествовать без турагента*\n\nНажми кнопку ниже 👇",
@@ -4743,9 +4671,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             promo = get_promo_code(arg)
             if promo and promo["type"] == "trial":
-                activate_trial(user.id, promo_source=arg)
                 increment_promo_uses(arg)
-                deep_link_msg = "🎁 Тебе активирован бесплатный доступ на 7 дней!"
+                deep_link_msg = "🎒 Добро пожаловать! Бот бесплатный целиком."
 
     if deep_link_msg:
         await update.message.reply_text(deep_link_msg)
@@ -4761,83 +4688,42 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "✅ Дневник путешественника · Чеклист\n\n"
         "🤝 Официальные партнёры:\n"
         "Aviasales · Tripster · Cherehapa · Airalo и другие\n\n"
-        "Бот бесплатный — только часть функций по подписке.\n"
-        "🎁 Тебе активированы 7 дней полного доступа бесплатно!\n\n"
+        "Бот бесплатный целиком — без подписок и ограничений.\n\n"
         "Выбери раздел 👇",
         reply_markup=get_main_keyboard(),
     )
     return MAIN_MENU
 
 
-async def show_premium_screen(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Экран ⭐ Премиум: статус, реф.ссылка, оформить."""
+async def show_donate_screen(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Экран 💜 Поддержать: бот бесплатный, донат по желанию."""
     user = update.effective_user
-    info = get_premium_info(user.id)
     ref_code = get_or_create_referral_code(user.id)
-    ref_link = f"t.me/{BOT_USERNAME}?start={ref_code}"
 
-    if is_premium(user.id):
-        if info["is_lifetime"]:
-            until_str = "вечно"
-        else:
-            until_str = info["until"].strftime("%d.%m.%Y") if info["until"] else "—"
-        msg = (
-            "⭐ *Как местный Премиум*\n\n"
-            f"✅ Премиум активен до: *{until_str}*\n\n"
-            f"👥 Приглашено друзей: *{info['ref_count']}*\n\n"
-            "Делись ссылкой — друзья получат 7 дней бесплатно, а ты — возможность пользоваться ботом бесплатно! 🎁"
+    share_kb = InlineKeyboardMarkup([[
+        InlineKeyboardButton(
+            "📲 Поделиться с другом",
+            switch_inline_query=f"🎒 {user.first_name} делится с тобой тревел-ботом «Как местный»\n\nТвой карманный помощник в путешествиях — визы, погода, билеты, страховки, путеводители, игры, рейтинг путешественников и многое другое. Всё в одном месте 🌍\nt.me/like_a_local_bot?start={ref_code}"
         )
-        share_kb = InlineKeyboardMarkup([[
-            InlineKeyboardButton(
-                "📲 Поделиться с другом",
-                switch_inline_query=f"🎒 {user.first_name} делится с тобой тревел-ботом «Как местный»\n\nТвой карманный помощник в путешествиях — визы, погода, билеты, страховки, путеводители, игры, рейтинг путешественников и многое другое. Всё в одном месте 🌍\nt.me/like_a_local_bot?start={ref_code}"
-            )
-        ]])
-        rows = [
-            ["💳 Продлить подписку"],
-            ["🎁 Как получить бесплатный доступ"],
-            ["📄 Условия оферты"],
-        ]
-        if has_paid_subscription(user.id):
-            rows.append(["🗑 Отвязать карту"])
-        rows.append(["◀️ Назад", HOME_BTN])
-        kb = ReplyKeyboardMarkup(
-            rows,
-            resize_keyboard=True,
-            one_time_keyboard=True,
-        )
-        await update.message.reply_text(msg, parse_mode="Markdown", reply_markup=share_kb)
-        await update.message.reply_text("Выбери раздел 👇", reply_markup=kb)
-        return MAIN_MENU
+    ]])
 
-    referral_code = get_or_create_referral_code(user.id)
-    ref_link = f"t.me/{BOT_USERNAME}?start={referral_code}"
-    ref_count = info["ref_count"]
-    msg = (
-        "⭐ Как местный Премиум\n\n"
-        "🔒 Премиум не активен\n\n"
-        "Всё для серьёзного путешественника:\n"
-        "📖 Дневник путешественника\n"
-        "📊 Моя статистика\n"
-        "🏛 Мои достопримечательности\n"
-        "🏆 Рейтинг путешественников\n"
-        "🌍 Угадай где я\n"
-        "🃏 Найди пару\n\n"
-        "💳 Стоимость:\n"
-        "- 200₽ / месяц\n"
-        "- 1490₽ / год (экономия 910₽)\n\n"
-        "🎁 Первые 7 дней — бесплатно\n\n"
-        f"👥 Приглашено друзей: {ref_count}\n\n"
-        "Делись ссылкой — друзья получат 7 дней бесплатно, а ты — возможность пользоваться ботом бесплатно! 🎁\n\n"
-        "Нажимая «Подключить», вы принимаете условия оферты"
+    await update.message.reply_text(
+        "💜 *Поддержать проект*\n\n"
+        "Бот бесплатный целиком, все функции открыты — и так и останется.\n\n"
+        "Я делаю его один: собираю данные, пишу тексты, плачу за сервер. "
+        "Если он тебе пригодился в поездке — можешь закинуть сколько не жалко. "
+        "Деньги идут на хостинг и на новые разделы.\n\n"
+        "Не хочешь донатить — просто поделись ботом с тем, кто собирается "
+        "в дорогу. Это помогает не меньше.",
+        parse_mode="Markdown",
+        reply_markup=share_kb,
     )
     await update.message.reply_text(
-        msg,
+        "Выбери сумму 👇",
         reply_markup=ReplyKeyboardMarkup(
             [
-                ["💳 Подключить Премиум"],
-                ["🎁 Как получить бесплатный доступ"],
-                ["📄 Условия оферты"],
+                [DONATE_AMOUNT_BTNS[0], DONATE_AMOUNT_BTNS[1]],
+                [DONATE_AMOUNT_BTNS[2], DONATE_CUSTOM_BTN],
                 ["◀️ Назад", HOME_BTN],
             ],
             resize_keyboard=True,
@@ -4845,6 +4731,68 @@ async def show_premium_screen(update: Update, context: ContextTypes.DEFAULT_TYPE
     )
     return MAIN_MENU
 
+
+async def donate_custom_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Кнопка «Своя сумма» — просим ввести число."""
+    await update.message.reply_text(
+        "Напиши сумму в рублях — от 50 до 100 000.\n\nНапример: 350",
+        reply_markup=ReplyKeyboardMarkup(
+            [["◀️ Назад", HOME_BTN]],
+            resize_keyboard=True,
+        ),
+    )
+    return DONATE_TYPING
+
+
+async def donate_typing_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Пользователь ввёл свою сумму доната."""
+    text = (update.message.text or "").strip()
+    if text == HOME_BTN:
+        return await go_home(update, context)
+    if text == "◀️ Назад":
+        return await show_donate_screen(update, context)
+
+    digits = re.sub(r"[^0-9]", "", text)
+    if not digits or not (50 <= int(digits) <= 100000):
+        await update.message.reply_text(
+            "Нужно число от 50 до 100 000. Например: 350",
+            reply_markup=ReplyKeyboardMarkup(
+                [["◀️ Назад", HOME_BTN]],
+                resize_keyboard=True,
+            ),
+        )
+        return DONATE_TYPING
+
+    await _send_donation_link(update, int(digits))
+    return MAIN_MENU
+
+
+async def _send_donation_link(update: Update, rubles: int) -> int:
+    """Создаёт платёж и отдаёт кнопку оплаты."""
+    user_id = update.effective_user.id
+    try:
+        url = yookassa_create_donation(user_id, rubles)
+        await update.message.reply_text(
+            f"💜 Поддержка проекта на *{rubles} ₽*\n\nСпасибо! Нажми кнопку ниже.",
+            parse_mode="Markdown",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton(f"Оплатить {rubles} ₽", url=url)],
+            ]),
+        )
+    except Exception as e:
+        logger.error("_send_donation_link user_id=%s сумма=%s: %s: %s",
+                     user_id, rubles, type(e).__name__, e)
+        await update.message.reply_text(
+            "⚠️ Не удалось создать платёж. Попробуй позже или напиши в поддержку.",
+        )
+    await update.message.reply_text(
+        "Выбери раздел 👇",
+        reply_markup=ReplyKeyboardMarkup(
+            [["◀️ Назад", HOME_BTN]],
+            resize_keyboard=True,
+        ),
+    )
+    return MAIN_MENU
 
 async def detach_card_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Отвязывает карту (yookassa_payment_method_id → NULL)."""
@@ -4865,63 +4813,6 @@ async def detach_card_handler(update: Update, context: ContextTypes.DEFAULT_TYPE
     return MAIN_MENU
 
 
-async def premium_buy_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Inline-кнопка premium_buy — показываем выбор тарифа."""
-    query = update.callback_query
-    await query.answer()
-    await query.message.reply_text(
-        "💳 Выбери тариф Как местный Премиум:",
-        reply_markup=ReplyKeyboardMarkup(
-            [
-                ["💳 200₽ / месяц"],
-                ["💳 1490₽ / год"],
-                ["◀️ Назад", "🏠 Главное меню"],
-            ],
-            resize_keyboard=True,
-        ),
-    )
-
-
-async def premium_buy_callback_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Кнопка «Подключить Премиум» — показываем выбор тарифа."""
-    await update.message.reply_text(
-        "💳 Выбери тариф Как местный Премиум:",
-        reply_markup=ReplyKeyboardMarkup(
-            [
-                ["💳 200₽ / месяц"],
-                ["💳 1490₽ / год"],
-                ["◀️ Назад", "🏠 Главное меню"],
-            ],
-            resize_keyboard=True,
-        ),
-    )
-    return MAIN_MENU
-
-
-async def _handle_premium_plan(update: Update, plan: str) -> int:
-    """Создаёт платёж ЮKassa и отправляет пользователю ссылку на оплату."""
-    user_id = update.effective_user.id
-    try:
-        url = yookassa_create_payment(user_id, plan)
-        label = "200₽ / месяц" if plan == "month" else "1490₽ / год"
-        await update.message.reply_text(
-            f"💳 Тариф: *{label}*\n\nНажми кнопку ниже для перехода к оплате.",
-            parse_mode="Markdown",
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("Оплатить", url=url)],
-            ]),
-        )
-    except Exception as e:
-        logger.error("_handle_premium_plan user_id=%s plan=%s: %s: %s", user_id, plan, type(e).__name__, e)
-        await update.message.reply_text(
-            "⚠️ Не удалось создать платёж. Попробуй позже или напиши в поддержку.",
-            reply_markup=ReplyKeyboardMarkup(
-                [["◀️ Назад", "🏠 Главное меню"]],
-                resize_keyboard=True,
-            ),
-        )
-    return MAIN_MENU
-
 
 async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
@@ -4935,7 +4826,7 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if context.user_data.pop("back_to_mytrips", False):
             return await show_folder_mytrips(update, context)
         if context.user_data.pop("back_to_premium", False):
-            return await show_premium_screen(update, context)
+            return await show_donate_screen(update, context)
         return await go_home(update, context)
 
     # ── Folder buttons ──────────────────────────────────────────────────────
@@ -4963,12 +4854,8 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == "🏆 Рейтинг путешественников":
         return await show_rating(update, context)
     elif text in ("🏛 Мои достопримечательности", "📊 Моя статистика", "📖 Дневник путешественника", "💰 Общий счёт"):
-        # Тапы по этим лейблам приходят сюда только когда WebApp-кнопка заменена
-        # на обычную (не премиум). У премиум-пользователя кнопка открывает WebApp напрямую.
-        if not is_premium(update.effective_user.id):
-            await _send_premium_lock(update)
-            return MAIN_MENU
-        # На всякий случай — если премиум всё-таки ввёл текст руками, вернём папку
+        # Кнопки открывают WebApp напрямую; сюда тап приходит, только если
+        # человек набрал название раздела руками — возвращаем папку
         await update.message.reply_text(
             "🗺 *Мои путешествия*\n\nВыбери раздел:",
             parse_mode="Markdown",
@@ -5145,17 +5032,19 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ),
         )
         return MAIN_MENU
-    elif text == "⭐ Премиум":
-        return await show_premium_screen(update, context)
-    elif text == "💳 Подключить Премиум" or text == "💳 Продлить подписку":
-        return await premium_buy_callback_reply(update, context)
+    elif text == DONATE_BTN:
+        return await show_donate_screen(update, context)
+    elif text in DONATE_AMOUNT_BTNS:
+        return await _send_donation_link(update, int(re.sub(r"[^0-9]", "", text)))
+    elif text == DONATE_CUSTOM_BTN:
+        return await donate_custom_start(update, context)
     elif text == "🗑 Отвязать карту":
         return await detach_card_handler(update, context)
     elif text == "📲 Поделиться с другом":
         user_id = update.effective_user.id
         ref_code = get_or_create_referral_code(user_id)
         await update.message.reply_text(
-            "Отправь другу — он получит 7 дней бесплатно 🎁",
+            "Отправь другу — бот бесплатный для всех 🎒",
             reply_markup=InlineKeyboardMarkup([[
                 InlineKeyboardButton(
                     "📲 Поделиться с другом",
@@ -5175,13 +5064,10 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == "🎁 Как получить бесплатный доступ":
         ref_code = get_or_create_referral_code(update.message.from_user.id)
         await update.message.reply_text(
-            "🎁 Бесплатный доступ за друзей\n\n"
-            "Приглашай друзей по своей ссылке и получай бесплатные месяцы:\n\n"
-            "👥 7 друзей → 1 месяц бесплатно\n"
-            "👥 15 друзей → 3 месяца бесплатно\n"
-            "👥 25 друзей → 6 месяцев бесплатно\n"
-            "👥 40 друзей → 1 год бесплатно\n"
-            "👥 80 друзей → вечный доступ 🏆",
+            "🎒 Позови друзей\n\n"
+            "Бот бесплатный для всех — приглашать можно просто так.\n\n"
+            "Чем больше людей им пользуется, тем быстрее он растёт: "
+            "за каждым новым разделом стоит чей-то вопрос.",
             reply_markup=InlineKeyboardMarkup([[
                 InlineKeyboardButton(
                     "📲 Поделиться с другом",
@@ -5192,10 +5078,6 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Выбери раздел 👇", reply_markup=ReplyKeyboardMarkup([["◀️ Назад", "🏠 Главное меню"]], resize_keyboard=True))
         context.user_data["back_to_premium"] = True
         return MAIN_MENU
-    elif text == "💳 200₽ / месяц":
-        return await _handle_premium_plan(update, "month")
-    elif text == "💳 1490₽ / год":
-        return await _handle_premium_plan(update, "year")
     elif text == "📄 Условия оферты":
         await update.message.reply_text("https://andreev032.github.io/Travel-Bot/oferta.html")
         await update.message.reply_text(
@@ -5206,9 +5088,6 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 one_time_keyboard=True,
             ),
         )
-        return MAIN_MENU
-    elif text == "💳 Оформить подписку":
-        await update.message.reply_text("Скоро!")
         return MAIN_MENU
     elif text == "🤝 Партнёры":
         return await show_partners_menu(update, context)
@@ -11328,10 +11207,6 @@ async def waters_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE
         return await show_folder_mytrips(update, context)
     if text == "📖 Справочник":
         return await show_waters_ref_type(update, context)
-    if text == "✅ Мои отметки":
-        # Без премиума кнопка приходит как обычный текст — показываем premium-замок.
-        await _send_premium_lock(update)
-        return WATERS_MENU
     return await show_waters_menu(update, context)
 
 
@@ -11438,10 +11313,8 @@ async def post_init(app: Application) -> None:
     queue_task.add_done_callback(_scheduler_done_cb)
     logger.info("Задача автопостинга очереди создана и запущена")
 
-    # Автопродление ЮKassa — раз в сутки
-    renewal_task = asyncio.create_task(autorenewal_scheduler(app.bot))
-    renewal_task.add_done_callback(_scheduler_done_cb)
-    logger.info("Задача автопродления ЮKassa создана и запущена")
+    # Автопродление ЮKassa не запускаем: бот бесплатный с 25.10.2026,
+    # подписок больше нет и списывать не с кого. Донаты — разовые платежи.
 
     # Онбординг-рассылка — каждый день в 12:00 МСК
     onboarding_task = asyncio.create_task(onboarding_scheduler(app.bot))
@@ -11537,6 +11410,10 @@ def main():
             EVENTS_TOPIC: [
                 home,
                 MessageHandler(filters.TEXT & ~filters.COMMAND, events_topic_handler),
+            ],
+            DONATE_TYPING: [
+                home,
+                MessageHandler(filters.TEXT & ~filters.COMMAND, donate_typing_handler),
             ],
             VACCINE_MENU: [
                 home,
@@ -11704,7 +11581,6 @@ def main():
     app.add_handler(CommandHandler("promostats", promostats_command))
     app.add_handler(CommandHandler("userstats",  userstats_command))
     app.add_handler(CommandHandler("broadcast",  broadcast_command))
-    app.add_handler(CallbackQueryHandler(premium_buy_callback, pattern=r"^premium_buy$"))
     app.add_handler(CallbackQueryHandler(queue_callback_handler, pattern=r"^pq:"))
     app.add_handler(MessageHandler(
         filters.UpdateType.CHANNEL_POST & filters.Chat(TEST_CHANNEL_ID),
