@@ -1791,7 +1791,7 @@ async def onb_mytrips_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = query.from_user.id
     await context.bot.send_message(
         chat_id=user_id,
-        text="🗺 *Мои путешествия*\n\nВыбери раздел:",
+        text="🗺 *Мои путешествия*\n\nТвоя личная карта. Отмечай страны и смотри, какое у тебя место в общем рейтинге.",
         parse_mode="Markdown",
         reply_markup=get_folder_mytrips_kb(user_id),
     )
@@ -3411,7 +3411,7 @@ async def show_folder_planning(update: Update, context: ContextTypes.DEFAULT_TYP
     context.user_data.clear()
     await nav_reply(
         update, context,
-        "🧭 *Планирование*\n\nВыбери раздел:",
+        "🧭 *Планирование*\n\nОтсюда начинается поездка. Куда лететь, в каком месяце и что там будет происходить.",
         parse_mode="Markdown",
         reply_markup=get_folder_planning_kb(),
     )
@@ -3423,7 +3423,7 @@ async def show_folder_knowledge(update: Update, context: ContextTypes.DEFAULT_TY
     context.user_data.clear()
     await nav_reply(
         update, context,
-        "📚 *Знания*\n\nВыбери раздел:",
+        "📚 *Знания*\n\nТо, о чём обычно узнают поздно. Визы, прививки, штрафы за дроны, страны, которые не стоит ставить в один паспорт.",
         parse_mode="Markdown",
         reply_markup=get_folder_knowledge_kb(),
     )
@@ -3802,7 +3802,7 @@ def _games_kb():
 async def show_games_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Подменю 🎮 Игры."""
     await update.message.reply_text(
-        "🎮 *Игры*\n\nВыбери игру:",
+        "🎮 *Игры*\n\nПроверить, насколько хорошо ты знаешь мир. Три игры, счёт сохраняется.",
         parse_mode="Markdown",
         reply_markup=_games_kb(),
     )
@@ -3829,7 +3829,7 @@ async def show_folder_tools(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data.clear()
     await nav_reply(
         update, context,
-        "🛠 *Инструменты*\n\nВыбери раздел:",
+        "🛠 *Инструменты*\n\nТо, что нужно уже в дороге. Перевести, посчитать курс, собрать чемодан по списку.",
         parse_mode="Markdown",
         reply_markup=get_folder_tools_kb(),
     )
@@ -4867,7 +4867,7 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if text == "🧭 Планирование":
         await nav_reply(
         update, context,
-            "🧭 *Планирование*\n\nВыбери раздел:",
+            "🧭 *Планирование*\n\nОтсюда начинается поездка. Куда лететь, в каком месяце и что там будет происходить.",
             parse_mode="Markdown",
             reply_markup=get_folder_planning_kb(),
         )
@@ -4875,7 +4875,7 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == "🛠 Инструменты":
         await nav_reply(
         update, context,
-            "🛠 *Инструменты*\n\nВыбери раздел:",
+            "🛠 *Инструменты*\n\nТо, что нужно уже в дороге. Перевести, посчитать курс, собрать чемодан по списку.",
             parse_mode="Markdown",
             reply_markup=get_folder_tools_kb(),
         )
@@ -4883,7 +4883,7 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == "🗺 Мои путешествия":
         await nav_reply(
         update, context,
-            "🗺 *Мои путешествия*\n\nВыбери раздел:",
+            "🗺 *Мои путешествия*\n\nТвоя личная карта. Отмечай страны и смотри, какое у тебя место в общем рейтинге.",
             parse_mode="Markdown",
             reply_markup=get_folder_mytrips_kb(update.effective_user.id),
         )
@@ -4895,7 +4895,7 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # человек набрал название раздела руками — возвращаем папку
         await nav_reply(
         update, context,
-            "🗺 *Мои путешествия*\n\nВыбери раздел:",
+            "🗺 *Мои путешествия*\n\nТвоя личная карта. Отмечай страны и смотри, какое у тебя место в общем рейтинге.",
             parse_mode="Markdown",
             reply_markup=get_folder_mytrips_kb(update.effective_user.id),
         )
@@ -4906,7 +4906,7 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data["back_to_planning"] = True
         await nav_reply(
         update, context,
-            "📚 *Знания*\n\nВыбери раздел:",
+            "📚 *Знания*\n\nТо, о чём обычно узнают поздно. Визы, прививки, штрафы за дроны, страны, которые не стоит ставить в один паспорт.",
             parse_mode="Markdown",
             reply_markup=get_folder_knowledge_kb(),
         )
@@ -4914,7 +4914,7 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == "✈️ Услуги":
         await nav_reply(
         update, context,
-            "✈️ *Услуги*\n\nВыбери раздел:",
+            "✈️ *Услуги*\n\nЕсли нужна помощь человека, а не бота. Путеводители, авторские туры, оформление визы.",
             parse_mode="Markdown",
             reply_markup=get_folder_services_kb(),
         )
@@ -11194,7 +11194,7 @@ async def show_folder_mytrips(update: Update, context: ContextTypes.DEFAULT_TYPE
     context.user_data.clear()
     await nav_reply(
         update, context,
-        "🗺 *Мои путешествия*\n\nВыбери раздел:",
+        "🗺 *Мои путешествия*\n\nТвоя личная карта. Отмечай страны и смотри, какое у тебя место в общем рейтинге.",
         parse_mode="Markdown",
         reply_markup=get_folder_mytrips_kb(update.effective_user.id),
     )
