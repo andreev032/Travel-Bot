@@ -5523,7 +5523,7 @@ async def handle_translation(update: Update, context: ContextTypes.DEFAULT_TYPE)
         reply,
         parse_mode="Markdown",
         reply_markup=ReplyKeyboardMarkup(
-            [["🔤 Перевести ещё"], [HOME_BTN]],
+            [["🔤 Перевести ещё"], ["◀️ Назад", HOME_BTN]],
             resize_keyboard=True,
             one_time_keyboard=True,
         ),
@@ -6385,7 +6385,7 @@ _SUPPORT_TYPES = {
 }
 
 _SUPPORT_KB = ReplyKeyboardMarkup(
-    [[btn] for btn in _SUPPORT_TYPES] + [["◀️ Назад"], [HOME_BTN]],
+    [[btn] for btn in _SUPPORT_TYPES] + [["◀️ Назад", HOME_BTN]],
     resize_keyboard=True,
     one_time_keyboard=True,
 )
@@ -6413,7 +6413,7 @@ async def support_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYP
         context.user_data["support_type"] = _SUPPORT_TYPES[text]
         await update.message.reply_text(
             "✏️ Напиши своё сообщение — мы обязательно его прочитаем:",
-            reply_markup=ReplyKeyboardMarkup([["◀️ Назад"], [HOME_BTN]], resize_keyboard=True),
+            reply_markup=ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True),
         )
         return SUPPORT_TYPING
     return await show_support_menu(update, context)
@@ -6471,7 +6471,7 @@ _TOURS_TYPES = {
 }
 
 _TOURS_KB = ReplyKeyboardMarkup(
-    [[btn] for btn in _TOURS_TYPES] + [["◀️ Назад"], [HOME_BTN]],
+    [[btn] for btn in _TOURS_TYPES] + [["◀️ Назад", HOME_BTN]],
     resize_keyboard=True,
     one_time_keyboard=True,
 )
@@ -6504,7 +6504,7 @@ async def tours_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE)
         context.user_data["tours_type"] = _TOURS_TYPES[text]
         await update.message.reply_text(
             "✏️ Напиши своё сообщение — мы обязательно его прочитаем:",
-            reply_markup=ReplyKeyboardMarkup([["◀️ Назад"], [HOME_BTN]], resize_keyboard=True),
+            reply_markup=ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True),
         )
         return TOURS_TYPING
     return await show_tours_menu(update, context)
@@ -6557,7 +6557,7 @@ async def tours_typing_handler(update: Update, context: ContextTypes.DEFAULT_TYP
 ## ── SHOP ─────────────────────────────────────────────────────────────────────
 
 _SHOP_KB = ReplyKeyboardMarkup(
-    [["🤝 Сотрудничество"], ["◀️ Назад"], [HOME_BTN]],
+    [["🤝 Сотрудничество"], ["◀️ Назад", HOME_BTN]],
     resize_keyboard=True,
     one_time_keyboard=True,
 )
@@ -6593,7 +6593,7 @@ async def shop_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data["shop_type"] = "Сотрудничество: Магазин"
         await update.message.reply_text(
             "✏️ Напиши своё сообщение — мы обязательно его прочитаем:",
-            reply_markup=ReplyKeyboardMarkup([["◀️ Назад"], [HOME_BTN]], resize_keyboard=True),
+            reply_markup=ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True),
         )
         return SHOP_TYPING
     return await show_shop_menu(update, context)
@@ -7354,7 +7354,7 @@ INCOMPATIBLE_MENU_BTN = list(INCOMPATIBLE_CATEGORIES.keys())
 
 
 async def show_incompatible_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    keyboard = [[btn] for btn in INCOMPATIBLE_MENU_BTN] + [["◀️ Назад"], [HOME_BTN]]
+    keyboard = [[btn] for btn in INCOMPATIBLE_MENU_BTN] + [["◀️ Назад", HOME_BTN]]
     await update.message.reply_text(
         "⛔ *Несовместимые страны*\n\n"
         "Выбери пару стран, между которыми могут возникнуть проблемы при путешествии:",
@@ -7372,7 +7372,7 @@ async def incompatible_menu_handler(update: Update, context: ContextTypes.DEFAUL
         return await show_folder_knowledge(update, context)
     if text in INCOMPATIBLE_CATEGORIES:
         content = INCOMPATIBLE_CATEGORIES[text]
-        keyboard = [["◀️ Назад к категориям"], [HOME_BTN]]
+        keyboard = [["◀️ Назад к категориям", HOME_BTN]]
         await update.message.reply_text(
             content,
             parse_mode="Markdown",
@@ -7615,7 +7615,7 @@ EVENTS_MENU_BTN = list(EVENTS_SECTIONS.keys())
 
 
 async def show_events_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    keyboard = [[btn] for btn in EVENTS_MENU_BTN] + [["◀️ Назад"], [HOME_BTN]]
+    keyboard = [[btn] for btn in EVENTS_MENU_BTN] + [["◀️ Назад", HOME_BTN]]
     await update.message.reply_text(
         "📅 *Куда слетать*\n\n"
         "Выбери категорию событий 2026 года:",
@@ -7633,7 +7633,7 @@ async def events_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE
         return await show_folder_planning(update, context)
     if text in EVENTS_SECTIONS:
         content = EVENTS_SECTIONS[text]
-        keyboard = [["◀️ Назад к категориям"], [HOME_BTN]]
+        keyboard = [["◀️ Назад к категориям", HOME_BTN]]
         await update.message.reply_text(
             content,
             parse_mode="Markdown",
