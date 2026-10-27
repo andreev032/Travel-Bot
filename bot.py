@@ -1850,6 +1850,24 @@ async def feedback_typing_handler(update: Update, context: ContextTypes.DEFAULT_
     return MAIN_MENU
 
 
+async def nav_reply(update: Update, context: ContextTypes.DEFAULT_TYPE, *args, **kwargs):
+    """Служебное сообщение навигации: в чате живёт только одно.
+
+    Перед отправкой нового удаляет предыдущее меню, чтобы за минуту
+    кликов не копилась стопка «Главное меню:».
+    """
+    # chat_data, а не user_data: user_data чистится при входе в разделы
+    prev_id = context.chat_data.get("nav_msg_id")
+    if prev_id:
+        try:
+            await context.bot.delete_message(update.effective_chat.id, prev_id)
+        except Exception:
+            pass          # старше 48 часов или уже удалено вручную
+    msg = await update.message.reply_text(*args, **kwargs)
+    context.chat_data["nav_msg_id"] = msg.message_id
+    return msg
+
+
 def get_main_keyboard():
     return ReplyKeyboardMarkup(
         [
@@ -2001,7 +2019,8 @@ async def show_rating(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def go_home(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data.clear()
-    await update.message.reply_text(
+    await nav_reply(
+        update, context,
         "🏠 Главное меню:",
         reply_markup=get_main_keyboard(),
     )
@@ -3383,7 +3402,8 @@ async def pair_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def show_folder_planning(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Вернуться в папку 🧭 Планирование."""
     context.user_data.clear()
-    await update.message.reply_text(
+    await nav_reply(
+        update, context,
         "🧭 *Планирование*\n\nВыбери раздел:",
         parse_mode="Markdown",
         reply_markup=get_folder_planning_kb(),
@@ -3394,7 +3414,8 @@ async def show_folder_planning(update: Update, context: ContextTypes.DEFAULT_TYP
 async def show_folder_knowledge(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Вернуться в папку 📚 Знания."""
     context.user_data.clear()
-    await update.message.reply_text(
+    await nav_reply(
+        update, context,
         "📚 *Знания*\n\nВыбери раздел:",
         parse_mode="Markdown",
         reply_markup=get_folder_knowledge_kb(),
@@ -3799,7 +3820,8 @@ async def games_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE)
 async def show_folder_tools(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Вернуться в папку 🛠 Инструменты."""
     context.user_data.clear()
-    await update.message.reply_text(
+    await nav_reply(
+        update, context,
         "🛠 *Инструменты*\n\nВыбери раздел:",
         parse_mode="Markdown",
         reply_markup=get_folder_tools_kb(),
@@ -4677,7 +4699,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if deep_link_msg:
         await update.message.reply_text(deep_link_msg)
 
-    await update.message.reply_text(
+    await nav_reply(
+        update, context,
         "✈️ Привет! Я «Как местный» — твой помощник по путешествиям 🎒\n\n"
         "Всё для путешествий в одном месте:\n"
         "🌍 Визы · Подбор страны · Сезоны\n"
@@ -4788,7 +4811,8 @@ async def _send_donation_link(update: Update, rubles: int) -> int:
         await update.message.reply_text(
             "⚠️ Не удалось создать платёж. Попробуй позже или напиши в поддержку.",
         )
-    await update.message.reply_text(
+    await nav_reply(
+        update, context,
         "Выбери раздел 👇",
         reply_markup=ReplyKeyboardMarkup(
             [["◀️ Назад", HOME_BTN]],
@@ -4834,21 +4858,24 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # ── Folder buttons ──────────────────────────────────────────────────────
     if text == "🧭 Планирование":
-        await update.message.reply_text(
+        await nav_reply(
+        update, context,
             "🧭 *Планирование*\n\nВыбери раздел:",
             parse_mode="Markdown",
             reply_markup=get_folder_planning_kb(),
         )
         return MAIN_MENU
     elif text == "🛠 Инструменты":
-        await update.message.reply_text(
+        await nav_reply(
+        update, context,
             "🛠 *Инструменты*\n\nВыбери раздел:",
             parse_mode="Markdown",
             reply_markup=get_folder_tools_kb(),
         )
         return MAIN_MENU
     elif text == "🗺 Мои путешествия":
-        await update.message.reply_text(
+        await nav_reply(
+        update, context,
             "🗺 *Мои путешествия*\n\nВыбери раздел:",
             parse_mode="Markdown",
             reply_markup=get_folder_mytrips_kb(update.effective_user.id),
@@ -4859,7 +4886,8 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text in ("🏛 Мои достопримечательности", "📊 Моя статистика", "📖 Дневник путешественника", "💰 Общий счёт"):
         # Кнопки открывают WebApp напрямую; сюда тап приходит, только если
         # человек набрал название раздела руками — возвращаем папку
-        await update.message.reply_text(
+        await nav_reply(
+        update, context,
             "🗺 *Мои путешествия*\n\nВыбери раздел:",
             parse_mode="Markdown",
             reply_markup=get_folder_mytrips_kb(update.effective_user.id),
@@ -4869,14 +4897,16 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await show_waters_menu(update, context)
     elif text == "📚 Знания":
         context.user_data["back_to_planning"] = True
-        await update.message.reply_text(
+        await nav_reply(
+        update, context,
             "📚 *Знания*\n\nВыбери раздел:",
             parse_mode="Markdown",
             reply_markup=get_folder_knowledge_kb(),
         )
         return MAIN_MENU
     elif text == "✈️ Услуги":
-        await update.message.reply_text(
+        await nav_reply(
+        update, context,
             "✈️ *Услуги*\n\nВыбери раздел:",
             parse_mode="Markdown",
             reply_markup=get_folder_services_kb(),
@@ -4937,7 +4967,8 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 [InlineKeyboardButton("🏔 Путеводитель по Дагестану", url="https://andreev032.github.io/Travel-Bot/guides/dagestan/index.html")],
             ]),
         )
-        await update.message.reply_text(
+        await nav_reply(
+        update, context,
             "Выбери раздел 👇",
             reply_markup=ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True),
         )
@@ -4952,7 +4983,7 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 [InlineKeyboardButton("✉️ Написать специалисту", url="https://t.me/Maksim1387")],
             ]),
         )
-        await update.message.reply_text("🏠 Главное меню:", reply_markup=get_main_keyboard())
+        await nav_reply(update, context, "🏠 Главное меню:", reply_markup=get_main_keyboard())
         return MAIN_MENU
     elif text == "✈️ Авторские туры":
         return await show_tours_menu(update, context)
@@ -4968,7 +4999,7 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 InlineKeyboardButton("Открыть гайд", web_app=WebAppInfo(url="https://andreev032.github.io/Travel-Bot/guides/how-to-travel-cheap/"))
             ]])
         )
-        await update.message.reply_text("Выбери раздел 👇", reply_markup=ReplyKeyboardMarkup([["◀️ Назад", "🏠 Главное меню"]], resize_keyboard=True))
+        await nav_reply(update, context, "Выбери раздел 👇", reply_markup=ReplyKeyboardMarkup([["◀️ Назад", "🏠 Главное меню"]], resize_keyboard=True))
         return MAIN_MENU
     elif text == "🏫 Языковые школы":
         context.user_data["back_to_knowledge"] = True
@@ -5078,7 +5109,7 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 )
             ]])
         )
-        await update.message.reply_text("Выбери раздел 👇", reply_markup=ReplyKeyboardMarkup([["◀️ Назад", "🏠 Главное меню"]], resize_keyboard=True))
+        await nav_reply(update, context, "Выбери раздел 👇", reply_markup=ReplyKeyboardMarkup([["◀️ Назад", "🏠 Главное меню"]], resize_keyboard=True))
         context.user_data["back_to_premium"] = True
         return MAIN_MENU
     elif text == "📄 Условия оферты":
@@ -5102,7 +5133,7 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Подписывайся на наш канал — там лайфхаки, маршруты и вдохновение для путешествий 🌍✈️",
             reply_markup=inline_kb,
         )
-        await update.message.reply_text("Главное меню:", reply_markup=get_main_keyboard())
+        await nav_reply(update, context, "Главное меню:", reply_markup=get_main_keyboard())
         return MAIN_MENU
     elif text == SHOP_BTN:
         return await show_shop_menu(update, context)
@@ -5134,7 +5165,8 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 [InlineKeyboardButton("📣 Наш канал «Как местный»", url="https://t.me/like_a_local")],
             ]),
         )
-        await update.message.reply_text(
+        await nav_reply(
+        update, context,
             "Выбери раздел 👇",
             reply_markup=ReplyKeyboardMarkup([["◀️ Назад", HOME_BTN]], resize_keyboard=True),
         )
@@ -5168,7 +5200,8 @@ async def help_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if text in HELP_TOPICS:
         # Baggage topic — show submenu instead of plain text
         if text == "🧳 Багаж и ручная кладь":
-            await update.message.reply_text(
+            await nav_reply(
+        update, context,
                 "🧳 *Багаж и ручная кладь*\n\nВыбери раздел:",
                 parse_mode="Markdown",
                 reply_markup=_BAGGAGE_MENU_KB,
@@ -5206,7 +5239,8 @@ async def help_topic_handler(update: Update, context: ContextTypes.DEFAULT_TYPE)
         if baggage_depth == 2:
             # Back from subtopic content → baggage submenu
             context.user_data["baggage_depth"] = 1
-            await update.message.reply_text(
+            await nav_reply(
+        update, context,
                 "🧳 *Багаж и ручная кладь*\n\nВыбери раздел:",
                 parse_mode="Markdown",
                 reply_markup=_BAGGAGE_MENU_KB,
@@ -5520,7 +5554,8 @@ async def visa_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 [InlineKeyboardButton("✉️ Написать специалисту", url="https://t.me/Maksim1387")],
             ]),
         )
-        await update.message.reply_text(
+        await nav_reply(
+        update, context,
             "🏠 Главное меню:",
             reply_markup=ReplyKeyboardMarkup(_VISA_MAIN_KB, resize_keyboard=True),
         )
@@ -6181,7 +6216,8 @@ async def show_wonders_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [[btn] for btn in WONDERS_BTNS] + [["◀️ Назад", HOME_BTN]],
         resize_keyboard=True,
     )
-    await update.message.reply_text(
+    await nav_reply(
+        update, context,
         "🏛 *Чудеса и наследие*\n\nВыбери раздел:",
         parse_mode="Markdown",
         reply_markup=keyboard,
@@ -6297,7 +6333,8 @@ async def cruise_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE
         [[btn] for btn in CRUISE_BTNS] + [["◀️ Назад", HOME_BTN]],
         resize_keyboard=True,
     )
-    await update.message.reply_text(
+    await nav_reply(
+        update, context,
         "🚢 *Круизы*\n\nВыбери раздел:",
         parse_mode="Markdown",
         reply_markup=keyboard,
@@ -7058,7 +7095,8 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Команда /menu — всегда возвращает в главное меню."""
     context.user_data.clear()
-    await update.message.reply_text(
+    await nav_reply(
+        update, context,
         "🏠 Главное меню:",
         reply_markup=get_main_keyboard(),
     )
@@ -8958,7 +8996,8 @@ SEASON_DATA: dict[str, str] = {
 async def show_seasons_weather_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Подменю 🌤 Сезоны и погода."""
     context.user_data["back_to_planning"] = True
-    await update.message.reply_text(
+    await nav_reply(
+        update, context,
         "🌤 *Сезоны и погода*\n\nВыбери раздел:",
         parse_mode="Markdown",
         reply_markup=ReplyKeyboardMarkup(
@@ -9649,7 +9688,8 @@ async def lounge_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE
         [[btn] for btn in LOUNGE_BTNS] + [["◀️ Назад", HOME_BTN]],
         resize_keyboard=True,
     )
-    await update.message.reply_text(
+    await nav_reply(
+        update, context,
         "🛋 *Лаунджи аэропортов*\n\nВыбери раздел:",
         parse_mode="Markdown",
         reply_markup=keyboard,
@@ -10846,30 +10886,6 @@ async def testpost_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     await update.message.reply_text("\n".join(result_lines), parse_mode="Markdown")
 
 
-async def giveaccess_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """/giveaccess @username | user_id — выдать вечный премиум."""
-    if update.effective_user.id != ADMIN_ID:
-        await update.message.reply_text("⛔ Нет доступа.")
-        return
-    if not context.args:
-        await update.message.reply_text("Использование: /giveaccess @username  или  /giveaccess <user_id>")
-        return
-    target = context.args[0]
-    if target.startswith("@"):
-        uid = find_user_id_by_username(target)
-        if uid is None:
-            await update.message.reply_text(f"⛔ Пользователь {target} не найден в БД.")
-            return
-    else:
-        try:
-            uid = int(target)
-        except ValueError:
-            await update.message.reply_text("⛔ Нужно @username или числовой user_id.")
-            return
-    activate_lifetime(uid)
-    await update.message.reply_text(f"✅ Вечный доступ выдан user_id={uid}.")
-
-
 async def reset_trial_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """/reset_trial — сбрасывает триал у админа и активирует его заново через record_user()."""
     user = update.effective_user
@@ -11169,7 +11185,8 @@ def _waters_nav_kb() -> ReplyKeyboardMarkup:
 
 async def show_folder_mytrips(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     context.user_data.clear()
-    await update.message.reply_text(
+    await nav_reply(
+        update, context,
         "🗺 *Мои путешествия*\n\nВыбери раздел:",
         parse_mode="Markdown",
         reply_markup=get_folder_mytrips_kb(update.effective_user.id),
@@ -11283,7 +11300,6 @@ async def post_init(app: Application) -> None:
         BotCommand("start", "Главное меню"),
         BotCommand("stats", "Статистика бота"),
         BotCommand("queue", "Очередь постов"),
-        BotCommand("giveaccess", "Выдать доступ блогеру"),
         BotCommand("broadcast", "Рассылка всем пользователям"),
     ]
     await app.bot.set_my_commands(
@@ -11578,7 +11594,6 @@ def main():
     app.add_handler(CommandHandler("stats",    stats_command))
     app.add_handler(CommandHandler("menu",     menu_command))
     app.add_handler(CommandHandler("queue",    queue_command))
-    app.add_handler(CommandHandler("giveaccess", giveaccess_command))
     app.add_handler(CommandHandler("reset_trial", reset_trial_command))
     app.add_handler(CommandHandler("addpromo",   addpromo_command))
     app.add_handler(CommandHandler("promostats", promostats_command))
