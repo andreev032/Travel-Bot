@@ -1083,9 +1083,9 @@ CHANNEL_URL     = "https://t.me/like_a_local"
 HOME_BTN    = "🏠 Главное меню"
 CHANNEL_BTN = "📢 Наш канал"
 SHOP_BTN    = "🛒 Магазин"
-DONATE_BTN  = "💜 Поддержать"
-DONATE_AMOUNT_BTNS = ["💜 200 ₽", "💜 500 ₽", "💜 1000 ₽"]
-DONATE_CUSTOM_BTN  = "💜 Своя сумма"
+DONATE_BTN  = "🤍 Поддержать проект"
+DONATE_AMOUNT_BTNS = ["300 ₽", "500 ₽", "1000 ₽"]
+DONATE_CUSTOM_BTN  = "Своя сумма"
 ADMIN_ID    = int(os.getenv("ADMIN_ID", "462171750"))       # доступ к /stats и служебным командам
 
 # ── ЮKassa ─────────────────────────────────────────────────────────────
@@ -1706,7 +1706,7 @@ _ONB_DAY7_TEXT = (
     "🎒 Ты с ботом неделю — спасибо!\n\n"
     "Бот бесплатный целиком и таким останется: ни подписок, ни замков.\n\n"
     "Если пригодился — поделись им с тем, кто собирается в дорогу. "
-    "А если хочешь поддержать деньгами — кнопка «💜 Поддержать» в главном меню 🙌"
+    f"А если хочешь поддержать деньгами — кнопка «{DONATE_BTN}» в главном меню 🙌"
 )
 
 _ONB_DAY14_TEXT = (
@@ -1716,7 +1716,7 @@ _ONB_DAY14_TEXT = (
 )
 
 _ONB_PREMIUM_KB = InlineKeyboardMarkup([[
-    InlineKeyboardButton("💜 Поддержать проект", callback_data="onb_premium"),
+    InlineKeyboardButton(DONATE_BTN, callback_data="onb_premium"),
 ]])
 
 
@@ -1811,12 +1811,12 @@ async def onb_feedback_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def onb_premium_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Колбэк кнопки [💜 Поддержать проект] из онбординг-сообщений."""
+    """Колбэк кнопки [🤍 Поддержать проект] из онбординг-сообщений."""
     query = update.callback_query
     await query.answer()
     user_id = query.from_user.id
     msg = (
-        "💜 *Поддержать проект*\n\n"
+        "🤍 *Поддержать проект*\n\n"
         "Бот бесплатный целиком — все разделы открыты, подписок нет.\n\n"
         "Если он тебе пригодился, можешь закинуть сколько не жалко: "
         f"нажми «{DONATE_BTN}» в главном меню. Деньги идут на сервер "
@@ -1854,9 +1854,9 @@ def get_main_keyboard():
     return ReplyKeyboardMarkup(
         [
             [KeyboardButton("🧭 Планирование"),    KeyboardButton("🛠 Инструменты")],
-            [KeyboardButton("🗺 Мои путешествия"), KeyboardButton(DONATE_BTN)],
+            [KeyboardButton("🗺 Мои путешествия"), KeyboardButton("🆘 Поддержка")],
             [KeyboardButton("🎮 Игры"),             KeyboardButton("🤝 Партнёры")],
-            [KeyboardButton("👤 О проекте"),        KeyboardButton("🆘 Поддержка")],
+            [KeyboardButton("👤 О проекте"),        KeyboardButton(DONATE_BTN)],
             [KeyboardButton(CHANNEL_BTN)],
         ],
         resize_keyboard=True,
@@ -4696,11 +4696,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def show_donate_screen(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Экран 💜 Поддержать: бот бесплатный, донат по желанию."""
+    """Экран 🤍 Поддержать проект: бот бесплатный, донат по желанию."""
     user = update.effective_user
     ref_code = get_or_create_referral_code(user.id)
 
-    share_kb = InlineKeyboardMarkup([[
+    share_kb = InlineKeyboardMarkup([
+        [InlineKeyboardButton("📣 Наш канал «Как местный»", url="https://t.me/like_a_local")],
+        [InlineKeyboardButton("📸 Instagram", url="https://instagram.com/andreev032")],
+        [
         InlineKeyboardButton(
             "📲 Поделиться с другом",
             switch_inline_query=f"🎒 {user.first_name} делится с тобой тревел-ботом «Как местный»\n\nТвой карманный помощник в путешествиях — визы, погода, билеты, страховки, путеводители, игры, рейтинг путешественников и многое другое. Всё в одном месте 🌍\nt.me/like_a_local_bot?start={ref_code}"
@@ -4708,7 +4711,7 @@ async def show_donate_screen(update: Update, context: ContextTypes.DEFAULT_TYPE)
     ]])
 
     await update.message.reply_text(
-        "💜 *Поддержать проект*\n\n"
+        "🤍 *Поддержать проект*\n\n"
         "Бот бесплатный целиком, все функции открыты — и так и останется.\n\n"
         "Я делаю его один: собираю данные, пишу тексты, плачу за сервер. "
         "Если он тебе пригодился в поездке — можешь закинуть сколько не жалко. "
@@ -4773,7 +4776,7 @@ async def _send_donation_link(update: Update, rubles: int) -> int:
     try:
         url = yookassa_create_donation(user_id, rubles)
         await update.message.reply_text(
-            f"💜 Поддержка проекта на *{rubles} ₽*\n\nСпасибо! Нажми кнопку ниже.",
+            f"🤍 Поддержка проекта на *{rubles} ₽*\n\nСпасибо! Нажми кнопку ниже.",
             parse_mode="Markdown",
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton(f"Оплатить {rubles} ₽", url=url)],
