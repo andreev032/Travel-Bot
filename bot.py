@@ -5189,7 +5189,10 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def show_help_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [[topic] for topic in HELP_TOPICS.keys()] + [["◀️ Назад", HOME_BTN]]
     await update.message.reply_text(
-        "📖 *Инструкция для новичка*\n\nВыбери тему:",
+        "📖 *Инструкция для новичка*\n\n"
+        "Если летишь впервые или давно не летал. Что происходит от стойки "
+        "регистрации до выхода в город чужой страны: аэропорт, паспортный "
+        "контроль, такси, симкарта, страховка.",
         parse_mode="Markdown",
         reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
     )
