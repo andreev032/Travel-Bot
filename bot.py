@@ -2535,12 +2535,13 @@ _QUIZ_QUESTIONS = [
 
 
 def _quiz_question_kb(options: list[str]) -> ReplyKeyboardMarkup:
-    """Клавиатура с 4 вариантами ответа (2×2) + Завершить + Назад."""
+    """Клавиатура с 4 вариантами ответа (2×2) + Завершить + Назад + Домой."""
     return ReplyKeyboardMarkup(
         [
             [options[0], options[1]],
             [options[2], options[3]],
-            ["🏁 Завершить", "◀️ Назад"],
+            ["🏁 Завершить"],
+            ["◀️ Назад", HOME_BTN],
         ],
         resize_keyboard=True,
         one_time_keyboard=True,
@@ -2549,7 +2550,7 @@ def _quiz_question_kb(options: list[str]) -> ReplyKeyboardMarkup:
 
 def _quiz_next_kb() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
-        [["➡️ Следующий вопрос"], ["🏁 Завершить", "◀️ Назад"]],
+        [["➡️ Следующий вопрос"], ["🏁 Завершить"], ["◀️ Назад", HOME_BTN]],
         resize_keyboard=True,
         one_time_keyboard=True,
     )
@@ -2557,7 +2558,7 @@ def _quiz_next_kb() -> ReplyKeyboardMarkup:
 
 def _quiz_finish_kb() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
-        [["🔄 Начать заново"], [HOME_BTN]],
+        [["🔄 Начать заново"], ["◀️ Назад", HOME_BTN]],
         resize_keyboard=True,
         one_time_keyboard=True,
     )
@@ -2590,6 +2591,9 @@ async def _quiz_show_question(update: Update, context: ContextTypes.DEFAULT_TYPE
 async def quiz_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
     ud = context.user_data
+
+    if text == HOME_BTN:
+        return await go_home(update, context)
 
     if text == "◀️ Назад":
         return await show_games_menu(update, context)
@@ -2986,7 +2990,7 @@ def _check_guess_answer(user_input: str, riddle: dict) -> bool:
 
 def _guess_question_kb() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
-        [["🏁 Завершить", "◀️ Назад"]],
+        [["🏁 Завершить"], ["◀️ Назад", HOME_BTN]],
         resize_keyboard=True,
         one_time_keyboard=False,
     )
@@ -2994,7 +2998,7 @@ def _guess_question_kb() -> ReplyKeyboardMarkup:
 
 def _guess_next_kb() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
-        [["➡️ Следующий вопрос"], ["🏁 Завершить", "◀️ Назад"]],
+        [["➡️ Следующий вопрос"], ["🏁 Завершить"], ["◀️ Назад", HOME_BTN]],
         resize_keyboard=True,
         one_time_keyboard=True,
     )
@@ -3002,7 +3006,7 @@ def _guess_next_kb() -> ReplyKeyboardMarkup:
 
 def _guess_finish_kb() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
-        [["🔄 Начать заново"], [HOME_BTN]],
+        [["🔄 Начать заново"], ["◀️ Назад", HOME_BTN]],
         resize_keyboard=True,
         one_time_keyboard=True,
     )
@@ -3058,6 +3062,9 @@ async def _guess_show_finish(update: Update, context: ContextTypes.DEFAULT_TYPE)
 async def guess_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
     ud   = context.user_data
+
+    if text == HOME_BTN:
+        return await go_home(update, context)
 
     if text == "◀️ Назад":
         return await show_games_menu(update, context)
@@ -3275,7 +3282,7 @@ def _pair_next_kb() -> ReplyKeyboardMarkup:
 
 def _pair_finish_kb() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
-        [["🔄 Начать заново"], [HOME_BTN]],
+        [["🔄 Начать заново"], ["◀️ Назад", HOME_BTN]],
         resize_keyboard=True,
         one_time_keyboard=True,
     )
