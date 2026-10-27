@@ -1791,7 +1791,7 @@ async def onb_mytrips_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = query.from_user.id
     await context.bot.send_message(
         chat_id=user_id,
-        text="🗺 *Мои путешествия*\n\nТвоя личная карта. Отмечай страны и смотри, какое у тебя место в общем рейтинге.",
+        text="🗺 *Мои путешествия*\n\nЗдесь всё про твои поездки. Отмечай страны и регионы России, собирай достопримечательности, веди дневник, считай расстояния и общий счёт в компании. Статистика и место в рейтинге обновляются сами.\n\nОтсюда же путеводители, авторские туры и помощь с визой.",
         parse_mode="Markdown",
         reply_markup=get_folder_mytrips_kb(user_id),
     )
@@ -4883,7 +4883,7 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == "🗺 Мои путешествия":
         await nav_reply(
         update, context,
-            "🗺 *Мои путешествия*\n\nТвоя личная карта. Отмечай страны и смотри, какое у тебя место в общем рейтинге.",
+            "🗺 *Мои путешествия*\n\nЗдесь всё про твои поездки. Отмечай страны и регионы России, собирай достопримечательности, веди дневник, считай расстояния и общий счёт в компании. Статистика и место в рейтинге обновляются сами.\n\nОтсюда же путеводители, авторские туры и помощь с визой.",
             parse_mode="Markdown",
             reply_markup=get_folder_mytrips_kb(update.effective_user.id),
         )
@@ -4895,7 +4895,7 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # человек набрал название раздела руками — возвращаем папку
         await nav_reply(
         update, context,
-            "🗺 *Мои путешествия*\n\nТвоя личная карта. Отмечай страны и смотри, какое у тебя место в общем рейтинге.",
+            "🗺 *Мои путешествия*\n\nЗдесь всё про твои поездки. Отмечай страны и регионы России, собирай достопримечательности, веди дневник, считай расстояния и общий счёт в компании. Статистика и место в рейтинге обновляются сами.\n\nОтсюда же путеводители, авторские туры и помощь с визой.",
             parse_mode="Markdown",
             reply_markup=get_folder_mytrips_kb(update.effective_user.id),
         )
@@ -11197,7 +11197,7 @@ async def show_folder_mytrips(update: Update, context: ContextTypes.DEFAULT_TYPE
     context.user_data.clear()
     await nav_reply(
         update, context,
-        "🗺 *Мои путешествия*\n\nТвоя личная карта. Отмечай страны и смотри, какое у тебя место в общем рейтинге.",
+        "🗺 *Мои путешествия*\n\nЗдесь всё про твои поездки. Отмечай страны и регионы России, собирай достопримечательности, веди дневник, считай расстояния и общий счёт в компании. Статистика и место в рейтинге обновляются сами.\n\nОтсюда же путеводители, авторские туры и помощь с визой.",
         parse_mode="Markdown",
         reply_markup=get_folder_mytrips_kb(update.effective_user.id),
     )
