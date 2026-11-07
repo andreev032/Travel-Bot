@@ -7,12 +7,9 @@ from datetime import datetime, time, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.error import BadRequest, Forbidden, RetryAfter
 
-VERSION = "intro_v1"
 MOSCOW = ZoneInfo("Europe/Moscow")
 FRESHNESS = timedelta(minutes=5)
-CLAIM_TIMEOUT = timedelta(minutes=2)
 POLL_SECONDS = 5
 logger = logging.getLogger(__name__)
 
@@ -152,6 +149,11 @@ STEPS = (
 )
 STEP_BY_KEY = {step.key: step for step in STEPS}
 
+# Legacy sends use nonnegative days. Reserve stable IDs for the 12 new steps.
+# The pending row stores its due time in UTC, and the claimed row its claim time.
+PENDING_STEPS = {-38501 - index: step for index, step in enumerate(STEPS)}
+CLAIM_OFFSET = 100
+
 
 def schedule(started_at):
     if started_at.utcoffset() is None:
@@ -182,122 +184,82 @@ def keyboard(step):
 
 
 def enroll(cur, user_id):
-    """Called in the same transaction as the first insert into users."""
+    """Queue the steps in the transaction that inserts the user."""
     cur.execute(
-        """
-        INSERT INTO onboarding_enrollments (user_id, campaign_version)
-        SELECT %s, %s
-        WHERE NOT EXISTS (SELECT 1 FROM onboarding_messages WHERE user_id = %s)
-        ON CONFLICT DO NOTHING
-        RETURNING started_at
-        """,
-        (user_id, VERSION, user_id),
+        "SELECT now() WHERE NOT EXISTS (SELECT 1 FROM onboarding_messages WHERE user_id = %s)",
+        (user_id,),
     )
-    enrollment = cur.fetchone()
-    if enrollment:
+    row = cur.fetchone()
+    if row:
+        due_by_key = dict(schedule(row[0]))
         cur.executemany(
             """
-            INSERT INTO onboarding_deliveries
-                (user_id, campaign_version, step_key, due_at, next_attempt_at)
-            VALUES (%s, %s, %s, %s, %s)
+            INSERT INTO onboarding_messages (user_id, day, sent_at)
+            VALUES (%s, %s, %s AT TIME ZONE 'UTC')
             """,
-            [(user_id, VERSION, key, due, due) for key, due in schedule(enrollment[0])],
+            [(user_id, day, due_by_key[step.key]) for day, step in PENDING_STEPS.items()],
         )
 
 
-def maintain_queue(connect):
+def expire(connect):
     with closing(connect()) as conn, conn, conn.cursor() as cur:
         cur.execute(
             """
-            UPDATE onboarding_deliveries
-            SET status = 'expired'
-            WHERE campaign_version = %s AND status = 'pending'
-              AND due_at <= now() - %s
+            DELETE FROM onboarding_messages
+            WHERE day BETWEEN %s AND %s
+              AND sent_at <= (now() AT TIME ZONE 'UTC') - %s
             """,
-            (VERSION, FRESHNESS),
-        )
-        cur.execute(
-            """
-            UPDATE onboarding_deliveries
-            SET status = 'uncertain'
-            WHERE campaign_version = %s AND status = 'sending'
-              AND claimed_at <= now() - %s
-            """,
-            (VERSION, CLAIM_TIMEOUT),
+            (min(PENDING_STEPS), max(PENDING_STEPS), FRESHNESS),
         )
 
 
 def claim(connect):
+    """Commit a permanent claim before calling Telegram, even across restarts."""
     with closing(connect()) as conn, conn, conn.cursor() as cur:
         cur.execute(
             """
-            WITH next_delivery AS (
-                SELECT user_id, campaign_version, step_key
-                FROM onboarding_deliveries
-                WHERE campaign_version = %s AND status = 'pending'
-                  AND next_attempt_at <= now() AND due_at > now() - %s
-                ORDER BY next_attempt_at, user_id, step_key
+            WITH next_message AS (
+                SELECT user_id, day
+                FROM onboarding_messages
+                WHERE day BETWEEN %s AND %s
+                  AND sent_at <= now() AT TIME ZONE 'UTC'
+                  AND sent_at > (now() AT TIME ZONE 'UTC') - %s
+                ORDER BY sent_at, user_id, day
                 LIMIT 1 FOR UPDATE SKIP LOCKED
             )
-            UPDATE onboarding_deliveries AS d
-            SET status = 'sending', claimed_at = now(), attempt_count = attempt_count + 1
-            FROM next_delivery AS n
-            WHERE (d.user_id, d.campaign_version, d.step_key)
-                = (n.user_id, n.campaign_version, n.step_key)
-            RETURNING d.user_id, d.step_key, d.attempt_count
+            UPDATE onboarding_messages AS message
+            SET day = message.day - %s, sent_at = now() AT TIME ZONE 'UTC'
+            FROM next_message
+            WHERE (message.user_id, message.day) = (next_message.user_id, next_message.day)
+            RETURNING next_message.user_id, next_message.day
             """,
-            (VERSION, FRESHNESS),
+            (min(PENDING_STEPS), max(PENDING_STEPS), FRESHNESS, CLAIM_OFFSET),
         )
-        return cur.fetchone()
+        row = cur.fetchone()
+        return (row[0], PENDING_STEPS[row[1]]) if row else None
 
 
-def finish(connect, delivery, status, message_id=None, delay=None):
-    user_id, key, attempt = delivery
-    with closing(connect()) as conn, conn, conn.cursor() as cur:
-        cur.execute(
-            """
-            UPDATE onboarding_deliveries
-            SET status = %s, telegram_message_id = %s,
-                sent_at = CASE WHEN %s = 'sent' THEN now() END,
-                next_attempt_at = COALESCE(now() + %s, next_attempt_at)
-            WHERE user_id = %s AND campaign_version = %s AND step_key = %s
-              AND attempt_count = %s AND status IN ('sending', 'uncertain')
-            """,
-            (status, message_id, status, delay, user_id, VERSION, key, attempt),
-        )
-
-
-async def deliver(bot, connect, delivery):
-    user_id, key, _ = delivery
-    step = STEP_BY_KEY[key]
+async def deliver(bot, delivery):
+    user_id, step = delivery
     try:
-        message = await asyncio.wait_for(
+        await asyncio.wait_for(
             bot.send_message(chat_id=user_id, text=step.text, reply_markup=keyboard(step)),
             timeout=30,
         )
-    except RetryAfter as error:
-        delay = error.retry_after
-        if not isinstance(delay, timedelta):
-            delay = timedelta(seconds=delay)
-        await asyncio.to_thread(finish, connect, delivery, "pending", delay=delay)
-    except (Forbidden, BadRequest):
-        await asyncio.to_thread(finish, connect, delivery, "failed")
     except Exception as error:
-        logger.warning("Onboarding delivery outcome unknown: %s (%s)", key, type(error).__name__)
-        await asyncio.to_thread(finish, connect, delivery, "uncertain")
-    else:
-        await asyncio.to_thread(finish, connect, delivery, "sent", message.message_id)
+        # Telegram may have accepted the message even when the request failed.
+        logger.warning("Onboarding step %s was not confirmed: %s", step.key, type(error).__name__)
 
 
 async def run(bot, connect):
     while True:
         try:
-            await asyncio.to_thread(maintain_queue, connect)
+            await asyncio.to_thread(expire, connect)
             for _ in range(50):
                 delivery = await asyncio.to_thread(claim, connect)
                 if delivery is None:
                     break
-                await deliver(bot, connect, delivery)
+                await deliver(bot, delivery)
         except Exception as error:
             logger.error("Onboarding scheduler: %s", type(error).__name__)
         await asyncio.sleep(POLL_SECONDS)
