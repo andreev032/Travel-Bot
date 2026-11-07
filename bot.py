@@ -17,6 +17,7 @@ import urllib.parse
 import requests
 import httpx
 import psycopg2
+import onboarding
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from flask import Flask, request as flask_request
@@ -61,6 +62,7 @@ logging.getLogger('werkzeug').addFilter(token_filter)
 CHANNEL_ID       = int(os.getenv("CHANNEL_ID", "-1002079377291"))   # ВРЕМЕННО: тестовый канал для проверки расписания
 TEST_CHANNEL_ID  = int(os.getenv("TEST_CHANNEL_ID", "-1003580791059"))   # тестовый канал — команда /testpost
 MOSCOW_TZ        = ZoneInfo("Europe/Moscow")
+ONBOARDING_ENABLED = os.getenv("INTERACTIVE_ONBOARDING_ENABLED") == "1"
 
 # ── Хранилище статистики пользователей (PostgreSQL) ──────────────────
 
@@ -438,7 +440,7 @@ def _populate_waters_if_empty(conn) -> None:
         conn.rollback()
 
 
-async def record_user(user_id: int, username: str | None, first_name: str | None) -> None:
+async def record_user(user_id: int, username: str | None, first_name: str | None, *, enroll_onboarding: bool = False) -> None:
     """Сохраняет/обновляет пользователя.
     Триал больше не выдаём — бот бесплатный с 25.10.2026."""
     try:
@@ -448,11 +450,17 @@ async def record_user(user_id: int, username: str | None, first_name: str | None
                 cur.execute("""
                     INSERT INTO users (user_id, username, first_name)
                     VALUES (%s, %s, %s)
-                    ON CONFLICT (user_id) DO UPDATE
-                        SET last_seen  = NOW(),
-                            username   = EXCLUDED.username,
-                            first_name = EXCLUDED.first_name
+                    ON CONFLICT (user_id) DO NOTHING
+                    RETURNING user_id
                 """, (user_id, username, first_name))
+                if cur.fetchone():
+                    if enroll_onboarding:
+                        onboarding.enroll(cur, user_id)
+                else:
+                    cur.execute("""
+                        UPDATE users SET last_seen = NOW(), username = %s, first_name = %s
+                        WHERE user_id = %s
+                    """, (username, first_name, user_id))
             conn.commit()
         finally:
             conn.close()
@@ -1290,8 +1298,11 @@ def yookassa_webhook():
 
     obj = data.get("object", {})
     metadata = obj.get("metadata", {})
-    user_id_str = metadata.get("user_id")
     plan = metadata.get("plan", "month")
+    if plan == "donate":
+        # One-off support has no entitlement or referral side effects.
+        return "", 200
+    user_id_str = metadata.get("user_id")
     if not user_id_str:
         logger.warning("YooKassa webhook: нет user_id в metadata")
         return "", 200
@@ -1596,22 +1607,6 @@ async def autorenewal_scheduler(bot) -> None:
 
 # ── ONBOARDING ────────────────────────────────────────────────────────────────
 
-def _mark_onboarding_sent(user_id: int, day: int) -> None:
-    try:
-        conn = get_db_connection()
-        try:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "INSERT INTO onboarding_messages (user_id, day) VALUES (%s, %s) ON CONFLICT DO NOTHING",
-                    (user_id, day),
-                )
-            conn.commit()
-        finally:
-            conn.close()
-    except Exception as e:
-        logger.error("_mark_onboarding_sent user=%s day=%s: %s", user_id, day, e)
-
-
 def _save_feedback(user_id: int, username: str | None, first_name: str | None, text: str) -> None:
     try:
         conn = get_db_connection()
@@ -1626,160 +1621,6 @@ def _save_feedback(user_id: int, username: str | None, first_name: str | None, t
             conn.close()
     except Exception as e:
         logger.error("_save_feedback user=%s: %s", user_id, e)
-
-
-def _get_onboarding_users(day: int, buyers_only: bool = False, interval: str | None = None, upper_interval: str | None = None) -> list[tuple]:
-    """Возвращает список (user_id, username, first_name) для дня онбординга."""
-    interval_str = interval if interval is not None else f"{day} days"
-    upper_clause = "AND first_seen >= NOW() - INTERVAL %s" if upper_interval else ""
-    try:
-        conn = get_db_connection()
-        try:
-            with conn.cursor() as cur:
-                if buyers_only:
-                    params = [interval_str]
-                    if upper_interval:
-                        params.append(upper_interval)
-                    params += [ADMIN_ID, day]
-                    cur.execute(
-                        f"""
-                        SELECT user_id, username, first_name FROM users
-                        WHERE first_seen <= NOW() - INTERVAL %s
-                          {upper_clause}
-                          AND user_id != %s
-                          AND (subscription_type IS NULL OR subscription_type = 'trial')
-                          AND user_id NOT IN (
-                              SELECT user_id FROM onboarding_messages WHERE day = %s
-                          )
-                        """,
-                        params,
-                    )
-                else:
-                    params = [interval_str]
-                    if upper_interval:
-                        params.append(upper_interval)
-                    params += [ADMIN_ID, day]
-                    cur.execute(
-                        f"""
-                        SELECT user_id, username, first_name FROM users
-                        WHERE first_seen <= NOW() - INTERVAL %s
-                          {upper_clause}
-                          AND user_id != %s
-                          AND user_id NOT IN (
-                              SELECT user_id FROM onboarding_messages WHERE day = %s
-                          )
-                        """,
-                        params,
-                    )
-                return cur.fetchall()
-        finally:
-            conn.close()
-    except Exception as e:
-        logger.error("_get_onboarding_users day=%s: %s", day, e)
-        return []
-
-
-_ONB_DAY1_TEXT = (
-    "🌍 Кстати, ты уже отметил страны где побывал?\n\n"
-    "Многие начинают именно с этого — получается неожиданно интересно, "
-    "сколько мест уже за плечами 🗺\n\n"
-    "Попробуй прямо сейчас!"
-)
-
-_ONB_DAY3_TEXT = (
-    "✈️ Как дела с путешествиями?\n\n"
-    "Мы строим «Как местный» как лучший русскоязычный помощник по путешествиям — "
-    "и твоё мнение важнее любой аналитики.\n\n"
-    "Что попробовал? Что понравилось или нет? Чего не хватает? "
-    "Хотим сделать по-настоящему крутой продукт 🙌"
-)
-
-_ONB_DAY5_TEXT = (
-    "🗺 Ты видел не всё, что умеет бот\n\n"
-    "📖 Дневник путешественника · 📊 Моя статистика\n"
-    "🏛 Мои достопримечательности · 🇷🇺 Путешествия по России\n"
-    "🌊 Отметки водоёмов · 💰 Общий счёт\n\n"
-    "Всё это открыто и бесплатно — загляни в «Мои путешествия»."
-)
-
-_ONB_DAY7_TEXT = (
-    "🎒 Ты с ботом неделю — спасибо!\n\n"
-    "Бот бесплатный целиком и таким останется: ни подписок, ни замков.\n\n"
-    "Если пригодился — поделись им с тем, кто собирается в дорогу. "
-    f"А если хочешь поддержать деньгами — кнопка «{DONATE_BTN}» в главном меню 🙌"
-)
-
-_ONB_DAY14_TEXT = (
-    "👋 Давно не виделись!\n\n"
-    "Если что-то не понравилось — напиши, это реально помогает нам стать лучше.\n\n"
-    "Если просто не было времени — возвращайся когда будешь готов 😊"
-)
-
-_ONB_PREMIUM_KB = InlineKeyboardMarkup([[
-    InlineKeyboardButton(DONATE_BTN, callback_data="onb_premium"),
-]])
-
-
-async def send_onboarding_messages(bot) -> None:
-    """Рассылает онбординг-сообщения всем подходящим пользователям."""
-    _days_cfg = [
-        (0,  "🔄 Если бот не реагирует — нажми /start для перезагрузки (Меню → /start)\n\nБот в активной разработке — постоянно добавляем новые функции 🎒 Спасибо что ты с нами 🙏", None, False, '1 hour', '2 hours'),
-        (1,  _ONB_DAY1_TEXT,  InlineKeyboardMarkup([[InlineKeyboardButton("🌍 Мои страны", callback_data="onb_mytrips")]]), False, None, None),
-        (3,  _ONB_DAY3_TEXT,  InlineKeyboardMarkup([[InlineKeyboardButton("📝 Оставить отзыв", callback_data="onb_feedback")]]), False, None, None),
-        (5,  _ONB_DAY5_TEXT,  _ONB_PREMIUM_KB, True, None, None),
-        (7,  _ONB_DAY7_TEXT,  _ONB_PREMIUM_KB, True, None, None),
-        (14, _ONB_DAY14_TEXT, _ONB_PREMIUM_KB, True, None, None),
-    ]
-    for day, text, kb, non_buyers_only, interval, upper_interval in _days_cfg:
-        users = _get_onboarding_users(day, buyers_only=non_buyers_only, interval=interval, upper_interval=upper_interval)
-        for user_id, username, first_name in users:
-            try:
-                await bot.send_message(chat_id=user_id, text=text, reply_markup=kb)
-                _mark_onboarding_sent(user_id, day)
-                logger.info("onboarding day%s sent → user_id=%s", day, user_id)
-            except Exception as e:
-                logger.warning("onboarding day%s user=%s: %s", day, user_id, e)
-
-
-async def hour1_scheduler(bot) -> None:
-    """Каждый час отправляет приветственное сообщение пользователям, зарегистрировавшимся 1–2 часа назад."""
-    while True:
-        await asyncio.sleep(3600)
-        try:
-            users = _get_onboarding_users(0, buyers_only=False, interval='1 hour', upper_interval='2 hours')
-            for user_id, username, first_name in users:
-                try:
-                    await bot.send_message(
-                        chat_id=user_id,
-                        text="🔄 Если бот не реагирует — нажми /start для перезагрузки (Меню → /start)\n\nБот в активной разработке — постоянно добавляем новые функции 🎒 Спасибо что ты с нами 🙏",
-                    )
-                    _mark_onboarding_sent(user_id, 0)
-                    logger.info("onboarding hour1 sent → user_id=%s", user_id)
-                except Exception as e:
-                    logger.warning("onboarding hour1 user=%s: %s", user_id, e)
-        except Exception as e:
-            logger.error("hour1_scheduler: %s: %s", type(e).__name__, e)
-
-
-async def onboarding_scheduler(bot) -> None:
-    """Ждёт 12:00 МСК и запускает send_onboarding_messages каждые сутки."""
-    _MSK = ZoneInfo("Europe/Moscow")
-    while True:
-        now = datetime.now(_MSK)
-        next_run = now.replace(hour=12, minute=0, second=0, microsecond=0)
-        if now >= next_run:
-            next_run = next_run + timedelta(days=1)
-        sleep_secs = (next_run - now).total_seconds()
-        logger.info(
-            "onboarding_scheduler: следующий запуск через %.0f сек (%s МСК)",
-            sleep_secs,
-            next_run.strftime("%Y-%m-%d %H:%M"),
-        )
-        await asyncio.sleep(sleep_secs)
-        try:
-            await send_onboarding_messages(bot)
-        except Exception as e:
-            logger.error("onboarding_scheduler: %s: %s", type(e).__name__, e)
 
 
 # ── ONBOARDING CALLBACK HANDLERS ─────────────────────────────────────────────
@@ -1863,7 +1704,7 @@ async def nav_reply(update: Update, context: ContextTypes.DEFAULT_TYPE, *args, *
             await context.bot.delete_message(update.effective_chat.id, prev_id)
         except Exception:
             pass          # старше 48 часов или уже удалено вручную
-    msg = await update.message.reply_text(*args, **kwargs)
+    msg = await update.effective_message.reply_text(*args, **kwargs)
     context.chat_data["nav_msg_id"] = msg.message_id
     return msg
 
@@ -2017,8 +1858,15 @@ async def show_rating(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return MAIN_MENU
 
 
+def reset_navigation(context):
+    # Game sessions can resume when reopened from the Games menu.
+    for key in list(context.user_data):
+        if not key.startswith(("quiz_", "guess_", "pair_")):
+            del context.user_data[key]
+
+
 async def go_home(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data.clear()
+    reset_navigation(context)
     await nav_reply(
         update, context,
         "🏠 Главное меню:",
@@ -2115,7 +1963,7 @@ def _calc_destiny(dob: str) -> int | None:
 
 async def destiny_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Вход в раздел 🔮 Страна по судьбе."""
-    await update.message.reply_text(
+    await update.effective_message.reply_text(
         "🔮 *Страна по судьбе*\n\n"
         "Введи дату рождения в формате *ДД.ММ.ГГГГ*\n"
         "_(например: 14.04.1990)_\n\n"
@@ -2135,6 +1983,9 @@ async def destiny_typing_handler(update: Update, context: ContextTypes.DEFAULT_T
         return await go_home(update, context)
     if text == "◀️ Назад":
         return await show_folder_planning(update, context)
+
+    if text == "🔮 Другая дата":
+        return await destiny_start(update, context)
 
     number = _calc_destiny(text)
     if number is None:
@@ -2564,6 +2415,24 @@ def _quiz_finish_kb() -> ReplyKeyboardMarkup:
     )
 
 
+async def resume_quiz(update, context):
+    data = context.user_data
+    if "quiz_questions" not in data:
+        return await quiz_start(update, context)
+    if data.get("quiz_finished") or (
+        data.get("quiz_awaiting_next")
+        and data["quiz_index"] + 1 >= len(data["quiz_questions"])
+    ):
+        return await _quiz_show_finish(update, context)
+    if data.get("quiz_awaiting_next"):
+        await update.effective_message.reply_text(
+            "Продолжим игру?", reply_markup=_quiz_next_kb(),
+        )
+    else:
+        await _quiz_show_question(update, context)
+    return QUIZ_ACTIVE
+
+
 async def quiz_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Начало викторины — перемешиваем вопросы и показываем первый."""
     questions = _QUIZ_QUESTIONS.copy()
@@ -2571,6 +2440,7 @@ async def quiz_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["quiz_questions"] = questions
     context.user_data["quiz_index"] = 0
     context.user_data["quiz_score"] = 0
+    context.user_data["quiz_finished"] = False
     context.user_data["quiz_awaiting_next"] = False
     return await _quiz_show_question(update, context)
 
@@ -2601,15 +2471,20 @@ async def quiz_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if text == "🏁 Завершить":
         return await _quiz_show_finish(update, context)
 
+    if text == "🔄 Начать заново" and (ud.get("quiz_finished") or ud.get("quiz_awaiting_next")):
+        return await quiz_start(update, context)
+    if ud.get("quiz_finished"):
+        return QUIZ_ACTIVE
+
     awaiting_next = ud.get("quiz_awaiting_next", False)
 
     # Пользователь нажал "Следующий вопрос" или "Начать заново"
     if awaiting_next:
-        if text == "🔄 Начать заново":
-            return await quiz_start(update, context)
         if text == HOME_BTN:
             return await go_home(update, context)
         if text == "➡️ Следующий вопрос":
+            if ud["quiz_index"] + 1 >= len(ud["quiz_questions"]):
+                return await _quiz_show_finish(update, context)
             ud["quiz_index"] += 1
             return await _quiz_show_question(update, context)
         # Любой другой текст — повторяем подсказку
@@ -2657,6 +2532,7 @@ async def quiz_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def _quiz_show_finish(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Досрочное завершение викторины по кнопке 🏁 Завершить."""
     ud = context.user_data
+    ud["quiz_finished"] = True
     score = ud.get("quiz_score", 0)
     # quiz_index = индекс текущего вопроса (ещё не отвечен).
     # Если quiz_awaiting_next=True — пользователь уже ответил на этот вопрос,
@@ -3012,12 +2888,31 @@ def _guess_finish_kb() -> ReplyKeyboardMarkup:
     )
 
 
+async def resume_guess(update, context):
+    data = context.user_data
+    if "guess_riddles" not in data:
+        return await guess_start(update, context)
+    if data.get("guess_finished") or (
+        data.get("guess_awaiting_next")
+        and data["guess_index"] + 1 >= len(data["guess_riddles"])
+    ):
+        return await _guess_show_finish(update, context)
+    if data.get("guess_awaiting_next"):
+        await update.effective_message.reply_text(
+            "Продолжим игру?", reply_markup=_guess_next_kb(),
+        )
+    else:
+        await _guess_show_question(update, context)
+    return GUESS_ACTIVE
+
+
 async def guess_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     riddles = _GUESS_RIDDLES.copy()
     _random_guess.shuffle(riddles)
     context.user_data["guess_riddles"]      = riddles
     context.user_data["guess_index"]        = 0
     context.user_data["guess_score"]        = 0
+    context.user_data["guess_finished"] = False
     context.user_data["guess_awaiting_next"] = False
     await _guess_show_question(update, context)
     return GUESS_ACTIVE
@@ -3038,6 +2933,7 @@ async def _guess_show_question(update: Update, context: ContextTypes.DEFAULT_TYP
 
 async def _guess_show_finish(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ud      = context.user_data
+    ud["guess_finished"] = True
     score   = ud.get("guess_score", 0)
     answered = ud.get("guess_index", 0) + (1 if ud.get("guess_awaiting_next") else 0)
     total   = len(ud.get("guess_riddles", _GUESS_RIDDLES))
@@ -3072,11 +2968,14 @@ async def guess_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if text == "🏁 Завершить":
         return await _guess_show_finish(update, context)
 
+    if text == "🔄 Начать заново" and (ud.get("guess_finished") or ud.get("guess_awaiting_next")):
+        return await guess_start(update, context)
+    if ud.get("guess_finished"):
+        return GUESS_ACTIVE
+
     awaiting_next = ud.get("guess_awaiting_next", False)
 
     if awaiting_next:
-        if text == "🔄 Начать заново":
-            return await guess_start(update, context)
         if text == HOME_BTN:
             return await go_home(update, context)
         if text == "➡️ Следующий вопрос":
@@ -3288,11 +3187,30 @@ def _pair_finish_kb() -> ReplyKeyboardMarkup:
     )
 
 
+async def resume_pair(update, context):
+    data = context.user_data
+    if "pair_questions" not in data:
+        return await pair_start(update, context)
+    if data.get("pair_finished") or (
+        data.get("pair_awaiting_next")
+        and data["pair_index"] + 1 >= len(data["pair_questions"])
+    ):
+        return await _pair_finish(update, context)
+    if data.get("pair_awaiting_next"):
+        await update.effective_message.reply_text(
+            "Продолжим игру?", reply_markup=_pair_next_kb(),
+        )
+    else:
+        await _pair_show_question(update, context)
+    return PAIR_ACTIVE
+
+
 async def pair_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     questions = _pair_build_questions()
     context.user_data["pair_questions"]      = questions
     context.user_data["pair_index"]          = 0
     context.user_data["pair_score"]          = 0
+    context.user_data["pair_finished"] = False
     context.user_data["pair_awaiting_next"]  = False
     context.user_data["pair_options"]        = []
     await _pair_show_question(update, context)
@@ -3314,6 +3232,7 @@ async def _pair_show_question(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 async def _pair_finish(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ud      = context.user_data
+    ud["pair_finished"] = True
     score   = ud.get("pair_score", 0)
     answered = ud.get("pair_index", 0) + (1 if ud.get("pair_awaiting_next") else 0)
     if score == answered:
@@ -3347,11 +3266,14 @@ async def pair_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if text == "🏁 Завершить":
         return await _pair_finish(update, context)
 
+    if text == "🔄 Начать заново" and (ud.get("pair_finished") or ud.get("pair_awaiting_next")):
+        return await pair_start(update, context)
+    if ud.get("pair_finished"):
+        return PAIR_ACTIVE
+
     awaiting = ud.get("pair_awaiting_next", False)
 
     if awaiting:
-        if text == "🔄 Начать заново":
-            return await pair_start(update, context)
         if text == "➡️ Следующий вопрос":
             ud["pair_index"] += 1
             ud["pair_awaiting_next"] = False
@@ -3408,7 +3330,7 @@ async def pair_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def show_folder_planning(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Вернуться в папку 🧭 Планирование."""
-    context.user_data.clear()
+    reset_navigation(context)
     await nav_reply(
         update, context,
         "🧭 *Планирование*\n\nОтсюда начинается поездка. Куда лететь, в каком месяце и что там будет происходить.",
@@ -3420,7 +3342,7 @@ async def show_folder_planning(update: Update, context: ContextTypes.DEFAULT_TYP
 
 async def show_folder_knowledge(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Вернуться в папку 📚 Знания."""
-    context.user_data.clear()
+    reset_navigation(context)
     await nav_reply(
         update, context,
         "📚 *Знания*\n\nТо, о чём обычно узнают поздно. Визы, прививки, штрафы за дроны, страны, которые не стоит ставить в один паспорт.",
@@ -3751,7 +3673,7 @@ async def country_of_day_start(update: Update, context: ContextTypes.DEFAULT_TYP
         f"🏳 Собрано флагов: *{count}* из 201\n\n"
         f"Возвращайся завтра за новым флагом! 🎒"
     )
-    await update.message.reply_text(text, parse_mode="Markdown", reply_markup=_cod_kb())
+    await update.effective_message.reply_text(text, parse_mode="Markdown", reply_markup=_cod_kb())
     return COUNTRY_OF_DAY
 
 
@@ -3801,7 +3723,7 @@ def _games_kb():
 
 async def show_games_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Подменю 🎮 Игры."""
-    await update.message.reply_text(
+    await update.effective_message.reply_text(
         "🎮 *Игры*\n\nПроверить, насколько хорошо ты знаешь мир. Три игры, счёт сохраняется.",
         parse_mode="Markdown",
         reply_markup=_games_kb(),
@@ -3814,11 +3736,11 @@ async def games_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE)
     if text == "◀️ Назад":
         return await go_home(update, context)
     if text == "🧠 Викторина о путешествиях":
-        return await quiz_start(update, context)
+        return await resume_quiz(update, context)
     if text == "🎯 Угадай где я?":
-        return await guess_start(update, context)
+        return await resume_guess(update, context)
     if text == "🤝 Найди пару":
-        return await pair_start(update, context)
+        return await resume_pair(update, context)
     if text == "🌍 Страна дня":
         return await country_of_day_start(update, context)
     return await show_games_menu(update, context)
@@ -3826,7 +3748,7 @@ async def games_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 async def show_folder_tools(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Вернуться в папку 🛠 Инструменты."""
-    context.user_data.clear()
+    reset_navigation(context)
     await nav_reply(
         update, context,
         "🛠 *Инструменты*\n\nТо, что нужно уже в дороге. Перевести, посчитать курс, собрать чемодан по списку.",
@@ -4667,9 +4589,17 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.unpin_all_chat_messages(chat_id=update.effective_chat.id)
     except:
         pass
-    context.user_data.clear()
+    reset_navigation(context)
     user = update.effective_user
-    await record_user(user.id, user.username, user.first_name)
+    await record_user(
+        user.id, user.username, user.first_name,
+        enroll_onboarding=(
+            ONBOARDING_ENABLED
+            and update.effective_chat.type == "private"
+            and not user.is_bot
+            and user.id != ADMIN_ID
+        ),
+    )
 
     # ── Deep-link обработка: /start <CODE> ──────────────────────────────
     arg = context.args[0].strip() if getattr(context, "args", None) else ""
@@ -4740,7 +4670,7 @@ async def show_donate_screen(update: Update, context: ContextTypes.DEFAULT_TYPE)
         )
     ]])
 
-    await update.message.reply_text(
+    await update.effective_message.reply_text(
         "🤍 *Поддержать проект*\n\n"
         "Бот бесплатный целиком, все разделы открыты. Так и останется.\n\n"
         "Делаю его один. Если понравился, можешь закинуть сколько не жалко. "
@@ -4751,7 +4681,7 @@ async def show_donate_screen(update: Update, context: ContextTypes.DEFAULT_TYPE)
         parse_mode="Markdown",
         reply_markup=share_kb,
     )
-    await update.message.reply_text(
+    await update.effective_message.reply_text(
         "Выбери сумму 👇",
         reply_markup=ReplyKeyboardMarkup(
             [
@@ -4853,6 +4783,8 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # ◀️ Назад из подменю папок → главное меню (или обратно в папку Знания/Планирование/Мои путешествия/Премиум)
     if text == "◀️ Назад":
+        if context.user_data.pop("back_to_tools", False):
+            return await show_folder_tools(update, context)
         if context.user_data.pop("back_to_knowledge", False):
             return await show_folder_knowledge(update, context)
         if context.user_data.pop("back_to_planning", False):
@@ -5391,10 +5323,15 @@ async def handle_webapp_data(update: Update, context: ContextTypes.DEFAULT_TYPE)
             except Exception as e:
                 logger.error("handle_webapp_data countries user_id=%s: %s: %s", user.id, type(e).__name__, e)
 
+        result_keyboard = get_main_keyboard()
+        if context.user_data.get("back_to_mytrips"):
+            result_keyboard = ReplyKeyboardMarkup(
+                [["◀️ Назад", HOME_BTN]], resize_keyboard=True,
+            )
         await update.message.reply_text(
             f"✅ Список стран сохранён! Посещено: *{count}* стран из {total}",
             parse_mode="Markdown",
-            reply_markup=get_main_keyboard(),
+            reply_markup=result_keyboard,
         )
         return MAIN_MENU
 
@@ -6392,7 +6329,7 @@ _SUPPORT_KB = ReplyKeyboardMarkup(
 
 
 async def show_support_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
+    await update.effective_message.reply_text(
         "🆘 *Поддержка*\n\n"
         "⚠️ Если бот не реагирует — зайди в меню и нажми /start для перезагрузки. "
         "Бот находится в активной разработке, мы постоянно добавляем новые функции и обновления.\n\n"
@@ -7104,7 +7041,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Команда /menu — всегда возвращает в главное меню."""
-    context.user_data.clear()
+    reset_navigation(context)
     await nav_reply(
         update, context,
         "🏠 Главное меню:",
@@ -10605,7 +10542,7 @@ _AIRHELP_TEXT = (
 async def show_partners_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Показывает меню раздела Партнёры."""
     context.user_data.pop("partners_sub", None)
-    await update.message.reply_text(
+    await update.effective_message.reply_text(
         "🤝 Партнёры\n\n"
         "🎒 Как местный — официальный партнёр ведущих travel-сервисов:\n"
         "Aviasales • Tripster • Cherehapa • Airalo и другие топовые сервисы\n\n"
@@ -11194,7 +11131,7 @@ def _waters_nav_kb() -> ReplyKeyboardMarkup:
 # ── WATERS: show_folder_mytrips helper ───────────────────────────────────────
 
 async def show_folder_mytrips(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    context.user_data.clear()
+    reset_navigation(context)
     await nav_reply(
         update, context,
         "🗺 *Мои путешествия*\n\nЗдесь всё про твои поездки. Отмечай страны и регионы России, собирай достопримечательности, веди дневник, считай расстояния и общий счёт в компании. Статистика и место в рейтинге обновляются сами.\n\nОтсюда же путеводители, авторские туры и помощь с визой.",
@@ -11297,6 +11234,52 @@ async def waters_ref_list_handler(update: Update, context: ContextTypes.DEFAULT_
     return await show_waters_ref_type(update, context)
 
 
+async def onboarding_webapp(update, context, *, countries):
+    reset_navigation(context)
+    if countries:
+        button = get_folder_mytrips_kb(update.effective_user.id).keyboard[0][0]
+        context.user_data["back_to_mytrips"] = True
+        title = "🗺 Мои страны"
+    else:
+        button = get_folder_tools_kb().keyboard[2][0]
+        context.user_data["back_to_tools"] = True
+        title = "✅ Чеклист"
+    await nav_reply(
+        update, context, title,
+        reply_markup=ReplyKeyboardMarkup(
+            [[button], ["◀️ Назад", HOME_BTN]], resize_keyboard=True,
+        ),
+    )
+    return MAIN_MENU
+
+
+async def onboarding_callback(update, context):
+    query = update.callback_query
+    await query.answer()
+    action = query.data.removeprefix("intro:")
+    if action == "countries" or action == "checklist":
+        return await onboarding_webapp(update, context, countries=action == "countries")
+
+    reset_navigation(context)
+    routes = {
+        "destiny": destiny_start,
+        "planning": show_folder_planning,
+        "start_tip": go_home,
+        "tools": show_folder_tools,
+        "mytrips": show_folder_mytrips,
+        "country_day": country_of_day_start,
+        "games": show_games_menu,
+        "partners": show_partners_menu,
+        "feedback": show_support_menu,
+        "donate": show_donate_screen,
+        "back:destiny": show_folder_planning,
+        "back:checklist": show_folder_tools,
+        "back:countries": show_folder_mytrips,
+        "back:country_day": show_games_menu,
+    }
+    return await routes.get(action, go_home)(update, context)
+
+
 async def post_init(app: Application) -> None:
     """Called by PTB after initialize() — set bot commands, verify channel, launch scheduler."""
     global _main_event_loop
@@ -11345,15 +11328,9 @@ async def post_init(app: Application) -> None:
     # Автопродление ЮKassa не запускаем: бот бесплатный с 25.10.2026,
     # подписок больше нет и списывать не с кого. Донаты — разовые платежи.
 
-    # Онбординг-рассылка — каждый день в 12:00 МСК
-    onboarding_task = asyncio.create_task(onboarding_scheduler(app.bot))
-    onboarding_task.add_done_callback(_scheduler_done_cb)
-    logger.info("Задача онбординг-рассылки создана и запущена")
-
-    # Онбординг час 1 — каждый час для новых пользователей
-    hour1_task = asyncio.create_task(hour1_scheduler(app.bot))
-    hour1_task.add_done_callback(_scheduler_done_cb)
-    logger.info("Задача онбординг hour1 создана и запущена")
+    if ONBOARDING_ENABLED:
+        onboarding_task = asyncio.create_task(onboarding.run(app.bot, get_db_connection))
+        onboarding_task.add_done_callback(_scheduler_done_cb)
 
 
 async def admin_photo_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -11378,6 +11355,7 @@ def main():
             CommandHandler("start", start),
             CommandHandler("menu", menu_command),
             CommandHandler("help", help_command),
+            CallbackQueryHandler(onboarding_callback, pattern=r"^intro:"),
             CallbackQueryHandler(onb_mytrips_cb,  pattern=r"^onb_mytrips$"),
             CallbackQueryHandler(onb_feedback_cb, pattern=r"^onb_feedback$"),
             CallbackQueryHandler(onb_premium_cb,  pattern=r"^onb_premium$"),
@@ -11593,6 +11571,7 @@ def main():
             CommandHandler("menu", menu_command),
             CommandHandler("cancel", cancel),
             CommandHandler("broadcast", broadcast_command),
+            CallbackQueryHandler(onboarding_callback, pattern=r"^intro:"),
             CallbackQueryHandler(onb_mytrips_cb,  pattern=r"^onb_mytrips$"),
             CallbackQueryHandler(onb_feedback_cb, pattern=r"^onb_feedback$"),
             CallbackQueryHandler(onb_premium_cb,  pattern=r"^onb_premium$"),
