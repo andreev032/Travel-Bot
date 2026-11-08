@@ -87,7 +87,7 @@ class NavigationTests(unittest.IsolatedAsyncioTestCase):
                                 self.assertTrue(button.web_app.url.startswith(bot.WEBAPP_URL + "#countries="))
                             else:
                                 self.assertEqual(button.text, "✅ Чеклист")
-                                self.assertIsNone(button.web_app)
+                                self.assertEqual(button.web_app.url, bot.CHECKLIST_URL)
 
     async def test_start_preserves_guide_deep_link(self):
         update = update_for_callback("intro:home")
