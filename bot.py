@@ -1482,7 +1482,7 @@ def get_folder_tools_kb():
              KeyboardButton("💱 Конвертер валют", web_app=WebAppInfo(url=CURRENCY_URL))],
             [KeyboardButton("🕐 Разница во времени", web_app=WebAppInfo(url=TIMEZONE_URL)),
              KeyboardButton("🗺 Карта мира",          web_app=WebAppInfo(url=MAP_URL))],
-            [KeyboardButton("✅ Чеклист")],
+            [KeyboardButton("✅ Чеклист", web_app=WebAppInfo(url=CHECKLIST_URL))],
             [KeyboardButton("◀️ Назад"),              KeyboardButton(HOME_BTN)],
         ],
         resize_keyboard=True,
