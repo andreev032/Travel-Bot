@@ -97,7 +97,9 @@
 </div>
 <div id="list"></div>
 <div id="done-wrap">
-  <button id="btn-done" onclick="closeApp()">Закрыть</button>
+  <p id="save-status" role="status"></p>
+  <button id="restore-local" onclick="restoreLocal()" hidden>Добавить старые отметки с устройства</button>
+  <button id="btn-done" onclick="closeApp()" disabled>Сохранить</button>
 </div>
 
 <script>
@@ -107,100 +109,57 @@ if (tg.setHeaderColor)    tg.setHeaderColor('#161b22');
 if (tg.setBackgroundColor) tg.setBackgroundColor('#0d1117');
 
 /* ── 195 стран ООН + 6 особых территорий = 201 ── */
-const ALL = [
-  ["Австралия","🇦🇺"],["Австрия","🇦🇹"],["Азербайджан","🇦🇿"],["Албания","🇦🇱"],
-  ["Алжир","🇩🇿"],["Ангола","🇦🇴"],["Андорра","🇦🇩"],["Антигуа и Барбуда","🇦🇬"],
-  ["Аргентина","🇦🇷"],["Армения","🇦🇲"],["Афганистан","🇦🇫"],["Багамские острова","🇧🇸"],
-  ["Бангладеш","🇧🇩"],["Барбадос","🇧🇧"],["Бахрейн","🇧🇭"],["Беларусь","🇧🇾"],
-  ["Белиз","🇧🇿"],["Бельгия","🇧🇪"],["Бенин","🇧🇯"],["Болгария","🇧🇬"],
-  ["Боливия","🇧🇴"],["Босния и Герцеговина","🇧🇦"],["Ботсвана","🇧🇼"],["Бразилия","🇧🇷"],
-  ["Бруней","🇧🇳"],["Буркина-Фасо","🇧🇫"],["Бурунди","🇧🇮"],["Бутан","🇧🇹"],
-  ["Вануату","🇻🇺"],["Ватикан","🇻🇦"],["Великобритания","🇬🇧"],["Венгрия","🇭🇺"],
-  ["Венесуэла","🇻🇪"],["Восточный Тимор","🇹🇱"],["Вьетнам","🇻🇳"],["Габон","🇬🇦"],
-  ["Гаити","🇭🇹"],["Гайана","🇬🇾"],["Гамбия","🇬🇲"],["Гана","🇬🇭"],
-  ["Гватемала","🇬🇹"],["Гвинея","🇬🇳"],["Гвинея-Бисау","🇬🇼"],["Германия","🇩🇪"],
-  ["Гондурас","🇭🇳"],["Гонконг","🇭🇰"],["Гренада","🇬🇩"],["Греция","🇬🇷"],["Грузия","🇬🇪"],
-  ["Дания","🇩🇰"],["Джибути","🇩🇯"],["Доминика","🇩🇲"],["Доминиканская Республика","🇩🇴"],
-  ["ДР Конго","🇨🇩"],["Египет","🇪🇬"],["Замбия","🇿🇲"],["Западная Сахара","🇪🇭"],["Зимбабве","🇿🇼"],
-  ["Израиль","🇮🇱"],["Индия","🇮🇳"],["Индонезия","🇮🇩"],["Иордания","🇯🇴"],
-  ["Ирак","🇮🇶"],["Иран","🇮🇷"],["Ирландия","🇮🇪"],["Исландия","🇮🇸"],
-  ["Испания","🇪🇸"],["Италия","🇮🇹"],["Йемен","🇾🇪"],["Кабо-Верде","🇨🇻"],
-  ["Казахстан","🇰🇿"],["Камбоджа","🇰🇭"],["Камерун","🇨🇲"],["Канада","🇨🇦"],
-  ["Катар","🇶🇦"],["Кения","🇰🇪"],["Кипр","🇨🇾"],["Кирибати","🇰🇮"],
-  ["Китай","🇨🇳"],["Колумбия","🇨🇴"],["Коморские острова","🇰🇲"],["Конго","🇨🇬"],["Косово","🇽🇰"],
-  ["Коста-Рика","🇨🇷"],["Кот-д'Ивуар","🇨🇮"],["Куба","🇨🇺"],["Кувейт","🇰🇼"],
-  ["Кыргызстан","🇰🇬"],["Лаос","🇱🇦"],["Латвия","🇱🇻"],["Лесото","🇱🇸"],
-  ["Либерия","🇱🇷"],["Ливан","🇱🇧"],["Ливия","🇱🇾"],["Литва","🇱🇹"],
-  ["Лихтенштейн","🇱🇮"],["Люксембург","🇱🇺"],["Маврикий","🇲🇺"],["Мавритания","🇲🇷"],
-  ["Мадагаскар","🇲🇬"],["Макао","🇲🇴"],["Малави","🇲🇼"],["Малайзия","🇲🇾"],["Мали","🇲🇱"],
-  ["Мальдивы","🇲🇻"],["Мальта","🇲🇹"],["Марокко","🇲🇦"],["Маршалловы острова","🇲🇭"],
-  ["Мексика","🇲🇽"],["Микронезия","🇫🇲"],["Мозамбик","🇲🇿"],["Молдова","🇲🇩"],
-  ["Монако","🇲🇨"],["Монголия","🇲🇳"],["Мьянма","🇲🇲"],["Намибия","🇳🇦"],
-  ["Науру","🇳🇷"],["Непал","🇳🇵"],["Нигер","🇳🇪"],["Нигерия","🇳🇬"],
-  ["Нидерланды","🇳🇱"],["Никарагуа","🇳🇮"],["Новая Зеландия","🇳🇿"],["Норвегия","🇳🇴"],
-  ["ОАЭ","🇦🇪"],["Оман","🇴🇲"],["Пакистан","🇵🇰"],["Палау","🇵🇼"],
-  ["Палестина","🇵🇸"],["Панама","🇵🇦"],["Папуа Новая Гвинея","🇵🇬"],["Парагвай","🇵🇾"],
-  ["Перу","🇵🇪"],["Польша","🇵🇱"],["Португалия","🇵🇹"],["Приднестровье","🏴"],["Руанда","🇷🇼"],
-  ["Румыния","🇷🇴"],["Россия","🇷🇺"],["Сальвадор","🇸🇻"],["Самоа","🇼🇸"],["Сан-Марино","🇸🇲"],
-  ["Сан-Томе и Принсипи","🇸🇹"],["Саудовская Аравия","🇸🇦"],["Северная Корея","🇰🇵"],
-  ["Северная Македония","🇲🇰"],["Сейшелы","🇸🇨"],["Сенегал","🇸🇳"],
-  ["Сент-Винсент и Гренадины","🇻🇨"],["Сент-Китс и Невис","🇰🇳"],["Сент-Люсия","🇱🇨"],
-  ["Сербия","🇷🇸"],["Сингапур","🇸🇬"],["Сирия","🇸🇾"],["Словакия","🇸🇰"],
-  ["Словения","🇸🇮"],["Соломоновы острова","🇸🇧"],["Сомали","🇸🇴"],["Судан","🇸🇩"],
-  ["Суринам","🇸🇷"],["США","🇺🇸"],["Сьерра-Леоне","🇸🇱"],["Таджикистан","🇹🇯"],
-  ["Таиланд","🇹🇭"],["Тайвань","🇹🇼"],["Танзания","🇹🇿"],["Того","🇹🇬"],["Тонга","🇹🇴"],
-  ["Тринидад и Тобаго","🇹🇹"],["Тувалу","🇹🇻"],["Тунис","🇹🇳"],["Туркменистан","🇹🇲"],
-  ["Турция","🇹🇷"],["Уганда","🇺🇬"],["Узбекистан","🇺🇿"],["Украина","🇺🇦"],
-  ["Уругвай","🇺🇾"],["Фиджи","🇫🇯"],["Филиппины","🇵🇭"],["Финляндия","🇫🇮"],
-  ["Франция","🇫🇷"],["Хорватия","🇭🇷"],["ЦАР","🇨🇫"],["Чад","🇹🇩"],
-  ["Черногория","🇲🇪"],["Чехия","🇨🇿"],["Чили","🇨🇱"],["Швейцария","🇨🇭"],
-  ["Швеция","🇸🇪"],["Шри-Ланка","🇱🇰"],["Эквадор","🇪🇨"],["Экваториальная Гвинея","🇬🇶"],
-  ["Эритрея","🇪🇷"],["Эсватини","🇸🇿"],["Эстония","🇪🇪"],["Эфиопия","🇪🇹"],
-  ["ЮАР","🇿🇦"],["Южная Корея","🇰🇷"],["Южный Судан","🇸🇸"],["Ямайка","🇯🇲"],["Япония","🇯🇵"],
-];
-const TOTAL = ALL.length;
-
-const KEY = 'visited_v2';
-let visited = new Set(JSON.parse(localStorage.getItem(KEY) || '[]'));
+let ALL = [];
+const status = document.getElementById('save-status');
+const saveButton = document.getElementById('btn-done');
+const restoreButton = document.getElementById('restore-local');
+let revision = null;
+let visited = new Set();
+let legacy = [];
 let query = '';
 
-function save() { localStorage.setItem(KEY, JSON.stringify([...visited])); }
-
-/* ── Гидратация из базы ────────────────────────────────────────────────
-   Если локально пусто, а в URL есть ?d=<base64> — восстанавливаем список
-   стран, переданный ботом (заход с нового устройства / после очистки
-   браузера). Свежее локальное состояние приоритетнее: если localStorage
-   уже не пуст, параметр d игнорируется. */
-(function hydrateFromDB() {
+async function initialize() {
   try {
-    if (visited.size > 0) return;                 // локальное состояние приоритетнее
-    const d = new URLSearchParams(location.search).get('d');
-    if (!d) return;
-    const b64 = d.replace(/-/g, '+').replace(/_/g, '/');
-    const list = JSON.parse(decodeURIComponent(escape(atob(b64))));
-    if (Array.isArray(list) && list.length) {
-      visited = new Set(list);
-      save();
+    const response = await fetch('countries.json');
+    if (!response.ok) throw new Error('Countries unavailable');
+    ALL = await response.json();
+    const payload = new URLSearchParams(location.hash.slice(1)).get('countries');
+    if (payload) {
+      const bytes = Uint8Array.from(atob(payload.replace(/-/g, '+').replace(/_/g, '/')),
+        char => char.charCodeAt(0));
+      const snapshot = JSON.parse(new TextDecoder().decode(bytes));
+      if (Number.isSafeInteger(snapshot.revision) && snapshot.revision >= 0 &&
+          Array.isArray(snapshot.indices)) {
+        revision = snapshot.revision;
+        visited = new Set(snapshot.indices.map(index => ALL[index]?.[0]).filter(Boolean));
+        saveButton.disabled = false;
+      }
     }
-  } catch (e) { /* повреждённый параметр — просто игнорируем */ }
-})();
-
-/* Синхронизация с базой с debounce ~1.5 сек: собираем изменения и шлём
-   один раз после последнего клика. tg.sendData в некоторых версиях
-   Telegram закрывает Mini App, поэтому не вызываем его на каждый тап. */
-let syncTimer = null;
-function sendVisited() {
-  try {
-    tg.sendData(JSON.stringify({
-      source: "countries",
-      count: visited.size,
-      visited: [...visited].sort()
-    }));
-  } catch (e) { /* нет tg — игнорируем */ }
+  } catch (_) {
+    // A damaged or old link cannot authorize replacement of the server snapshot.
+  }
+  if (revision === null) {
+    status.textContent = 'Открой «Мои страны» заново из меню бота, чтобы загрузить список.';
+  } else {
+    try {
+      const local = JSON.parse(localStorage.getItem('visited_v2') || '[]');
+      if (Array.isArray(local)) {
+        legacy = local.filter(name => ALL.some(([known]) => known === name) && !visited.has(name));
+        restoreButton.hidden = legacy.length === 0;
+      }
+    } catch (_) {
+      // The server snapshot remains usable if local storage is unavailable.
+    }
+  }
+  render();
+  updateCounter();
 }
-function scheduleSync() {
-  if (syncTimer) clearTimeout(syncTimer);
-  syncTimer = setTimeout(sendVisited, 1500);
+
+function restoreLocal() {
+  for (const name of legacy) visited.add(name);
+  restoreButton.hidden = true;
+  render();
+  updateCounter();
 }
 
 function render() {
@@ -226,26 +185,34 @@ function render() {
 function updateCounter() {
   const n = visited.size;
   const badge = document.getElementById('counter-badge');
-  badge.textContent = `${n} из ${TOTAL}`;
+  badge.textContent = `${n} из ${ALL.length}`;
   badge.className = n ? 'has' : '';
 }
 
 function toggle(name) {
+  if (revision === null) return;
   visited.has(name) ? visited.delete(name) : visited.add(name);
-  save(); render(); updateCounter();
+  render();
+  updateCounter();
 }
 
 function filter(v) { query = v; render(); }
 
 function closeApp() {
-  tg.sendData(JSON.stringify({
-    source: "countries",
-    count: visited.size,
-    visited: [...visited].sort()
-  }));
+  if (revision === null) return;
+  try {
+    tg.sendData(JSON.stringify({
+      source: "countries_v2",
+      revision,
+      indices: ALL.flatMap(([name], index) => visited.has(name) ? [index] : [])
+    }));
+    status.textContent = 'Подтверждение сохранения появится в чате.';
+  } catch (_) {
+    status.textContent = 'Не удалось отправить список. Попробуй ещё раз.';
+  }
 }
 
-render(); updateCounter();
+initialize();
 </script>
 </body>
 </html>

@@ -63,7 +63,7 @@ class NavigationTests(unittest.IsolatedAsyncioTestCase):
             "games": bot.GAMES_MENU, "partners": bot.PARTNERS_MENU,
             "feedback": bot.SUPPORT_MENU, "donate": bot.MAIN_MENU,
         }
-        with patch.object(bot, "get_user_countries", return_value=["Италия"]), \
+        with patch.object(bot, "get_country_snapshot", return_value=(0, ["Италия"])), \
              patch.object(bot, "get_or_create_referral_code", return_value="REF_TEST"), \
              patch.object(bot, "_add_flag_to_collection", return_value=True), \
              patch.object(bot, "_get_flag_count", return_value=1):
@@ -84,7 +84,7 @@ class NavigationTests(unittest.IsolatedAsyncioTestCase):
                         if action in ("countries", "checklist"):
                             url = keyboard.keyboard[0][0].web_app.url
                             if action == "countries":
-                                self.assertTrue(url.startswith(bot.WEBAPP_URL + "?d="))
+                                self.assertTrue(url.startswith(bot.WEBAPP_URL + "#countries="))
                             else:
                                 self.assertEqual(url, bot.CHECKLIST_URL)
 
@@ -108,7 +108,7 @@ class NavigationTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_legacy_callbacks_still_answer(self):
         context = SimpleNamespace(bot=SimpleNamespace(send_message=AsyncMock()))
-        with patch.object(bot, "get_user_countries", return_value=[]):
+        with patch.object(bot, "get_country_snapshot", return_value=(0, [])):
             for name in ("onb_mytrips", "onb_feedback", "onb_premium"):
                 update = update_for_callback(name)
                 await getattr(bot, name + "_cb")(update, context)
@@ -190,6 +190,25 @@ class PostgresTests(unittest.TestCase):
             self.assertIn((4, steps["destiny"] - onboarding.CLAIM_OFFSET), rows)
             self.assertIn((4, steps["planning"] - onboarding.CLAIM_OFFSET), rows)
             self.assertNotIn((4, steps["start_tip"]), rows)
+
+    def test_repeated_start_does_not_enroll_existing_user(self):
+        async def start_twice():
+            update = update_for_callback("intro:home")
+            update.effective_user.id = 1
+            update.message = update.effective_message
+            context = SimpleNamespace(
+                user_data={}, chat_data={}, args=[],
+                bot=SimpleNamespace(unpin_all_chat_messages=AsyncMock(), delete_message=AsyncMock()),
+            )
+            await bot.start(update, context)
+            await bot.start(update, context)
+
+        with patch.object(bot, "get_db_connection", self.connect), \
+             patch.object(bot, "ONBOARDING_ENABLED", True):
+            asyncio.run(start_twice())
+        with closing(self.connect()) as conn, conn.cursor() as cur:
+            cur.execute("SELECT day FROM onboarding_messages WHERE user_id = 1")
+            self.assertEqual(cur.fetchall(), [(14,)])
 
     def test_registration_rolls_back_when_enrollment_fails(self):
         def fail(cur, user_id):
