@@ -137,7 +137,7 @@
   <button id="btn-reset" onclick="resetAll()">Сбросить всё</button>
 </div>
 
-<script>
+<script type="text/plain" id="personal-app" data-kind="checklist" data-key="travel_checklist_v1">
 const tg = window.Telegram.WebApp;
 tg.ready(); tg.expand();
 
@@ -175,10 +175,10 @@ const CATEGORIES = [
 const STORAGE_KEY = 'travel_checklist_v1';
 
 function loadState() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; }
+  try { return JSON.parse(personalRecords.read()) || {}; } catch { return {}; }
 }
 function saveState(state) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  personalRecords.write(JSON.stringify(state));
 }
 
 function itemId(catIdx, itemIdx) { return `${catIdx}_${itemIdx}`; }
@@ -233,5 +233,6 @@ function resetAll() {
 
 render();
 </script>
+<script src="record-sync.js"></script>
 </body>
 </html>

@@ -11,13 +11,17 @@ import hmac
 import hashlib
 import traceback
 import threading
-import ipaddress
+from contextlib import closing
+from decimal import Decimal, InvalidOperation
+from pathlib import Path
+from uuid import UUID
 import urllib.request
 import urllib.parse
 import requests
 import httpx
 import psycopg2
 import onboarding
+import user_records
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from flask import Flask, request as flask_request
@@ -142,11 +146,6 @@ async def init_db(app) -> None:
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS username TEXT")
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS first_name TEXT")
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS language_code TEXT")
-            # ── Удаление устаревшей колонки premium_until ────────────────────
-            try:
-                cur.execute("ALTER TABLE users DROP COLUMN IF EXISTS premium_until")
-            except Exception as e:
-                logger.warning("init_db: drop premium_until: %s: %s", type(e).__name__, e)
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS promo_codes (
                     code        TEXT PRIMARY KEY,
@@ -204,6 +203,15 @@ async def init_db(app) -> None:
                 )
             """)
             cur.execute("""
+                CREATE TABLE IF NOT EXISTS country_list_revisions (
+                    user_id BIGINT PRIMARY KEY,
+                    revision BIGINT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS processed_yookassa_payments (
+                    payment_id UUID PRIMARY KEY
+                );
+            """)
+            cur.execute("""
                 CREATE TABLE IF NOT EXISTS onboarding_messages (
                     user_id BIGINT,
                     day     INT,
@@ -229,6 +237,7 @@ async def init_db(app) -> None:
                     PRIMARY KEY (user_id, key)
                 )
             """)
+            user_records.initialize(cur)
         conn.commit()
         _populate_waters_if_empty(conn)
         with conn.cursor() as cur:
@@ -493,30 +502,6 @@ async def _track_activity(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         logger.error("_track_activity: user_id=%s: %s: %s", user.id, type(e).__name__, e)
 
 
-def upsert_countries_count(user_id: int, username: str | None,
-                           first_name: str | None, count: int) -> None:
-    """Сохраняет количество отмеченных стран пользователя в user_countries."""
-    try:
-        conn = get_db_connection()
-        try:
-            with conn.cursor() as cur:
-                cur.execute("""
-                    INSERT INTO user_countries (user_id, username, first_name, countries_count, updated_at)
-                    VALUES (%s, %s, %s, %s, NOW())
-                    ON CONFLICT (user_id) DO UPDATE SET
-                        username        = EXCLUDED.username,
-                        first_name      = EXCLUDED.first_name,
-                        countries_count = EXCLUDED.countries_count,
-                        updated_at      = NOW()
-                """, (user_id, username, first_name, count))
-            conn.commit()
-        finally:
-            conn.close()
-        logger.info("upsert_countries_count: user_id=%s count=%s ✓", user_id, count)
-    except Exception as e:
-        logger.error("upsert_countries_count: ошибка user_id=%s: %s: %s", user_id, type(e).__name__, e)
-
-
 def get_countries_rating(user_id: int) -> tuple[list[dict], int, int]:
     """Возвращает (топ-30 список, позиция текущего пользователя, его счёт).
     Каждый элемент: {"name": str, "count": int}.
@@ -549,23 +534,48 @@ def get_countries_rating(user_id: int) -> tuple[list[dict], int, int]:
     return [], 0, 0
 
 
-def get_user_countries(user_id: int) -> list[str]:
-    """Возвращает список названий отмеченных стран пользователя из user_country_marks."""
-    try:
-        conn = get_db_connection()
-        try:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "SELECT country_name FROM user_country_marks WHERE user_id=%s",
-                    (user_id,),
-                )
-                rows = cur.fetchall()
-        finally:
-            conn.close()
-        return [r[0] for r in rows]
-    except Exception as e:
-        logger.error("get_user_countries: user_id=%s: %s: %s", user_id, type(e).__name__, e)
-        return []
+# Catalog order is the wire format for countries_v2. Append new entries only.
+with Path(__file__).with_name("webapp").joinpath("countries.json").open(encoding="utf-8") as catalog:
+    COUNTRY_NAMES = tuple(name for name, _ in json.load(catalog))
+
+
+def get_country_snapshot(user_id: int) -> tuple[int, list[str]]:
+    with closing(get_db_connection()) as conn, conn.cursor() as cur:
+        cur.execute("""
+            SELECT COALESCE((SELECT revision FROM country_list_revisions WHERE user_id = %s), 0),
+                   ARRAY(SELECT country_name FROM user_country_marks
+                         WHERE user_id = %s ORDER BY country_name)
+        """, (user_id, user_id))
+        return cur.fetchone()
+
+
+def save_country_snapshot(user_id, username, first_name, revision, visited):
+    with closing(get_db_connection()) as conn, conn, conn.cursor() as cur:
+        cur.execute("""
+            INSERT INTO country_list_revisions (user_id, revision) VALUES (%s, 0)
+            ON CONFLICT DO NOTHING
+        """, (user_id,))
+        cur.execute("""
+            UPDATE country_list_revisions SET revision = revision + 1
+            WHERE user_id = %s AND revision = %s RETURNING revision
+        """, (user_id, revision))
+        if cur.fetchone() is None:
+            return False
+        cur.execute("""
+            DELETE FROM user_country_marks WHERE user_id = %s
+                AND (%s OR country_name = ANY(%s))
+        """, (user_id, not visited, list(COUNTRY_NAMES)))
+        cur.executemany("""
+            INSERT INTO user_country_marks (user_id, country_name) VALUES (%s, %s)
+        """, [(user_id, name) for name in visited])
+        cur.execute("""
+            INSERT INTO user_countries (user_id, username, first_name, countries_count)
+            VALUES (%s, %s, %s, (SELECT COUNT(*) FROM user_country_marks WHERE user_id = %s))
+            ON CONFLICT (user_id) DO UPDATE SET username = EXCLUDED.username,
+                first_name = EXCLUDED.first_name, countries_count = EXCLUDED.countries_count,
+                updated_at = now()
+        """, (user_id, username, first_name, user_id))
+        return True
 
 
 def _get_stats() -> dict:
@@ -628,31 +638,10 @@ def generate_ref_code(user_id: int) -> str:
 
 
 def is_premium(user_id: int) -> bool:
-    """С 25.10.2026 бот бесплатный — все функции открыты всем.
-    Функция оставлена, чтобы не трогать места вызова: если когда-нибудь
-    вернём платные разделы, достаточно убрать эту строку.
-    Прежняя логика чтения из БД — в истории git."""
+    """Совместимость старых вызовов. Все функции доступны бесплатно."""
     return True
 
 
-def has_paid_subscription(user_id: int) -> bool:
-    """True если у пользователя оплаченная подписка (subscription_type задан),
-    а не триал."""
-    try:
-        conn = get_db_connection()
-        try:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "SELECT subscription_type FROM users WHERE user_id = %s",
-                    (user_id,),
-                )
-                row = cur.fetchone()
-                return bool(row and row[0])
-        finally:
-            conn.close()
-    except Exception as e:
-        logger.error("has_paid_subscription: %s: %s", type(e).__name__, e)
-        return False
 
 
 def detach_payment_method(user_id: int) -> bool:
@@ -681,54 +670,8 @@ def detach_payment_method(user_id: int) -> bool:
         return False
 
 
-def activate_trial(user_id: int, promo_source: str | None = None) -> None:
-    """Активирует 7-дневный триал."""
-    try:
-        until = datetime.now() + timedelta(days=7)
-        conn = get_db_connection()
-        try:
-            with conn.cursor() as cur:
-                cur.execute("""
-                    INSERT INTO users (user_id, is_premium, premium_expires_at,
-                                       premium_trial_used, subscription_type, promo_source)
-                    VALUES (%s, TRUE, %s, TRUE, 'trial', %s)
-                    ON CONFLICT (user_id) DO UPDATE
-                        SET is_premium         = TRUE,
-                            premium_expires_at = EXCLUDED.premium_expires_at,
-                            premium_trial_used = TRUE,
-                            subscription_type  = 'trial',
-                            promo_source       = COALESCE(EXCLUDED.promo_source, users.promo_source)
-                """, (user_id, until, promo_source))
-            conn.commit()
-        finally:
-            conn.close()
-        logger.info("activate_trial: user_id=%s до %s source=%r ✓", user_id, until, promo_source)
-    except Exception as e:
-        logger.error("activate_trial: user_id=%s %s: %s", user_id, type(e).__name__, e)
 
 
-def activate_lifetime(user_id: int) -> None:
-    """Вечный доступ (для блогеров): premium_expires_at = NULL + promo_source='lifetime'."""
-    try:
-        conn = get_db_connection()
-        try:
-            with conn.cursor() as cur:
-                cur.execute("""
-                    INSERT INTO users (user_id, is_premium, premium_expires_at,
-                                       subscription_type, promo_source)
-                    VALUES (%s, TRUE, NULL, 'lifetime', 'lifetime')
-                    ON CONFLICT (user_id) DO UPDATE
-                        SET is_premium         = TRUE,
-                            premium_expires_at = NULL,
-                            subscription_type  = 'lifetime',
-                            promo_source       = 'lifetime'
-                """, (user_id,))
-            conn.commit()
-        finally:
-            conn.close()
-        logger.info("activate_lifetime: user_id=%s ✓", user_id)
-    except Exception as e:
-        logger.error("activate_lifetime: user_id=%s %s: %s", user_id, type(e).__name__, e)
 
 
 def get_or_create_ref_code(user_id: int) -> str:
@@ -1106,28 +1049,6 @@ YKConfiguration.secret_key  = YOOKASSA_SECRET_KEY
 
 # ── ЮKassa: вспомогательные функции ───────────────────────────────────
 
-def yookassa_activate_premium(user_id: int, plan: str, payment_method_id: str | None = None):
-    """Активирует/продлевает премиум в БД и сохраняет payment_method_id.
-    Если premium_expires_at уже в будущем — прибавляет дни к нему, иначе к NOW().
-    Возвращает новое значение premium_expires_at."""
-    days = 365 if plan == "year" else 30
-    conn = get_db_connection()
-    try:
-        with conn.cursor() as cur:
-            cur.execute("""
-                UPDATE users
-                SET is_premium = TRUE,
-                    premium_expires_at = GREATEST(NOW(), COALESCE(premium_expires_at, NOW())) + (INTERVAL '1 day' * %s),
-                    subscription_type = %s,
-                    yookassa_payment_method_id = COALESCE(%s, yookassa_payment_method_id)
-                WHERE user_id = %s
-                RETURNING premium_expires_at
-            """, (days, plan, payment_method_id, user_id))
-            row = cur.fetchone()
-        conn.commit()
-        return row[0] if row else None
-    finally:
-        conn.close()
 
 
 def _get_user_email(user_id: int) -> str:
@@ -1135,23 +1056,6 @@ def _get_user_email(user_id: int) -> str:
     return f"{user_id}@likealocal.bot"
 
 
-def _get_payment_method_id(user_id: int) -> str | None:
-    """Возвращает сохранённый yookassa_payment_method_id для пользователя, или None."""
-    try:
-        conn = get_db_connection()
-        try:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "SELECT yookassa_payment_method_id FROM users WHERE user_id = %s",
-                    (user_id,),
-                )
-                row = cur.fetchone()
-                return row[0] if row and row[0] else None
-        finally:
-            conn.close()
-    except Exception as e:
-        logger.warning("_get_payment_method_id: user_id=%s: %s: %s", user_id, type(e).__name__, e)
-        return None
 
 
 def yookassa_create_donation(user_id: int, rubles: int) -> str:
@@ -1168,7 +1072,7 @@ def yookassa_create_donation(user_id: int, rubles: int) -> str:
         },
         "capture": True,
         "description": description,
-        "metadata": {"user_id": str(user_id), "plan": "donate"},
+        "metadata": {"plan": "donate"},
         "receipt": {
             "customer": {"email": email},
             "items": [
@@ -1186,182 +1090,93 @@ def yookassa_create_donation(user_id: int, rubles: int) -> str:
     return payment.confirmation.confirmation_url
 
 
-def yookassa_create_payment(user_id: int, plan: str) -> str:
-    """Создаёт платёж в ЮKassa и возвращает confirmation_url."""
-    amount = "200.00" if plan == "month" else "1490.00"
-    description = "Подписка Как местный Премиум (месяц)" if plan == "month" else "Подписка Как местный Премиум (год)"
-    item_description = "Премиум подписка Как местный" if plan == "month" else "Годовая премиум подписка Как местный"
-    email = _get_user_email(user_id)
-    payment = YKPayment.create({
-        "amount": {"value": amount, "currency": "RUB"},
-        "save_payment_method": True,
-        "confirmation": {
-            "type": "redirect",
-            "return_url": "https://t.me/like_a_local_bot",
-        },
-        "capture": True,
-        "description": description,
-        "metadata": {"user_id": str(user_id), "plan": plan},
-        "receipt": {
-            "customer": {
-                "email": email,
-            },
-            "items": [
-                {
-                    "description": item_description,
-                    "quantity": "1.00",
-                    "amount": {
-                        "value": amount,
-                        "currency": "RUB",
-                    },
-                    "vat_code": 1,
-                    "payment_mode": "full_payment",
-                    "payment_subject": "service",
-                },
-            ],
-        },
-    }, secrets.token_hex(16))
-    return payment.confirmation.confirmation_url
 
 
-def yookassa_charge_renewal(user_id: int, plan: str, payment_method_id: str) -> bool:
-    """Списывает автоплатёж через сохранённый payment_method_id. Возвращает True при успехе."""
-    try:
-        amount = "200.00" if plan == "month" else "1490.00"
-        description = "Автопродление Как местный Премиум"
-        payment = YKPayment.create({
-            "amount": {"value": amount, "currency": "RUB"},
-            "payment_method_id": payment_method_id,
-            "capture": True,
-            "description": description,
-            "metadata": {"user_id": str(user_id), "plan": plan, "auto": "true"},
-        }, secrets.token_hex(16))
-        return payment.status == "succeeded"
-    except Exception as e:
-        logger.error("yookassa_charge_renewal user_id=%s: %s: %s", user_id, type(e).__name__, e)
-        return False
 
 
 # ── Flask webhook для ЮKassa ───────────────────────────────────────────
-
-_YOOKASSA_ALLOWED_IPS = [
-    ipaddress.ip_network("185.71.76.0/27"),
-    ipaddress.ip_network("185.71.77.0/27"),
-    ipaddress.ip_network("77.75.153.0/25"),
-    ipaddress.ip_address("77.75.156.11"),
-    ipaddress.ip_address("77.75.156.35"),
-]
-
-
-def _yookassa_ip_allowed(ip_str: str) -> bool:
-    try:
-        ip = ipaddress.ip_address(ip_str)
-        return any(
-            ip in net if isinstance(net, ipaddress.IPv4Network) else ip == net
-            for net in _YOOKASSA_ALLOWED_IPS
-        )
-    except ValueError:
-        return False
-
 
 _flask_app = Flask(__name__)
 _telegram_bot_ref: "Application | None" = None
 _main_event_loop: "asyncio.AbstractEventLoop | None" = None
 
 
+def apply_yookassa_payment(payment_id, captured_at, user_id, plan, pm_id):
+    # Historical payments are acknowledged once, without restoring paid features.
+    with closing(get_db_connection()) as conn, conn, conn.cursor() as cur:
+        cur.execute("""
+            INSERT INTO processed_yookassa_payments (payment_id) VALUES (%s)
+            ON CONFLICT DO NOTHING
+        """, (payment_id,))
+
+
 @_flask_app.route("/yookassa/webhook", methods=["POST"])
 def yookassa_webhook():
-    # IP-фильтр временно отключён — Railway проксирует запросы, реальный IP ЮKassa не виден.
-    # Вернём проверку, когда разберёмся с цепочкой proxy.
-    ip = flask_request.headers.get("X-Forwarded-For", flask_request.remote_addr)
-    logger.info(f"Webhook received from IP: {ip}")
-
-    # Проверка секрета webhook'а. Если переменная окружения не задана —
-    # пропускаем проверку (с предупреждением), чтобы не сломать прод до того,
-    # как секрет будет добавлен в Railway Variables.
     if YOOKASSA_WEBHOOK_SECRET:
-        provided = (
-            flask_request.headers.get("HTTP_NOTIFICATION_SECRET")
-            or flask_request.headers.get("Notification-Secret")
-            or flask_request.headers.get("X-Notification-Secret")
-        )
-        if not provided or not hmac.compare_digest(provided, YOOKASSA_WEBHOOK_SECRET):
-            logger.warning("YooKassa webhook: bad/missing notification secret from IP=%s", ip)
+        provided = (flask_request.headers.get("HTTP_NOTIFICATION_SECRET")
+                    or flask_request.headers.get("Notification-Secret")
+                    or flask_request.headers.get("X-Notification-Secret") or "")
+        if not hmac.compare_digest(provided.encode(), YOOKASSA_WEBHOOK_SECRET.encode()):
             return "", 403
-    else:
-        logger.warning("YooKassa webhook: YOOKASSA_WEBHOOK_SECRET не задан — проверка пропущена")
 
-    data = flask_request.get_json(silent=True) or {}
-    logger.info("YooKassa webhook: %s", data.get("event"))
+    data = flask_request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return "", 400
     if data.get("event") != "payment.succeeded":
         return "", 200
-
-    obj = data.get("object", {})
-    metadata = obj.get("metadata", {})
-    user_id_str = metadata.get("user_id")
-    plan = metadata.get("plan", "month")
-    if not user_id_str:
-        logger.warning("YooKassa webhook: нет user_id в metadata")
-        return "", 200
-
-    user_id = int(user_id_str)
-    payment_method = obj.get("payment_method", {})
-    pm_id = payment_method.get("id") if payment_method.get("saved") else None
-
-    new_expires_at = yookassa_activate_premium(user_id, plan, pm_id)
-    logger.info("YooKassa: премиум активирован user_id=%s plan=%s pm_id=%s", user_id, plan, pm_id)
-
-    # ── Начисление токенов рефереру ──────────────────────────────────────
+    obj = data.get("object")
     try:
-        conn_ref = get_db_connection()
-        try:
-            with conn_ref.cursor() as cur:
-                cur.execute("SELECT referred_by FROM users WHERE user_id = %s", (user_id,))
-                ref_row = cur.fetchone()
-            if ref_row and ref_row[0]:
-                referrer_id = ref_row[0]
-                n_tokens = 3 if plan == "year" else 1
-                with conn_ref.cursor() as cur:
-                    cur.execute(
-                        "UPDATE users SET tokens = tokens + %s WHERE user_id = %s",
-                        (n_tokens, referrer_id),
-                    )
-                conn_ref.commit()
-                logger.info(
-                    "YooKassa: начислено %s токен(ов) рефереру user_id=%s за оплату user_id=%s plan=%s",
-                    n_tokens, referrer_id, user_id, plan,
-                )
-                if _telegram_bot_ref is not None and _main_event_loop is not None:
-                    asyncio.run_coroutine_threadsafe(
-                        _telegram_bot_ref.bot.send_message(
-                            chat_id=referrer_id,
-                            text=f"💎 Ваш друг оплатил подписку! +{n_tokens} токен(ов) на вашем счету",
-                        ),
-                        _main_event_loop,
-                    )
-        finally:
-            conn_ref.close()
-    except Exception as e:
-        logger.error(
-            "YooKassa webhook: referrer token accrual user_id=%s: %s: %s",
-            user_id, type(e).__name__, e,
-        )
+        payment_id = str(UUID(obj["id"]))
+        notified_amount = Decimal(obj["amount"]["value"])
+        notified_currency = obj["amount"]["currency"]
+        notified_metadata = obj["metadata"]
+        if not isinstance(notified_metadata, dict):
+            return "", 400
+    except (KeyError, TypeError, ValueError, InvalidOperation, AttributeError):
+        return "", 400
 
-    if _telegram_bot_ref is not None and _main_event_loop is not None:
-        plan_label = "Год" if plan == "year" else "Месяц"
-        date_str = new_expires_at.strftime("%d.%m.%Y") if new_expires_at else "—"
-        msg = (
-            "✅ Оплата прошла успешно!\n\n"
-            f"📅 Премиум активен до: {date_str}\n"
-            f"📦 Тариф: {plan_label}"
-        )
-        asyncio.run_coroutine_threadsafe(
-            _telegram_bot_ref.bot.send_message(
-                chat_id=user_id,
-                text=msg,
-            ),
-            _main_event_loop,
-        )
+    try:
+        payment = YKPayment.find_one(payment_id)
+    except yookassa.domain.exceptions.NotFoundError:
+        return "", 400
+    except Exception:
+        logger.warning("YooKassa verification unavailable")
+        return "", 503
+
+    try:
+        if not payment or payment.id != payment_id or payment.status != "succeeded":
+            return "", 400
+        metadata = payment.metadata
+        plan = metadata["plan"]
+        user_id = None if plan == "donate" else int(metadata["user_id"])
+        amount = Decimal(payment.amount.value)
+        if (not amount.is_finite() or amount <= 0
+                or (user_id is not None and not 0 < user_id < 2**63)
+                or amount != notified_amount or notified_currency != "RUB"
+                or payment.amount.currency != "RUB"
+                or str(payment.recipient.account_id) != YOOKASSA_SHOP_ID
+                or any(metadata.get(key) != notified_metadata.get(key)
+                       for key in ("user_id", "plan"))):
+            return "", 400
+        if plan == "donate":
+            if amount != amount.to_integral_value():
+                return "", 400
+        elif {"month": Decimal("200"), "year": Decimal("1490")}.get(plan) != amount:
+            return "", 400
+        captured_at = datetime.fromisoformat(str(payment.captured_at))
+        if captured_at.utcoffset() is None:
+            return "", 400
+        method = payment.payment_method
+        pm_id = None
+    except (KeyError, TypeError, ValueError, InvalidOperation, AttributeError):
+        return "", 400
+
+    try:
+        apply_yookassa_payment(payment_id, captured_at, user_id, plan, pm_id)
+    except (psycopg2.Error, ValueError):
+        logger.warning("YooKassa payment could not be recorded")
+        return "", 503
+
     return "", 200
 
 
@@ -1392,6 +1207,9 @@ def _validate_init_data(init_data: str) -> dict | None:
     except Exception as e:
         logger.error("_validate_init_data: %s: %s", type(e).__name__, e)
         return None
+
+
+user_records.register(_flask_app, lambda: get_db_connection(), _validate_init_data)
 
 
 def _cors_headers():
@@ -1522,84 +1340,8 @@ def _start_flask_server() -> None:
 
 # ── Автопродление (фоновая задача) ─────────────────────────────────────
 
-async def process_recurring_payments(bot) -> None:
-    """Списывает автоплатёж для всех пользователей с истекающим премиумом."""
-    logger.info("process_recurring_payments: запуск")
-    try:
-        conn = get_db_connection()
-        try:
-            with conn.cursor() as cur:
-                cur.execute("""
-                    SELECT user_id, subscription_type, yookassa_payment_method_id
-                    FROM users
-                    WHERE yookassa_payment_method_id IS NOT NULL
-                      AND DATE(premium_expires_at) = CURRENT_DATE
-                      AND subscription_type IN ('month', 'year')
-                """)
-                rows = cur.fetchall()
-        finally:
-            conn.close()
-    except Exception as e:
-        logger.error("process_recurring_payments: ошибка запроса к БД: %s: %s", type(e).__name__, e)
-        return
-
-    logger.info("process_recurring_payments: кандидатов на продление: %d", len(rows))
-    for user_id, plan, pm_id in rows:
-        plan = plan or "month"
-        logger.info("process_recurring_payments: обработка user_id=%s plan=%s", user_id, plan)
-        try:
-            success = yookassa_charge_renewal(user_id, plan, pm_id)
-            if success:
-                new_expires_at = yookassa_activate_premium(user_id, plan, pm_id)
-                plan_label = "Год" if plan == "year" else "Месяц"
-                date_str = new_expires_at.strftime("%d.%m.%Y") if new_expires_at else "—"
-                try:
-                    await bot.send_message(
-                        chat_id=user_id,
-                        text=(
-                            "✅ Подписка продлена автоматически!\n\n"
-                            f"📅 Премиум активен до: {date_str}\n"
-                            f"📦 Тариф: {plan_label}"
-                        ),
-                    )
-                except Exception as notify_err:
-                    logger.warning("process_recurring_payments: уведомление user_id=%s: %s", user_id, notify_err)
-                logger.info("process_recurring_payments: продлён user_id=%s plan=%s до %s", user_id, plan, date_str)
-            else:
-                try:
-                    await bot.send_message(
-                        chat_id=user_id,
-                        text="⚠️ Не удалось автоматически продлить подписку. Зайди в бот и продли вручную.",
-                        reply_markup=InlineKeyboardMarkup([
-                            [InlineKeyboardButton("Продлить", callback_data="premium_buy")],
-                        ]),
-                    )
-                except Exception as notify_err:
-                    logger.warning("process_recurring_payments: уведомление об ошибке user_id=%s: %s", user_id, notify_err)
-                logger.warning("process_recurring_payments: не удалось списать user_id=%s plan=%s", user_id, plan)
-        except Exception as e:
-            logger.error("process_recurring_payments: ошибка user_id=%s: %s: %s", user_id, type(e).__name__, e)
 
 
-async def autorenewal_scheduler(bot) -> None:
-    """Ждёт 10:00 МСК и запускает process_recurring_payments каждые сутки."""
-    _MSK = ZoneInfo("Europe/Moscow")
-    while True:
-        now = datetime.now(_MSK)
-        next_run = now.replace(hour=10, minute=0, second=0, microsecond=0)
-        if now >= next_run:
-            next_run = next_run + timedelta(days=1)
-        sleep_secs = (next_run - now).total_seconds()
-        logger.info(
-            "autorenewal_scheduler: следующий запуск через %.0f сек (%s МСК)",
-            sleep_secs,
-            next_run.strftime("%Y-%m-%d %H:%M"),
-        )
-        await asyncio.sleep(sleep_secs)
-        try:
-            await process_recurring_payments(bot)
-        except Exception as e:
-            logger.error("autorenewal_scheduler: %s: %s", type(e).__name__, e)
 
 
 # ── ONBOARDING ────────────────────────────────────────────────────────────────
@@ -1740,7 +1482,7 @@ def get_folder_tools_kb():
              KeyboardButton("💱 Конвертер валют", web_app=WebAppInfo(url=CURRENCY_URL))],
             [KeyboardButton("🕐 Разница во времени", web_app=WebAppInfo(url=TIMEZONE_URL)),
              KeyboardButton("🗺 Карта мира",          web_app=WebAppInfo(url=MAP_URL))],
-            [KeyboardButton("✅ Чеклист",             web_app=WebAppInfo(url=CHECKLIST_URL))],
+            [KeyboardButton("✅ Чеклист")],
             [KeyboardButton("◀️ Назад"),              KeyboardButton(HOME_BTN)],
         ],
         resize_keyboard=True,
@@ -1752,21 +1494,19 @@ def get_folder_mytrips_kb(user_id: int | None = None):
     # Платные пункты этой папки (открываются по premium)
     premium = is_premium(user_id) if user_id is not None else True
 
-    # URL для «🗺 Мои страны»: подставляем сохранённый в базе список стран,
-    # чтобы WebApp восстановил отметки при заходе с нового устройства / после
-    # очистки браузера. Затрагивает только эту кнопку.
     countries_url = WEBAPP_URL
     if user_id is not None:
         try:
-            saved = get_user_countries(user_id)
-            if saved:
-                payload = base64.urlsafe_b64encode(
-                    json.dumps(sorted(saved), ensure_ascii=False).encode("utf-8")
-                ).decode("ascii")
-                countries_url = f"{WEBAPP_URL}?d={payload}"
-        except Exception as e:
-            logger.error("get_folder_mytrips_kb countries url user_id=%s: %s: %s",
-                         user_id, type(e).__name__, e)
+            revision, saved = get_country_snapshot(user_id)
+            payload = base64.urlsafe_b64encode(
+                json.dumps({
+                    "revision": revision,
+                    "indices": [index for index, name in enumerate(COUNTRY_NAMES) if name in saved],
+                }, separators=(",", ":")).encode("utf-8")
+            ).decode("ascii")
+            countries_url = f"{WEBAPP_URL}#countries={payload}"
+        except psycopg2.Error:
+            logger.warning("Country snapshot unavailable")
 
     def gated(label: str, url: str) -> KeyboardButton:
         if premium:
@@ -1777,13 +1517,13 @@ def get_folder_mytrips_kb(user_id: int | None = None):
         [
             [KeyboardButton("🗺 Мои страны",                  web_app=WebAppInfo(url=countries_url)),
              KeyboardButton("🏆 Рейтинг путешественников")],
-            [KeyboardButton("🇷🇺 Путешествия по России",      web_app=WebAppInfo(url=RUSSIA_URL)),
+            [KeyboardButton("🇷🇺 Путешествия по России"),
              gated("🏛 Мои достопримечательности",            ATTRACTIONS_URL)],
-            [gated("📊 Моя статистика",                       STATS_URL),
+            [KeyboardButton("📊 Моя статистика"),
              KeyboardButton("📏 Калькулятор расстояний",      web_app=WebAppInfo(url=DISTANCE_URL))],
-            [gated("📖 Дневник путешественника",              DIARY_URL),
+            [KeyboardButton("📖 Дневник путешественника"),
              KeyboardButton("🌊 Океаны, моря и реки")],
-            [gated("💰 Общий счёт",                           SPLITWISE_URL),
+            [KeyboardButton("💰 Общий счёт"),
              KeyboardButton("📚 Путеводители")],
             [KeyboardButton("✈️ Авторские туры"),             KeyboardButton("🛃 Оформить визу")],
             [KeyboardButton("◀️ Назад"),                      KeyboardButton(HOME_BTN)],
@@ -4659,8 +4399,7 @@ async def _send_donation_link(update: Update, rubles: int) -> int:
             ]),
         )
     except Exception as e:
-        logger.error("_send_donation_link user_id=%s сумма=%s: %s: %s",
-                     user_id, rubles, type(e).__name__, e)
+        logger.warning("YooKassa donation link unavailable: %s", type(e).__name__)
         await update.message.reply_text(
             "⚠️ Не удалось создать платёж. Попробуй позже или напиши в поддержку.",
         )
@@ -4735,6 +4474,18 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode="Markdown",
             reply_markup=get_folder_mytrips_kb(update.effective_user.id),
         )
+        return MAIN_MENU
+    elif text in ("🇷🇺 Путешествия по России", "✅ Чеклист", "📊 Моя статистика", "📖 Дневник путешественника", "💰 Общий счёт"):
+        urls = {"🇷🇺 Путешествия по России": RUSSIA_URL, "✅ Чеклист": CHECKLIST_URL, "📊 Моя статистика": STATS_URL,
+                "📖 Дневник путешественника": DIARY_URL, "💰 Общий счёт": SPLITWISE_URL}
+        domain = os.getenv("RAILWAY_PUBLIC_DOMAIN", "")
+        if not domain or not re.fullmatch(r"[A-Za-z0-9.-]+", domain):
+            await update.message.reply_text("Серверное сохранение временно недоступно. Попробуй позже.")
+            return MAIN_MENU
+        url = urls[text] + "#api=" + urllib.parse.quote("https://" + domain, safe="")
+        await nav_reply(update, context, text, reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("Открыть", web_app=WebAppInfo(url=url))]
+        ]))
         return MAIN_MENU
     elif text == "🏆 Рейтинг путешественников":
         return await show_rating(update, context)
@@ -5198,52 +4949,31 @@ async def handle_webapp_data(update: Update, context: ContextTypes.DEFAULT_TYPE)
     except (json.JSONDecodeError, AttributeError):
         data = {}
 
-    source = data.get("source", "")
+    source = data.get("source", "") if isinstance(data, dict) else ""
 
     # ── 🗺 Мои страны (index.html) ──────────────────────────────────────────
-    if source == "countries":
+    if source in ("countries", "countries_v2"):
         user = update.effective_user
-        visited = data.get("visited")
-        total = data.get("total", 201)
-
-        # count: длина списка, если visited передан; иначе как раньше
-        if isinstance(visited, list):
-            count = len(visited)
+        indices = data.get("indices")
+        revision = data.get("revision")
+        if (source != "countries_v2" or type(revision) is not int or not 0 <= revision < 2**53 - 1
+                or not isinstance(indices, list) or len(indices) > len(COUNTRY_NAMES)
+                or any(type(index) is not int or not 0 <= index < len(COUNTRY_NAMES)
+                       for index in indices)):
+            message = "Список не сохранён. Открой «Мои страны» заново из меню бота."
         else:
-            count = data.get("count", 0)
-
-        # Рейтинг (не трогаем существующую логику)
-        upsert_countries_count(user.id, user.username, user.first_name, count)
-
-        # ── Надёжное хранение полного списка стран в user_country_marks ──
-        if not visited:
-            # ЗАЩИТА ОТ ЗАТИРАНИЯ: пустой или отсутствующий список
-            # не должен стирать уже сохранённые страны.
-            logger.warning("skipped empty countries sync user_id=%s", user.id)
-        else:
+            visited = {COUNTRY_NAMES[index] for index in indices}
             try:
-                conn = get_db_connection()
-                try:
-                    with conn.cursor() as cur:
-                        cur.execute("DELETE FROM user_country_marks WHERE user_id=%s", (user.id,))
-                        for name in visited:
-                            if isinstance(name, str) and name.strip():
-                                cur.execute(
-                                    "INSERT INTO user_country_marks (user_id, country_name) "
-                                    "VALUES (%s, %s) ON CONFLICT DO NOTHING",
-                                    (user.id, name),
-                                )
-                    conn.commit()
-                finally:
-                    conn.close()
-            except Exception as e:
-                logger.error("handle_webapp_data countries user_id=%s: %s: %s", user.id, type(e).__name__, e)
-
-        await update.message.reply_text(
-            f"✅ Список стран сохранён! Посещено: *{count}* стран из {total}",
-            parse_mode="Markdown",
-            reply_markup=get_main_keyboard(),
-        )
+                saved = save_country_snapshot(
+                    user.id, user.username, user.first_name, revision, visited,
+                )
+            except psycopg2.Error:
+                logger.warning("Country snapshot save failed")
+                message = "Не удалось сохранить список. Открой «Мои страны» и попробуй снова."
+            else:
+                message = (f"✅ Список стран сохранён! Посещено: {len(visited)}."
+                           if saved else "Список уже изменился. Открой «Мои страны» заново.")
+        await update.message.reply_text(message, reply_markup=get_main_keyboard())
         return MAIN_MENU
 
     # ── 🗿 Достопримечательности (attractions.html) ──────────────────────────
@@ -5307,7 +5037,7 @@ async def handle_webapp_data(update: Update, context: ContextTypes.DEFAULT_TYPE)
         count = data.get("count", len(data.get("visited", [])))
         total = data.get("total", 89)
         await update.message.reply_text(
-            f"✅ Список регионов сохранён! Посещено: *{count}* регионов из {total}",
+            "Открой «Путешествия по России» заново из меню для серверного сохранения.",
             parse_mode="Markdown",
             reply_markup=get_main_keyboard(),
         )
@@ -5315,7 +5045,7 @@ async def handle_webapp_data(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
     # ── Splitwise WebApp ─────────────────────────────────────────────────────
     if data.get("type") == "splitwise_export":
-        await update.message.reply_text("✅ Данные сохранены!", reply_markup=get_main_keyboard())
+        await update.message.reply_text("Открой нужный раздел из меню и проверь статус сохранения.", reply_markup=get_main_keyboard())
         return MAIN_MENU
 
     # ── Устаревший формат index.html (visited: [...]) ────────────────────────
@@ -5329,7 +5059,7 @@ async def handle_webapp_data(update: Update, context: ContextTypes.DEFAULT_TYPE)
         )
         return MAIN_MENU
 
-    await update.message.reply_text("✅ Данные сохранены!", reply_markup=get_main_keyboard())
+    await update.message.reply_text("Открой нужный раздел из меню и проверь статус сохранения.", reply_markup=get_main_keyboard())
     return MAIN_MENU
 
 
@@ -10744,41 +10474,19 @@ async def testpost_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     await update.message.reply_text("\n".join(result_lines), parse_mode="Markdown")
 
 
-async def reset_trial_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """/reset_trial — сбрасывает триал у админа и активирует его заново через record_user()."""
-    user = update.effective_user
-    if user.id != ADMIN_ID:
-        await update.message.reply_text("⛔ Нет доступа.")
-        return
-    try:
-        conn = get_db_connection()
-        try:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "UPDATE users SET is_premium=TRUE, premium_expires_at=NOW() + INTERVAL '7 days', premium_trial_used=TRUE, subscription_type='trial' WHERE user_id=%s",
-                    (user.id,),
-                )
-            conn.commit()
-        finally:
-            conn.close()
-    except Exception as e:
-        logger.error("reset_trial_command: user_id=%s %s: %s", user.id, type(e).__name__, e)
-        await update.message.reply_text("⚠️ Не удалось сбросить триал.")
-        return
-    await update.message.reply_text("✅ Триал активирован на 7 дней.")
 
 
 async def addpromo_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """/addpromo КОД TYPE — добавить промо-код (TYPE = trial|partner)."""
+    """/addpromo КОД TYPE — добавить промо-код (TYPE = partner)."""
     if update.effective_user.id != ADMIN_ID:
         await update.message.reply_text("⛔ Нет доступа.")
         return
     if len(context.args) < 2:
-        await update.message.reply_text("Использование: /addpromo КОД TYPE  (TYPE = trial|partner)")
+        await update.message.reply_text("Использование: /addpromo КОД TYPE  (TYPE = partner)")
         return
     code, ptype = context.args[0], context.args[1].lower()
-    if ptype not in ("trial", "partner"):
-        await update.message.reply_text("⛔ TYPE должен быть trial или partner.")
+    if ptype != "partner":
+        await update.message.reply_text("⛔ TYPE должен быть partner.")
         return
     added = add_promo_code(code, ptype, created_by=update.effective_user.id)
     if added:
@@ -11492,7 +11200,6 @@ def main():
     app.add_handler(CommandHandler("stats",    stats_command))
     app.add_handler(CommandHandler("menu",     menu_command))
     app.add_handler(CommandHandler("queue",    queue_command))
-    app.add_handler(CommandHandler("reset_trial", reset_trial_command))
     app.add_handler(CommandHandler("addpromo",   addpromo_command))
     app.add_handler(CommandHandler("promostats", promostats_command))
     app.add_handler(CommandHandler("userstats",  userstats_command))

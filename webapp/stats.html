@@ -310,7 +310,7 @@
   <button id="btn-calc" onclick="calculate()">🚀 Рассчитать статистику</button>
 </div>
 
-<script>
+<script type="text/plain" id="personal-app" data-kind="stats" data-key="travel_stats_v1">
 const tg = window.Telegram.WebApp;
 tg.ready(); tg.expand();
 
@@ -321,11 +321,11 @@ const FIELDS = ['flights','hours','car','train','walk','countries','cities','bud
 function save() {
   const d = {};
   FIELDS.forEach(k => { d[k] = parseFloat(document.getElementById('f-' + k).value) || 0; });
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(d));
+  personalRecords.write(JSON.stringify(d));
   return d;
 }
 function load() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; }
+  try { return JSON.parse(personalRecords.read()) || {}; } catch { return {}; }
 }
 (function restoreInputs() {
   const d = load();
@@ -494,12 +494,13 @@ function renderStats(d) {
 }
 
 function resetAll() {
-  localStorage.removeItem(STORAGE_KEY);
+  personalRecords.write('{}');
   FIELDS.forEach(k => { document.getElementById('f-' + k).value = ''; });
   document.getElementById('stats-content').style.display = 'none';
   document.getElementById('empty-state').style.display = '';
   switchTab('input');
 }
 </script>
+<script src="record-sync.js"></script>
 </body>
 </html>

@@ -544,7 +544,7 @@
   </div>
 </div>
 
-<script>
+<script type="text/plain" id="personal-app" data-kind="diary" data-key="diary_trips_v1">
 // ──────────────────────────────────────────────
 //  State
 // ──────────────────────────────────────────────
@@ -560,11 +560,11 @@ try { window.Telegram.WebApp.expand(); } catch(e) {}
 //  Persistence
 // ──────────────────────────────────────────────
 function loadTrips() {
-  try { trips = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+  try { trips = JSON.parse(personalRecords.read()) || []; }
   catch(e) { trips = []; }
 }
 function saveTrips() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(trips));
+  personalRecords.write(JSON.stringify(trips));
 }
 
 // ──────────────────────────────────────────────
@@ -924,5 +924,6 @@ loadTrips();
 renderList();
 updateSliderColor();
 </script>
+<script src="record-sync.js"></script>
 </body>
 </html>

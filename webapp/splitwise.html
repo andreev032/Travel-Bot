@@ -395,7 +395,7 @@
 
 <div class="toast" id="toast"></div>
 
-<script>
+<script type="text/plain" id="personal-app" data-kind="splitwise" data-key="splitwise_v2">
 // ════════════════════════════════════════════════
 // STATE
 // ════════════════════════════════════════════════
@@ -409,10 +409,10 @@ let state = {
 
 const SYMBOLS = { RUB:'₽', USD:'$', EUR:'€', THB:'฿', AED:'د.إ', TRY:'₺', GEL:'₾' };
 
-function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+function save() { personalRecords.write(JSON.stringify(state)); }
 function load() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = personalRecords.read();
     if (raw) state = JSON.parse(raw);
   } catch(e) {}
 }
@@ -825,5 +825,6 @@ function renderAll() {
 load();
 renderAll();
 </script>
+<script src="record-sync.js"></script>
 </body>
 </html>

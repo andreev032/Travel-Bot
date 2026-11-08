@@ -133,7 +133,7 @@
   <button id="btn-reset" onclick="resetAll()">🗑 Сбросить всё</button>
 </div>
 
-<script>
+<script type="text/plain" id="personal-app" data-kind="regions" data-key="russia_visited_v2">
 const tg = window.Telegram.WebApp;
 tg.ready(); tg.expand();
 if (tg.setHeaderColor)     tg.setHeaderColor('#161b22');
@@ -291,10 +291,10 @@ const TOTAL = ALL.length;  // 89
 
 /* ── localStorage ── */
 const LS_KEY = "russia_visited_v2";
-let visited = new Set(JSON.parse(localStorage.getItem(LS_KEY) || "[]"));
+let visited = new Set(JSON.parse(personalRecords.read() || "[]"));
 
 function save() {
-  localStorage.setItem(LS_KEY, JSON.stringify([...visited]));
+  personalRecords.write(JSON.stringify([...visited]));
 }
 
 /* ── DOM refs ── */
@@ -307,18 +307,13 @@ function updateCounter() {
   const n = visited.size;
   badgeEl.textContent = `${n} из ${TOTAL}`;
   badgeEl.classList.toggle("has", n > 0);
-  document.getElementById("btn-save").disabled = n === 0;
+  document.getElementById("btn-save").disabled = false;
   resetBtn.classList.toggle("active", n > 0);
 }
 
-function send() {
-  if (!visited.size) return;
-  tg.sendData(JSON.stringify({
-    source: "regions",
-    count: visited.size,
-    total: TOTAL,
-    visited: [...visited].sort(),
-  }));
+async function send() {
+  save();
+  if (await personalRecords.flush()) tg.close();
 }
 
 function buildList(query) {
@@ -394,5 +389,6 @@ function resetAll() {
 buildList("");
 updateCounter();
 </script>
+<script src="record-sync.js"></script>
 </body>
 </html>
