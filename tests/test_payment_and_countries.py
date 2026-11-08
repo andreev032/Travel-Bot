@@ -52,6 +52,24 @@ class WebhookTests(unittest.TestCase):
                 self.assertEqual(response.status_code, 400)
                 apply.assert_not_called()
 
+    def test_donation_amounts_do_not_save_payment_method(self):
+        for amount in (300, 500, 1000, 137):
+            with patch.object(bot.YKPayment, "create", return_value=SimpleNamespace(
+                    confirmation=SimpleNamespace(confirmation_url="https://example.test"))) as create:
+                bot.yookassa_create_donation(1, amount)
+                request = create.call_args.args[0]
+                self.assertEqual(request["amount"]["value"], f"{amount}.00")
+                self.assertEqual(request["metadata"], {"plan": "donate"})
+                self.assertNotIn("save_payment_method", request)
+                self.assertNotIn("payment_method_id", request)
+
+    def test_paid_routes_are_removed(self):
+        for name in ("activate_trial", "activate_lifetime", "yookassa_create_payment",
+                     "yookassa_charge_renewal", "process_recurring_payments",
+                     "autorenewal_scheduler", "reset_trial_command"):
+            self.assertFalse(hasattr(bot, name), name)
+        self.assertTrue(bot.is_premium(1))
+
     def test_yookassa_api_outage_returns_retryable_response(self):
         payload, _ = payment_fixture()
         with patch.object(bot, "YOOKASSA_WEBHOOK_SECRET", ""), \
@@ -95,6 +113,30 @@ class PostgresTests(unittest.TestCase):
     def drop_schema(self):
         with closing(self.connect()) as conn, conn, conn.cursor() as cur:
             cur.execute(f"DROP SCHEMA {self.schema} CASCADE")
+
+    def test_parallel_country_updates_and_restart_migration(self):
+        def save(name):
+            return bot.save_country_snapshot(1, "one", "Test", 0, {name})
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            results = list(pool.map(save, ["Франция", "Германия"]))
+        self.assertEqual(sorted(results), [False, True])
+        before = bot.get_country_snapshot(1)
+        asyncio.run(bot.init_db(None))
+        self.assertEqual(bot.get_country_snapshot(1), before)
+        self.assertFalse(save("Италия"))
+
+    def test_payment_database_failure_can_be_retried(self):
+        payload, payment = payment_fixture("donate", "500.00")
+        with patch.object(bot, "YOOKASSA_WEBHOOK_SECRET", ""), \
+             patch.object(bot.YKPayment, "find_one", return_value=payment):
+            with patch.object(bot, "apply_yookassa_payment", side_effect=psycopg2.OperationalError):
+                self.assertEqual(bot._flask_app.test_client().post(
+                    "/yookassa/webhook", json=payload).status_code, 503)
+            self.assertEqual(bot._flask_app.test_client().post(
+                "/yookassa/webhook", json=payload).status_code, 200)
+        with closing(self.connect()) as conn, conn.cursor() as cur:
+            cur.execute("SELECT COUNT(*) FROM processed_yookassa_payments")
+            self.assertEqual(cur.fetchone(), (1,))
 
     def test_two_devices_and_explicit_empty_list(self):
         self.assertEqual(bot.get_country_snapshot(1), (0, ["Италия"]))
@@ -145,8 +187,8 @@ class PostgresTests(unittest.TestCase):
 
         with closing(self.connect()) as conn, conn.cursor() as cur:
             cur.execute("SELECT COUNT(*) FROM processed_yookassa_payments")
-            self.assertEqual(cur.fetchone(), (2,))
+            self.assertEqual(cur.fetchone(), (3,))
             cur.execute("SELECT subscription_type FROM users WHERE user_id = 1")
-            self.assertEqual(cur.fetchone(), ("month",))
+            self.assertEqual(cur.fetchone(), (None,))
             cur.execute("SELECT tokens FROM users WHERE user_id = 2")
-            self.assertEqual(cur.fetchone(), (1,))
+            self.assertEqual(cur.fetchone(), (0,))

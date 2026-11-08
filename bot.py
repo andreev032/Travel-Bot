@@ -145,11 +145,6 @@ async def init_db(app) -> None:
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS username TEXT")
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS first_name TEXT")
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS language_code TEXT")
-            # ── Удаление устаревшей колонки premium_until ────────────────────
-            try:
-                cur.execute("ALTER TABLE users DROP COLUMN IF EXISTS premium_until")
-            except Exception as e:
-                logger.warning("init_db: drop premium_until: %s: %s", type(e).__name__, e)
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS promo_codes (
                     code        TEXT PRIMARY KEY,
@@ -214,12 +209,6 @@ async def init_db(app) -> None:
                 CREATE TABLE IF NOT EXISTS processed_yookassa_payments (
                     payment_id UUID PRIMARY KEY
                 );
-                CREATE TABLE IF NOT EXISTS yookassa_webhook_cutover (
-                    singleton BOOLEAN PRIMARY KEY CHECK (singleton),
-                    started_at TIMESTAMPTZ NOT NULL DEFAULT now()
-                );
-                INSERT INTO yookassa_webhook_cutover (singleton)
-                VALUES (TRUE) ON CONFLICT DO NOTHING;
             """)
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS onboarding_messages (
@@ -647,31 +636,10 @@ def generate_ref_code(user_id: int) -> str:
 
 
 def is_premium(user_id: int) -> bool:
-    """С 25.10.2026 бот бесплатный — все функции открыты всем.
-    Функция оставлена, чтобы не трогать места вызова: если когда-нибудь
-    вернём платные разделы, достаточно убрать эту строку.
-    Прежняя логика чтения из БД — в истории git."""
+    """Совместимость старых вызовов. Все функции доступны бесплатно."""
     return True
 
 
-def has_paid_subscription(user_id: int) -> bool:
-    """True если у пользователя оплаченная подписка (subscription_type задан),
-    а не триал."""
-    try:
-        conn = get_db_connection()
-        try:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "SELECT subscription_type FROM users WHERE user_id = %s",
-                    (user_id,),
-                )
-                row = cur.fetchone()
-                return bool(row and row[0])
-        finally:
-            conn.close()
-    except Exception as e:
-        logger.error("has_paid_subscription: %s: %s", type(e).__name__, e)
-        return False
 
 
 def detach_payment_method(user_id: int) -> bool:
@@ -700,54 +668,8 @@ def detach_payment_method(user_id: int) -> bool:
         return False
 
 
-def activate_trial(user_id: int, promo_source: str | None = None) -> None:
-    """Активирует 7-дневный триал."""
-    try:
-        until = datetime.now() + timedelta(days=7)
-        conn = get_db_connection()
-        try:
-            with conn.cursor() as cur:
-                cur.execute("""
-                    INSERT INTO users (user_id, is_premium, premium_expires_at,
-                                       premium_trial_used, subscription_type, promo_source)
-                    VALUES (%s, TRUE, %s, TRUE, 'trial', %s)
-                    ON CONFLICT (user_id) DO UPDATE
-                        SET is_premium         = TRUE,
-                            premium_expires_at = EXCLUDED.premium_expires_at,
-                            premium_trial_used = TRUE,
-                            subscription_type  = 'trial',
-                            promo_source       = COALESCE(EXCLUDED.promo_source, users.promo_source)
-                """, (user_id, until, promo_source))
-            conn.commit()
-        finally:
-            conn.close()
-        logger.info("activate_trial: user_id=%s до %s source=%r ✓", user_id, until, promo_source)
-    except Exception as e:
-        logger.error("activate_trial: user_id=%s %s: %s", user_id, type(e).__name__, e)
 
 
-def activate_lifetime(user_id: int) -> None:
-    """Вечный доступ (для блогеров): premium_expires_at = NULL + promo_source='lifetime'."""
-    try:
-        conn = get_db_connection()
-        try:
-            with conn.cursor() as cur:
-                cur.execute("""
-                    INSERT INTO users (user_id, is_premium, premium_expires_at,
-                                       subscription_type, promo_source)
-                    VALUES (%s, TRUE, NULL, 'lifetime', 'lifetime')
-                    ON CONFLICT (user_id) DO UPDATE
-                        SET is_premium         = TRUE,
-                            premium_expires_at = NULL,
-                            subscription_type  = 'lifetime',
-                            promo_source       = 'lifetime'
-                """, (user_id,))
-            conn.commit()
-        finally:
-            conn.close()
-        logger.info("activate_lifetime: user_id=%s ✓", user_id)
-    except Exception as e:
-        logger.error("activate_lifetime: user_id=%s %s: %s", user_id, type(e).__name__, e)
 
 
 def get_or_create_ref_code(user_id: int) -> str:
@@ -1125,28 +1047,6 @@ YKConfiguration.secret_key  = YOOKASSA_SECRET_KEY
 
 # ── ЮKassa: вспомогательные функции ───────────────────────────────────
 
-def yookassa_activate_premium(user_id: int, plan: str, payment_method_id: str | None = None):
-    """Активирует/продлевает премиум в БД и сохраняет payment_method_id.
-    Если premium_expires_at уже в будущем — прибавляет дни к нему, иначе к NOW().
-    Возвращает новое значение premium_expires_at."""
-    days = 365 if plan == "year" else 30
-    conn = get_db_connection()
-    try:
-        with conn.cursor() as cur:
-            cur.execute("""
-                UPDATE users
-                SET is_premium = TRUE,
-                    premium_expires_at = GREATEST(NOW(), COALESCE(premium_expires_at, NOW())) + (INTERVAL '1 day' * %s),
-                    subscription_type = %s,
-                    yookassa_payment_method_id = COALESCE(%s, yookassa_payment_method_id)
-                WHERE user_id = %s
-                RETURNING premium_expires_at
-            """, (days, plan, payment_method_id, user_id))
-            row = cur.fetchone()
-        conn.commit()
-        return row[0] if row else None
-    finally:
-        conn.close()
 
 
 def _get_user_email(user_id: int) -> str:
@@ -1154,23 +1054,6 @@ def _get_user_email(user_id: int) -> str:
     return f"{user_id}@likealocal.bot"
 
 
-def _get_payment_method_id(user_id: int) -> str | None:
-    """Возвращает сохранённый yookassa_payment_method_id для пользователя, или None."""
-    try:
-        conn = get_db_connection()
-        try:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "SELECT yookassa_payment_method_id FROM users WHERE user_id = %s",
-                    (user_id,),
-                )
-                row = cur.fetchone()
-                return row[0] if row and row[0] else None
-        finally:
-            conn.close()
-    except Exception as e:
-        logger.warning("_get_payment_method_id: user_id=%s: %s: %s", user_id, type(e).__name__, e)
-        return None
 
 
 def yookassa_create_donation(user_id: int, rubles: int) -> str:
@@ -1205,60 +1088,8 @@ def yookassa_create_donation(user_id: int, rubles: int) -> str:
     return payment.confirmation.confirmation_url
 
 
-def yookassa_create_payment(user_id: int, plan: str) -> str:
-    """Создаёт платёж в ЮKassa и возвращает confirmation_url."""
-    amount = "200.00" if plan == "month" else "1490.00"
-    description = "Подписка Как местный Премиум (месяц)" if plan == "month" else "Подписка Как местный Премиум (год)"
-    item_description = "Премиум подписка Как местный" if plan == "month" else "Годовая премиум подписка Как местный"
-    email = _get_user_email(user_id)
-    payment = YKPayment.create({
-        "amount": {"value": amount, "currency": "RUB"},
-        "save_payment_method": True,
-        "confirmation": {
-            "type": "redirect",
-            "return_url": "https://t.me/like_a_local_bot",
-        },
-        "capture": True,
-        "description": description,
-        "metadata": {"user_id": str(user_id), "plan": plan},
-        "receipt": {
-            "customer": {
-                "email": email,
-            },
-            "items": [
-                {
-                    "description": item_description,
-                    "quantity": "1.00",
-                    "amount": {
-                        "value": amount,
-                        "currency": "RUB",
-                    },
-                    "vat_code": 1,
-                    "payment_mode": "full_payment",
-                    "payment_subject": "service",
-                },
-            ],
-        },
-    }, secrets.token_hex(16))
-    return payment.confirmation.confirmation_url
 
 
-def yookassa_charge_renewal(user_id: int, plan: str, payment_method_id: str) -> bool:
-    """Списывает автоплатёж через сохранённый payment_method_id. Возвращает True при успехе."""
-    try:
-        amount = "200.00" if plan == "month" else "1490.00"
-        description = "Автопродление Как местный Премиум"
-        payment = YKPayment.create({
-            "amount": {"value": amount, "currency": "RUB"},
-            "payment_method_id": payment_method_id,
-            "capture": True,
-            "description": description,
-            "metadata": {"user_id": str(user_id), "plan": plan, "auto": "true"},
-        }, secrets.token_hex(16))
-        return payment.status == "succeeded"
-    except Exception as e:
-        logger.error("yookassa_charge_renewal user_id=%s: %s: %s", user_id, type(e).__name__, e)
-        return False
 
 
 # ── Flask webhook для ЮKassa ───────────────────────────────────────────
@@ -1269,30 +1100,12 @@ _main_event_loop: "asyncio.AbstractEventLoop | None" = None
 
 
 def apply_yookassa_payment(payment_id, captured_at, user_id, plan, pm_id):
+    # Historical payments are acknowledged once, without restoring paid features.
     with closing(get_db_connection()) as conn, conn, conn.cursor() as cur:
         cur.execute("""
-            INSERT INTO processed_yookassa_payments (payment_id)
-            SELECT %s WHERE %s >= (SELECT started_at FROM yookassa_webhook_cutover)
-            ON CONFLICT DO NOTHING RETURNING payment_id
-        """, (payment_id, captured_at))
-        if cur.fetchone() is None or plan == "donate":
-            return None
-        days = 365 if plan == "year" else 30
-        cur.execute("""
-            UPDATE users SET is_premium = TRUE, subscription_type = %s,
-                premium_expires_at = GREATEST(NOW(), COALESCE(premium_expires_at, NOW()))
-                    + INTERVAL '1 day' * %s,
-                yookassa_payment_method_id = COALESCE(%s, yookassa_payment_method_id)
-            WHERE user_id = %s RETURNING premium_expires_at, referred_by
-        """, (plan, days, pm_id, user_id))
-        result = cur.fetchone()
-        if result is None:
-            raise ValueError("Payment user missing")
-        expires_at, referrer_id = result
-        if referrer_id:
-            cur.execute("UPDATE users SET tokens = tokens + %s WHERE user_id = %s",
-                        (3 if plan == "year" else 1, referrer_id))
-        return expires_at, referrer_id
+            INSERT INTO processed_yookassa_payments (payment_id) VALUES (%s)
+            ON CONFLICT DO NOTHING
+        """, (payment_id,))
 
 
 @_flask_app.route("/yookassa/webhook", methods=["POST"])
@@ -1352,31 +1165,16 @@ def yookassa_webhook():
         if captured_at.utcoffset() is None:
             return "", 400
         method = payment.payment_method
-        pm_id = method.id if plan != "donate" and method and method.saved else None
+        pm_id = None
     except (KeyError, TypeError, ValueError, InvalidOperation, AttributeError):
         return "", 400
 
     try:
-        result = apply_yookassa_payment(payment_id, captured_at, user_id, plan, pm_id)
+        apply_yookassa_payment(payment_id, captured_at, user_id, plan, pm_id)
     except (psycopg2.Error, ValueError):
         logger.warning("YooKassa payment could not be recorded")
         return "", 503
 
-    if result and _telegram_bot_ref is not None and _main_event_loop is not None:
-        expires_at, referrer_id = result
-        label = "Год" if plan == "year" else "Месяц"
-        notifications = [(user_id, f"✅ Оплата прошла успешно!\n"
-                          f"📅 Премиум активен до: {expires_at:%d.%m.%Y}\n📦 Тариф: {label}")]
-        if referrer_id:
-            tokens = 3 if plan == "year" else 1
-            notifications.append((referrer_id, f"💎 Ваш друг оплатил подписку! +{tokens} токен(ов)"))
-        for recipient, message in notifications:
-            send = _telegram_bot_ref.bot.send_message(chat_id=recipient, text=message)
-            try:
-                asyncio.run_coroutine_threadsafe(send, _main_event_loop)
-            except RuntimeError:
-                send.close()
-                logger.warning("YooKassa payment notification unavailable")
     return "", 200
 
 
@@ -1537,84 +1335,8 @@ def _start_flask_server() -> None:
 
 # ── Автопродление (фоновая задача) ─────────────────────────────────────
 
-async def process_recurring_payments(bot) -> None:
-    """Списывает автоплатёж для всех пользователей с истекающим премиумом."""
-    logger.info("process_recurring_payments: запуск")
-    try:
-        conn = get_db_connection()
-        try:
-            with conn.cursor() as cur:
-                cur.execute("""
-                    SELECT user_id, subscription_type, yookassa_payment_method_id
-                    FROM users
-                    WHERE yookassa_payment_method_id IS NOT NULL
-                      AND DATE(premium_expires_at) = CURRENT_DATE
-                      AND subscription_type IN ('month', 'year')
-                """)
-                rows = cur.fetchall()
-        finally:
-            conn.close()
-    except Exception as e:
-        logger.error("process_recurring_payments: ошибка запроса к БД: %s: %s", type(e).__name__, e)
-        return
-
-    logger.info("process_recurring_payments: кандидатов на продление: %d", len(rows))
-    for user_id, plan, pm_id in rows:
-        plan = plan or "month"
-        logger.info("process_recurring_payments: обработка user_id=%s plan=%s", user_id, plan)
-        try:
-            success = yookassa_charge_renewal(user_id, plan, pm_id)
-            if success:
-                new_expires_at = yookassa_activate_premium(user_id, plan, pm_id)
-                plan_label = "Год" if plan == "year" else "Месяц"
-                date_str = new_expires_at.strftime("%d.%m.%Y") if new_expires_at else "—"
-                try:
-                    await bot.send_message(
-                        chat_id=user_id,
-                        text=(
-                            "✅ Подписка продлена автоматически!\n\n"
-                            f"📅 Премиум активен до: {date_str}\n"
-                            f"📦 Тариф: {plan_label}"
-                        ),
-                    )
-                except Exception as notify_err:
-                    logger.warning("process_recurring_payments: уведомление user_id=%s: %s", user_id, notify_err)
-                logger.info("process_recurring_payments: продлён user_id=%s plan=%s до %s", user_id, plan, date_str)
-            else:
-                try:
-                    await bot.send_message(
-                        chat_id=user_id,
-                        text="⚠️ Не удалось автоматически продлить подписку. Зайди в бот и продли вручную.",
-                        reply_markup=InlineKeyboardMarkup([
-                            [InlineKeyboardButton("Продлить", callback_data="premium_buy")],
-                        ]),
-                    )
-                except Exception as notify_err:
-                    logger.warning("process_recurring_payments: уведомление об ошибке user_id=%s: %s", user_id, notify_err)
-                logger.warning("process_recurring_payments: не удалось списать user_id=%s plan=%s", user_id, plan)
-        except Exception as e:
-            logger.error("process_recurring_payments: ошибка user_id=%s: %s: %s", user_id, type(e).__name__, e)
 
 
-async def autorenewal_scheduler(bot) -> None:
-    """Ждёт 10:00 МСК и запускает process_recurring_payments каждые сутки."""
-    _MSK = ZoneInfo("Europe/Moscow")
-    while True:
-        now = datetime.now(_MSK)
-        next_run = now.replace(hour=10, minute=0, second=0, microsecond=0)
-        if now >= next_run:
-            next_run = next_run + timedelta(days=1)
-        sleep_secs = (next_run - now).total_seconds()
-        logger.info(
-            "autorenewal_scheduler: следующий запуск через %.0f сек (%s МСК)",
-            sleep_secs,
-            next_run.strftime("%Y-%m-%d %H:%M"),
-        )
-        await asyncio.sleep(sleep_secs)
-        try:
-            await process_recurring_payments(bot)
-        except Exception as e:
-            logger.error("autorenewal_scheduler: %s: %s", type(e).__name__, e)
 
 
 # ── ONBOARDING ────────────────────────────────────────────────────────────────
@@ -10735,41 +10457,19 @@ async def testpost_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     await update.message.reply_text("\n".join(result_lines), parse_mode="Markdown")
 
 
-async def reset_trial_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """/reset_trial — сбрасывает триал у админа и активирует его заново через record_user()."""
-    user = update.effective_user
-    if user.id != ADMIN_ID:
-        await update.message.reply_text("⛔ Нет доступа.")
-        return
-    try:
-        conn = get_db_connection()
-        try:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "UPDATE users SET is_premium=TRUE, premium_expires_at=NOW() + INTERVAL '7 days', premium_trial_used=TRUE, subscription_type='trial' WHERE user_id=%s",
-                    (user.id,),
-                )
-            conn.commit()
-        finally:
-            conn.close()
-    except Exception as e:
-        logger.error("reset_trial_command: user_id=%s %s: %s", user.id, type(e).__name__, e)
-        await update.message.reply_text("⚠️ Не удалось сбросить триал.")
-        return
-    await update.message.reply_text("✅ Триал активирован на 7 дней.")
 
 
 async def addpromo_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """/addpromo КОД TYPE — добавить промо-код (TYPE = trial|partner)."""
+    """/addpromo КОД TYPE — добавить промо-код (TYPE = partner)."""
     if update.effective_user.id != ADMIN_ID:
         await update.message.reply_text("⛔ Нет доступа.")
         return
     if len(context.args) < 2:
-        await update.message.reply_text("Использование: /addpromo КОД TYPE  (TYPE = trial|partner)")
+        await update.message.reply_text("Использование: /addpromo КОД TYPE  (TYPE = partner)")
         return
     code, ptype = context.args[0], context.args[1].lower()
-    if ptype not in ("trial", "partner"):
-        await update.message.reply_text("⛔ TYPE должен быть trial или partner.")
+    if ptype != "partner":
+        await update.message.reply_text("⛔ TYPE должен быть partner.")
         return
     added = add_promo_code(code, ptype, created_by=update.effective_user.id)
     if added:
@@ -11483,7 +11183,6 @@ def main():
     app.add_handler(CommandHandler("stats",    stats_command))
     app.add_handler(CommandHandler("menu",     menu_command))
     app.add_handler(CommandHandler("queue",    queue_command))
-    app.add_handler(CommandHandler("reset_trial", reset_trial_command))
     app.add_handler(CommandHandler("addpromo",   addpromo_command))
     app.add_handler(CommandHandler("promostats", promostats_command))
     app.add_handler(CommandHandler("userstats",  userstats_command))
