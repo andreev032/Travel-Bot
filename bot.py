@@ -21,6 +21,7 @@ import requests
 import httpx
 import psycopg2
 import onboarding
+import user_records
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from flask import Flask, request as flask_request
@@ -236,6 +237,7 @@ async def init_db(app) -> None:
                     PRIMARY KEY (user_id, key)
                 )
             """)
+            user_records.initialize(cur)
         conn.commit()
         _populate_waters_if_empty(conn)
         with conn.cursor() as cur:
@@ -1207,6 +1209,9 @@ def _validate_init_data(init_data: str) -> dict | None:
         return None
 
 
+user_records.register(_flask_app, lambda: get_db_connection(), _validate_init_data)
+
+
 def _cors_headers():
     return {
         "Access-Control-Allow-Origin": "*",
@@ -1477,7 +1482,7 @@ def get_folder_tools_kb():
              KeyboardButton("💱 Конвертер валют", web_app=WebAppInfo(url=CURRENCY_URL))],
             [KeyboardButton("🕐 Разница во времени", web_app=WebAppInfo(url=TIMEZONE_URL)),
              KeyboardButton("🗺 Карта мира",          web_app=WebAppInfo(url=MAP_URL))],
-            [KeyboardButton("✅ Чеклист",             web_app=WebAppInfo(url=CHECKLIST_URL))],
+            [KeyboardButton("✅ Чеклист")],
             [KeyboardButton("◀️ Назад"),              KeyboardButton(HOME_BTN)],
         ],
         resize_keyboard=True,
@@ -1512,13 +1517,13 @@ def get_folder_mytrips_kb(user_id: int | None = None):
         [
             [KeyboardButton("🗺 Мои страны",                  web_app=WebAppInfo(url=countries_url)),
              KeyboardButton("🏆 Рейтинг путешественников")],
-            [KeyboardButton("🇷🇺 Путешествия по России",      web_app=WebAppInfo(url=RUSSIA_URL)),
+            [KeyboardButton("🇷🇺 Путешествия по России"),
              gated("🏛 Мои достопримечательности",            ATTRACTIONS_URL)],
-            [gated("📊 Моя статистика",                       STATS_URL),
+            [KeyboardButton("📊 Моя статистика"),
              KeyboardButton("📏 Калькулятор расстояний",      web_app=WebAppInfo(url=DISTANCE_URL))],
-            [gated("📖 Дневник путешественника",              DIARY_URL),
+            [KeyboardButton("📖 Дневник путешественника"),
              KeyboardButton("🌊 Океаны, моря и реки")],
-            [gated("💰 Общий счёт",                           SPLITWISE_URL),
+            [KeyboardButton("💰 Общий счёт"),
              KeyboardButton("📚 Путеводители")],
             [KeyboardButton("✈️ Авторские туры"),             KeyboardButton("🛃 Оформить визу")],
             [KeyboardButton("◀️ Назад"),                      KeyboardButton(HOME_BTN)],
@@ -4470,6 +4475,18 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=get_folder_mytrips_kb(update.effective_user.id),
         )
         return MAIN_MENU
+    elif text in ("🇷🇺 Путешествия по России", "✅ Чеклист", "📊 Моя статистика", "📖 Дневник путешественника", "💰 Общий счёт"):
+        urls = {"🇷🇺 Путешествия по России": RUSSIA_URL, "✅ Чеклист": CHECKLIST_URL, "📊 Моя статистика": STATS_URL,
+                "📖 Дневник путешественника": DIARY_URL, "💰 Общий счёт": SPLITWISE_URL}
+        domain = os.getenv("RAILWAY_PUBLIC_DOMAIN", "")
+        if not domain or not re.fullmatch(r"[A-Za-z0-9.-]+", domain):
+            await update.message.reply_text("Серверное сохранение временно недоступно. Попробуй позже.")
+            return MAIN_MENU
+        url = urls[text] + "#api=" + urllib.parse.quote("https://" + domain, safe="")
+        await nav_reply(update, context, text, reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("Открыть", web_app=WebAppInfo(url=url))]
+        ]))
+        return MAIN_MENU
     elif text == "🏆 Рейтинг путешественников":
         return await show_rating(update, context)
     elif text in ("🏛 Мои достопримечательности", "📊 Моя статистика", "📖 Дневник путешественника", "💰 Общий счёт"):
@@ -5020,7 +5037,7 @@ async def handle_webapp_data(update: Update, context: ContextTypes.DEFAULT_TYPE)
         count = data.get("count", len(data.get("visited", [])))
         total = data.get("total", 89)
         await update.message.reply_text(
-            f"✅ Список регионов сохранён! Посещено: *{count}* регионов из {total}",
+            "Открой «Путешествия по России» заново из меню для серверного сохранения.",
             parse_mode="Markdown",
             reply_markup=get_main_keyboard(),
         )
@@ -5028,7 +5045,7 @@ async def handle_webapp_data(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
     # ── Splitwise WebApp ─────────────────────────────────────────────────────
     if data.get("type") == "splitwise_export":
-        await update.message.reply_text("✅ Данные сохранены!", reply_markup=get_main_keyboard())
+        await update.message.reply_text("Открой нужный раздел из меню и проверь статус сохранения.", reply_markup=get_main_keyboard())
         return MAIN_MENU
 
     # ── Устаревший формат index.html (visited: [...]) ────────────────────────
@@ -5042,7 +5059,7 @@ async def handle_webapp_data(update: Update, context: ContextTypes.DEFAULT_TYPE)
         )
         return MAIN_MENU
 
-    await update.message.reply_text("✅ Данные сохранены!", reply_markup=get_main_keyboard())
+    await update.message.reply_text("Открой нужный раздел из меню и проверь статус сохранения.", reply_markup=get_main_keyboard())
     return MAIN_MENU
 
 

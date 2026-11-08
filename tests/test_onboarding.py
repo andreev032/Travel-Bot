@@ -82,11 +82,12 @@ class NavigationTests(unittest.IsolatedAsyncioTestCase):
                         if action == "feedback":
                             self.assertTrue(set(bot._SUPPORT_TYPES) <= set(labels))
                         if action in ("countries", "checklist"):
-                            url = keyboard.keyboard[0][0].web_app.url
+                            button = keyboard.keyboard[0][0]
                             if action == "countries":
-                                self.assertTrue(url.startswith(bot.WEBAPP_URL + "#countries="))
+                                self.assertTrue(button.web_app.url.startswith(bot.WEBAPP_URL + "#countries="))
                             else:
-                                self.assertEqual(url, bot.CHECKLIST_URL)
+                                self.assertEqual(button.text, "✅ Чеклист")
+                                self.assertIsNone(button.web_app)
 
     async def test_start_preserves_guide_deep_link(self):
         update = update_for_callback("intro:home")
